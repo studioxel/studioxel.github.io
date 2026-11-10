@@ -230,6 +230,12 @@ details.adv[open] summary{color:var(--accent)}
 .stepper button{height:34px;min-width:44px;border-radius:17px;border:1px solid var(--line);background:var(--bg);font-weight:700}
 .stepper output{min-width:90px;text-align:center;font:500 14px var(--mono)}
 .pl.sec-cur,.ph.sec-cur{background:var(--raise);color:var(--fg)}
+.lockb{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:4px}
+.row.locked .hdr{background:color-mix(in srgb,var(--panel) 85%,var(--muted))}
+.row.locked .clip{cursor:default;opacity:.85}
+fieldset.lk{border:0;margin:0;padding:0;min-width:0}
+fieldset.lk[disabled]{opacity:.55}
+.lknote{color:var(--accent)!important}
 .help{margin-top:12px;color:var(--muted);font-size:12px;line-height:1.6}
 .help kbd{font:11px var(--mono);border:1px solid var(--line);border-radius:4px;padding:1px 5px;background:var(--raise);color:var(--fg)}
 @media (max-width:480px){.sl,.grrow{grid-template-columns:92px minmax(0,1fr) 58px}}
@@ -253,10 +259,11 @@ details.adv[open] summary{color:var(--accent)}
     <label class="grp">BPM <input type="number" id="bpm" min="40" max="220" value="90"></label>
     <button class="toggle" id="tCount" aria-pressed="true" title="1 mesure de décompte avant la prise">Décompte</button>
     <button class="toggle" id="tMetro" aria-pressed="false">Métronome</button>
+    <label class="grp">Ton blaze <input id="meName" style="width:120px;height:34px;background:var(--raise);border:1px solid var(--line);border-radius:6px;padding:0 8px;text-transform:none;letter-spacing:0" placeholder="ex. Xela"></label>
     <button class="toggle" id="tCasque" aria-pressed="false" title="Active-le seulement si tu chantes avec un casque ou des écouteurs">Casque</button>
     <button class="toggle" id="tMon" aria-pressed="false" title="Entendre ta voix avec les effets pendant la prise (casque obligatoire)">Retour voix</button>
     <button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-    <span class="grp" id="ver">Version 13</span>
+    <span class="grp" id="ver">Version 14</span>
     <span class="grp" id="latInfo" title="Le retard du téléphone est mesuré et corrigé tout seul à chaque prise">Calage auto</span>
   </div>
 </div>
@@ -278,6 +285,10 @@ details.adv[open] summary{color:var(--accent)}
     <select id="sessLink" aria-label="Lier à un titre de projet"></select>
     <button class="sbtn" id="sessListBtn" aria-expanded="false">Mes sessions</button>
     <button class="sbtn" id="sessNew">+ Nouvelle</button>
+    <button class="sbtn" id="sessSend">Envoyer la session</button>
+    <button class="sbtn primary" id="sessShare" hidden>Partager le fichier</button>
+    <button class="sbtn" id="sessRecv">Recevoir une session</button>
+    <input type="file" id="sessFile" hidden>
     <span class="sstate" id="sessState"></span>
   </div>
   <div class="sesslist" id="sessList" hidden></div>
@@ -410,7 +421,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 </section>
 
 <div class="help">
-  StudioXel · version 13.
+  StudioXel · version 14.
   Arme une piste avec R, puis REC. Chaque prise est gardée dans le menu « Prise ». Glisse un clip pour le décaler.
   Les sons ne sont pas sauvegardés à la fermeture : exporte avant de quitter. Le texte et les projets sont gardés.
 </div>
@@ -703,6 +714,7 @@ async function record(){
       pushUndo('la prise', false, true);
       let off0 = recInfo.pos, punched = false;
       if(recInfo.punch && tr.buffer){ const pm = punchMerge(tr, buf, recInfo.pos, recInfo.end); buf = pm.buffer; off0 = pm.offset; punched = true; }
+      claim(tr);
       tr.takes.push({ buffer: buf, offset: off0, punch: punched }); tr.take = tr.takes.length - 1;
       tr.buffer = buf; tr.offset = off0;
       if(!punched){ await adaptVoice(tr); await autoLevel(tr); }
@@ -757,7 +769,7 @@ let undoAt = 0, undoLbl = '';
 function snapTrack(t){
   return { id: t.id, name: t.name, color: t.color, preset: t.preset, fx: { ...t.fx }, vr: t.vr, vol: t.vol, pan: t.pan,
     mute: t.mute, solo: t.solo, arm: t.arm, offset: t.offset, buffer: t.buffer, take: t.take, takes: t.takes.map(k => ({ ...k })),
-    trim: t.trim, atOn: t.atOn, at: { ...t.at }, lv: t.lv ? { ...t.lv } : undefined, vp: t.vp, adapted: t.adapted, semi: t.semi, bpmOrig: t.bpmOrig, origTake: t.origTake };
+    trim: t.trim, atOn: t.atOn, at: { ...t.at }, lv: t.lv ? { ...t.lv } : undefined, vp: t.vp, adapted: t.adapted, semi: t.semi, bpmOrig: t.bpmOrig, origTake: t.origTake, uid: t.uid, owner: t.owner, ownerName: t.ownerName };
 }
 function pushUndo(label, coalesce, force){
   if(S.recording && !force) return;
@@ -800,12 +812,14 @@ function undo(){
 $('#bUndo').onclick = undo;
 
 /* ---------- Pistes ---------- */
+let claimNext = false;
 function addTrack(name, preset){
   const p = preset || 'neutre';
   const t = { id: ++idSeq, name, color: COLORS[(idSeq - 1) % COLORS.length], buffer: null, offset: 0,
-    takes: [], take: -1, vol: 0.85, pan: 0, mute: false, solo: false, arm: false, preset: p, fx: { ...FX[p] }, vr: 0,
+    uid: uid('k'), owner: null, ownerName: '', takes: [], take: -1, vol: 0.85, pan: 0, mute: false, solo: false, arm: false, preset: p, fx: { ...FX[p] }, vr: 0,
     at: { key: 9, scale: 'min', speed: 60, amount: 100, auto: true } };
   t.chain = makeChain(ctx, bus); t.chain.set(t, true, false);
+  if(claimNext){ t.owner = ME.id; t.ownerName = ME.name; claimNext = false; }
   S.tracks.push(t); applyMix();
   return t;
 }
@@ -823,20 +837,24 @@ function renderTracks(){
   const list = $('#list'); list.innerHTML = '';
   S.tracks.forEach(t => {
     const row = document.createElement('div');
-    row.className = 'row'; row.dataset.id = t.id;
+    const lk = isLocked(t);
+    row.className = 'row' + (lk ? ' locked' : ''); row.dataset.id = t.id;
     const takes = t.takes.length > 1
       ? `<select data-act="take" aria-label="Prise">${t.takes.map((tk, i) => `<option value="${i}" ${i === t.take ? 'selected' : ''}>Prise ${i + 1}${tk.tuned ? ' · AT' : ''}${tk.xf ? ' · modifiée' : ''}${tk.punch ? ' · retouchée' : ''}</option>`).join('')}</select>` : '';
     row.innerHTML = `
       <div class="hdr">
         <div class="l1"><span class="swatch" style="background:${t.color}"></span>
-          <input class="name" data-act="name" value="${esc(t.name)}" aria-label="Nom de la piste">
+          <input class="name" data-act="name" value="${esc(t.name)}" aria-label="Nom de la piste" ${lk ? 'disabled' : ''}>
           <button class="chip arm" data-act="arm" aria-pressed="${t.arm}" title="Armer pour l'enregistrement">R</button>
           <button class="chip mute" data-act="mute" aria-pressed="${t.mute}" title="Muet">M</button>
           <button class="chip solo" data-act="solo" aria-pressed="${t.solo}" title="Solo">S</button>
         </div>
         <div class="l2">
-          <span>Vol</span><input type="range" min="0" max="2" step="0.01" value="${t.vol}" data-act="vol" aria-label="Volume">
-          <span>Pan</span><input type="range" min="-1" max="1" step="0.05" value="${t.pan}" data-act="pan" aria-label="Panoramique">
+          <span>Vol</span><input type="range" min="0" max="2" step="0.01" value="${t.vol}" data-act="vol" aria-label="Volume" ${lk ? 'disabled' : ''}>
+          <span>Pan</span><input type="range" min="-1" max="1" step="0.05" value="${t.pan}" data-act="pan" aria-label="Panoramique" ${lk ? 'disabled' : ''}>
+        </div>
+        ${t.ownerName ? `<div class="lockb">${lk ? '🔒 Verrouillée · ' : '✓ '}${esc(t.ownerName)}</div>` : ''}
+        <div style="display:none">
         </div>
         <div class="l3">
           <button class="sbtn" data-act="import">Importer</button>${takes}
@@ -895,7 +913,7 @@ function drawRuler(cv){
 }
 function dragClip(clip, t){
   let sx, so, moved;
-  clip.addEventListener('pointerdown', e => { if(S.recording) return; sx = e.clientX; so = t.offset; moved = false; clip.setPointerCapture(e.pointerId); });
+  clip.addEventListener('pointerdown', e => { if(S.recording || isLocked(t)) return; sx = e.clientX; so = t.offset; moved = false; clip.setPointerCapture(e.pointerId); });
   clip.addEventListener('pointermove', e => {
     if(sx === undefined) return;
     const dx = e.clientX - sx;
@@ -917,6 +935,7 @@ let importFor = null, delArm = null;
 list.addEventListener('click', e => {
   const el = e.target.closest('[data-act]'); if(!el) return;
   const t = trackById(el.closest('.row').dataset.id), act = el.dataset.act;
+  if(['arm', 'import', 'del'].includes(act) && isLocked(t)){ lockToast(t); return; }
   if(act === 'arm'){ if(S.recording) return; const v = !t.arm; S.tracks.forEach(x => x.arm = false); t.arm = v; renderTracks(); }
   if(act === 'mute' || act === 'solo') pushUndo(act === 'mute' ? 'le muet' : 'le solo');
   if(act === 'mute'){ t.mute = !t.mute; el.setAttribute('aria-pressed', t.mute); applyMix(); }
@@ -940,6 +959,7 @@ list.addEventListener('click', e => {
 list.addEventListener('input', e => {
   const el = e.target, act = el.dataset.act; if(!act) return;
   const t = trackById(el.closest('.row').dataset.id);
+  if(isLocked(t)) return;
   if(act === 'vol' || act === 'pan') pushUndo('le volume', true);
   if(act === 'vol'){ t.vol = +el.value; applyMix(); }
   if(act === 'pan'){ t.pan = +el.value; applyMix(); }
@@ -948,6 +968,7 @@ list.addEventListener('input', e => {
 list.addEventListener('change', e => {
   const el = e.target; if(el.dataset.act !== 'take') return;
   const t = trackById(el.closest('.row').dataset.id);
+  if(isLocked(t)){ lockToast(t); renderTracks(); return; }
   pushUndo('le changement de prise');
   t.take = +el.value; t.buffer = t.takes[t.take].buffer; t.offset = t.takes[t.take].offset;
   restart(); renderTracks();
@@ -960,6 +981,7 @@ $('#file').addEventListener('change', async e => {
     const buf = await ctx.decodeAudioData(await f.arrayBuffer());
     const t = importFor;
     pushUndo('l\'import');
+    claim(t);
     t.takes.push({ buffer: buf, offset: 0 }); t.take = t.takes.length - 1;
     t.buffer = buf; t.offset = 0;
     if(/^(Instru|Piste \d+)$/.test(t.name)) t.name = f.name.replace(/\.[^.]+$/, '').slice(0, 28);
@@ -1096,7 +1118,7 @@ function renderMix(){
         <div class="grrow"><span>Réduction</span><div class="meter wide gr"><i id="trGr"></i></div><output id="trGrDb">0 dB</output></div>
       </div>
     </details>`;
-  st.innerHTML = html;
+  st.innerHTML = isLocked(cur) ? `<p class="note lknote">🔒 Piste de ${esc(cur.ownerName)} : verrouillée. Tu peux l'écouter, la couper (M) ou l'isoler (S), mais seul ${esc(cur.ownerName)} peut la modifier.</p><fieldset class="lk" disabled>${html}</fieldset>` : html;
   renderQuick();
   const adv = st.querySelector('details.adv');
   adv.addEventListener('toggle', () => { if(adv.open) drawEQ(); });
@@ -1123,6 +1145,7 @@ $('#strip').addEventListener('input', e => {
 });
 async function fxAction(e, t){
   if(!t) return;
+  if(isLocked(t) && e.target.closest('button')){ lockToast(t); return; }
   const fb = e.target.closest('.fxbtn'), nb = e.target.closest('.notch button');
   if((fb && fb.dataset.fx !== 'at') || nb) pushUndo('l\'effet');
   if(fb){
@@ -1146,17 +1169,18 @@ function renderQuick(){
   const q = $('#quick'), t = quickTrack();
   if(!t){ q.innerHTML = ''; return; }
   const on = isTuned(t) || !!t.atOn, ai = nearest(AT_SP, t.at.speed);
-  q.innerHTML = `<div class="qhead"><span>Effets en direct</span><b style="color:${t.color}">${esc(t.name)}</b>${S.recording ? '<span class="qrec">● en prise</span>' : ''}</div>
+  q.innerHTML = (isLocked(t) ? '<fieldset class="lk" disabled>' : '<fieldset class="lk">') + `<div class="qhead"><span>Effets en direct</span>${isLocked(t) ? '<span>🔒 ' + esc(t.ownerName) + '</span>' : ''}<b style="color:${t.color}">${esc(t.name)}</b>${S.recording ? '<span class="qrec">● en prise</span>' : ''}</div>
     <div class="qrow">${fxRowHTML(t, 'rev', 'Reverb')}${fxRowHTML(t, 'dly', 'Écho')}${fxRowHTML(t, 'dbl', 'Doubler')}
       <div class="fxrow"><button class="fxbtn" data-fx="at" aria-pressed="${on}">Auto-tune</button>
       ${on ? `<div class="notch" data-fx="at" role="group" aria-label="Style d'auto-tune">${AT_N.map((n, i) => `<button data-l="${i}" aria-pressed="${i === ai}">${n}</button>`).join('')}</div>` : ''}</div>
-    </div>`;
+    </div></fieldset>`;
 }
 $('#quick').addEventListener('click', e => fxAction(e, quickTrack()));
 $('#strip').addEventListener('click', e => fxAction(e, selTrack()));
 
 $('#strip').addEventListener('change', e => {
   const t0 = selTrack();
+  if(isLocked(t0)) return;
   if(e.target.id === 'atKey' || e.target.id === 'atScale') pushUndo('la tonalité');
   if(e.target.id === 'atKey'){ t0.at.key = +e.target.value; t0.at.auto = false; if(isTuned(t0)) applyAutotune(t0); return; }
   if(e.target.id === 'atScale'){ t0.at.scale = e.target.value; t0.at.auto = false; if(isTuned(t0)) applyAutotune(t0); return; }
@@ -1501,7 +1525,7 @@ async function autoLevel(t){
 $('#bLevel').onclick = async () => {
   if(busy) return; setBusy(true, 'Équilibrage des pistes…');
   pushUndo('le rééquilibrage');
-  for(const t of S.tracks){ t.vol = 0.85; await autoLevel(t); }
+  for(const t of S.tracks){ if(isLocked(t)) continue; t.vol = 0.85; await autoLevel(t); }
   setBusy(false); renderTracks(); renderMix(); toast('Niveaux rééquilibrés : voix devant, instru derrière.');
 };
 async function lufs(buf){
@@ -1879,7 +1903,7 @@ async function saveSession(){
     if(!sess.name) sess.name = defaultSessName();
     const tracks = S.tracks.map(t => ({
       name: t.name, color: t.color, preset: t.preset, fx: t.fx, vr: t.vr, vol: t.vol, pan: t.pan, mute: t.mute, solo: t.solo,
-      take: t.take, trim: t.trim, atOn: t.atOn, at: t.at, lv: t.lv, vp: t.vp, adapted: t.adapted, semi: t.semi, bpmOrig: t.bpmOrig, origTake: t.origTake,
+      uid: t.uid, owner: t.owner, ownerName: t.ownerName, take: t.take, trim: t.trim, atOn: t.atOn, at: t.at, lv: t.lv, vp: t.vp, adapted: t.adapted, semi: t.semi, bpmOrig: t.bpmOrig, origTake: t.origTake,
       takes: t.takes.map(k => ({ aid: bufAid(k.buffer), offset: k.offset, tuned: k.tuned, src: k.src, xf: k.xf, punch: k.punch }))
     }));
     for(const t of S.tracks) for(const k of t.takes){
@@ -1907,7 +1931,7 @@ async function loadSession(id){
   undoStack.length = 0; updUndo();
   for(const tr of rec.tracks){
     const t = addTrack(tr.name, FX[tr.preset] ? tr.preset : 'neutre'); t.preset = tr.preset;
-    Object.assign(t, { color: tr.color, fx: { ...FX.neutre, ...tr.fx }, vr: tr.vr || 0, vol: tr.vol, pan: tr.pan, mute: tr.mute, solo: tr.solo,
+    Object.assign(t, { uid: tr.uid || t.uid, owner: tr.owner || null, ownerName: tr.ownerName || '', color: tr.color, fx: { ...FX.neutre, ...tr.fx }, vr: tr.vr || 0, vol: tr.vol, pan: tr.pan, mute: tr.mute, solo: tr.solo,
       trim: tr.trim, atOn: tr.atOn, at: { ...t.at, ...tr.at }, lv: tr.lv, vp: tr.vp, adapted: tr.adapted, semi: tr.semi, bpmOrig: tr.bpmOrig, origTake: tr.origTake });
     t.takes = [];
     for(const k of tr.takes){
@@ -2319,6 +2343,127 @@ $('#bStems').onclick = async () => {
 };
 $('#bShareStems').onclick = () => { if(lastStems) shareFiles(lastStems); };
 
+/* ---------- Travail à plusieurs : passe-session avec pistes verrouillées ---------- */
+const ME = (() => {
+  let m = store.get('me', null);
+  if(!m || !m.id){ m = { id: uid('u'), name: '' }; store.set('me', m); }
+  return m;
+})();
+$('#meName').value = ME.name || '';
+$('#meName').addEventListener('input', e => {
+  ME.name = e.target.value.trim(); store.set('me', ME);
+  S.tracks.forEach(t => { if(t.owner === ME.id) t.ownerName = ME.name; });
+});
+const isLocked = t => !!(t && t.owner && t.owner !== ME.id);
+function lockToast(t){ toast('🔒 Piste de ' + (t.ownerName || 'un autre artiste') + ' : seul lui peut la modifier.'); }
+function claim(t){ if(!t.owner){ t.owner = ME.id; t.ownerName = ME.name || 'Moi'; } }
+
+/* Fichier de session : « SXL1 » + taille du JSON + JSON + audio 16 bits à la suite */
+function buildSessionFile(){
+  const metas = [], bufs = [];
+  const tracks = S.tracks.map(t => {
+    const k = t.takes[t.take];
+    let ai = -1;
+    if(k){ ai = bufs.length; bufs.push(k.buffer); }
+    return { uid: t.uid, owner: t.owner, ownerName: t.ownerName, name: t.name, color: t.color, preset: t.preset, fx: t.fx, vr: t.vr,
+      vol: t.vol, pan: t.pan, mute: t.mute, solo: t.solo, trim: t.trim, at: t.at, vp: t.vp, adapted: t.adapted, offset: t.offset,
+      tuned: !!k?.tuned, ai };
+  });
+  let off = 0;
+  bufs.forEach(b => { metas.push({ sr: b.sampleRate, nc: b.numberOfChannels, len: b.length, off }); off += b.length * b.numberOfChannels * 2; });
+  const json = new TextEncoder().encode(JSON.stringify({
+    v: 1, id: sess.id || uid('s'), name: sess.name || defaultSessName(), from: ME.name || 'Quelqu\'un', fromId: ME.id,
+    bpm: S.bpm, instruKey: S.instruKey || null, markers: S.markers, M: { preset: M.preset, low: M.low, high: M.high, glue: M.glue, target: M.target },
+    tracks, metas
+  }));
+  const head = 8 + json.length, pad = (2 - head % 2) % 2;
+  const ab = new ArrayBuffer(head + pad + off), dv = new DataView(ab), u8 = new Uint8Array(ab);
+  u8.set([83, 88, 76, 49], 0); dv.setUint32(4, json.length, true); u8.set(json, 8);
+  const audio = new Int16Array(ab, head + pad);
+  bufs.forEach((b, i) => {
+    let p = metas[i].off / 2;
+    for(let c = 0; c < b.numberOfChannels; c++){ const d = b.getChannelData(c); for(let j = 0; j < d.length; j++){ const v = d[j]; audio[p++] = v >= 1 ? 32767 : v <= -1 ? -32767 : v * 32767; } }
+  });
+  return ab;
+}
+function readSessionFile(ab){
+  const u8 = new Uint8Array(ab);
+  if(u8[0] !== 83 || u8[1] !== 88 || u8[2] !== 76 || u8[3] !== 49) throw new Error('ce fichier n\'est pas une session StudioXel');
+  const len = new DataView(ab).getUint32(4, true);
+  const data = JSON.parse(new TextDecoder().decode(u8.subarray(8, 8 + len)));
+  const head = 8 + len, pad = (2 - head % 2) % 2, audio = new Int16Array(ab, head + pad);
+  const bufs = data.metas.map(m => {
+    const b = ctx.createBuffer(m.nc, m.len, m.sr); let p = m.off / 2;
+    for(let c = 0; c < m.nc; c++){ const d = b.getChannelData(c); for(let j = 0; j < m.len; j++) d[j] = audio[p++] / 32767; }
+    return b;
+  });
+  return { data, bufs };
+}
+let sessFileOut = null;
+$('#sessSend').onclick = async () => {
+  if(busy || S.recording) return;
+  if(!ME.name){ toast('Mets d\'abord ton blaze dans « Réglages » : c\'est lui qui signe tes pistes.'); $('#settings').hidden = false; $('#bSet').setAttribute('aria-expanded', 'true'); $('#meName').focus(); return; }
+  if(!S.tracks.some(t => t.buffer)){ toast('La session est vide : rien à envoyer.'); return; }
+  setBusy(true, 'Préparation du fichier…');
+  try{
+    S.tracks.forEach(t => { if(t.buffer && !t.owner) claim(t); });
+    clearTimeout(saveTimer); await saveSession();
+    await tick();
+    sessFileOut = new File([buildSessionFile()], safeName(sess.name || 'session') + '.sxl', { type: 'application/octet-stream' });
+    $('#sessShare').hidden = false;
+    toast('Fichier prêt (' + Math.round(sessFileOut.size / 1048576) + ' Mo) : touche « Partager le fichier » et envoie-le par WhatsApp, AirDrop ou mail.');
+  }catch(e){ toast('Préparation impossible : ' + e.message); }
+  setBusy(false);
+};
+$('#sessShare').onclick = () => { if(sessFileOut) shareFiles([sessFileOut]); };
+$('#sessRecv').onclick = () => $('#sessFile').click();
+$('#sessFile').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = '';
+  if(!f || busy || S.recording) return;
+  setBusy(true, 'Lecture de la session reçue…');
+  try{
+    ensureCtx();
+    const { data, bufs } = readSessionFile(await f.arrayBuffer());
+    if(data.fromId === ME.id){ toast('C\'est ta propre session : rien à fusionner.'); setBusy(false); return; }
+    /* même session déjà chez moi ? on l'ouvre pour fusionner dedans */
+    if(sess.id !== data.id){
+      clearTimeout(saveTimer); await saveSession();
+      if(sessIndex.some(x => x.id === data.id)) await loadSession(data.id);
+      else {
+        sessReady = false;
+        if(S.playing) pause();
+        S.tracks.forEach(t => t.chain.kill()); S.tracks = []; idSeq = 0; undoStack.length = 0; updUndo();
+        sess = { id: data.id, name: data.name, link: '', created: Date.now() }; store.set('sessId', data.id);
+        S.bpm = data.bpm || S.bpm; $('#bpm').value = S.bpm; bus.setBpm(S.bpm);
+        S.instruKey = data.instruKey; S.markers = []; Object.assign(M, data.M || {}); mpre.set();
+        sessReady = true;
+      }
+    }
+    pushUndo('la session reçue');
+    let upd = 0, add = 0;
+    for(const it of data.tracks){
+      const b = it.ai >= 0 ? bufs[it.ai] : null;
+      let t = S.tracks.find(x => x.uid === it.uid);
+      if(t && it.owner === ME.id) continue;                                   /* mes pistes : ma version fait foi */
+      if(t && t.owner && it.owner && t.owner !== it.owner) t = null;          /* les deux ont pris la même piste : on garde les deux */
+      if(!t){ t = addTrack(it.name, FX[it.preset] ? it.preset : 'neutre'); if(S.tracks.some(x => x !== t && x.uid === it.uid)) it.uid = uid('k'); add++; }
+      else upd++;
+      Object.assign(t, { uid: it.uid, owner: it.owner, ownerName: it.ownerName, name: it.name, preset: it.preset, fx: { ...FX.neutre, ...it.fx }, vr: it.vr || 0,
+        vol: it.vol, pan: it.pan, trim: it.trim, at: { ...t.at, ...it.at }, vp: it.vp, adapted: it.adapted, arm: false });
+      if(b){ t.takes = [{ buffer: b, offset: it.offset, tuned: it.tuned }]; t.take = 0; t.buffer = b; t.offset = it.offset; }
+      else { t.takes = []; t.take = -1; t.buffer = null; }
+    }
+    const key = m => m.name.toLowerCase() + '@' + Math.round(m.t);
+    const have = new Set(S.markers.map(key));
+    (data.markers || []).forEach(m => { if(!have.has(key(m))) S.markers.push(m); });
+    if(!S.instruKey && data.instruKey) S.instruKey = data.instruKey;
+    applyMix(); renderTracks(); renderMix(); renderSessBar(); scheduleSave();
+    document.querySelector('.nav [data-view="vPistes"]').click();
+    toast('Session de ' + (data.from || 'ton collègue') + ' reçue : ' + upd + ' piste(s) mise(s) à jour, ' + add + ' ajoutée(s). Ses pistes sont verrouillées 🔒.');
+  }catch(err){ toast('Session illisible : ' + err.message); sessReady = true; }
+  setBusy(false);
+});
+
 /* ---------- Vues & interface ---------- */
 document.querySelector('.nav').addEventListener('click', e => {
   const b = e.target.closest('button'); if(!b) return;
@@ -2356,7 +2501,7 @@ $('#tMon').addEventListener('click', () => { if(S.mon && !S.casque) toast('Retou
 $('#zIn').onclick = () => { S.pps = Math.min(200, S.pps * 1.5); renderTracks(); };
 $('#zOut').onclick = () => { S.pps = Math.max(8, S.pps / 1.5); renderTracks(); };
 $('#ruler').addEventListener('click', e => seek(e.offsetX / S.pps));
-$('#addTrack').onclick = () => { pushUndo('l\'ajout de piste'); addTrack('Piste ' + (S.tracks.length + 1), 'neutre'); renderTracks(); };
+$('#addTrack').onclick = () => { pushUndo('l\'ajout de piste'); claimNext = true; addTrack('Piste ' + (S.tracks.length + 1), 'neutre'); renderTracks(); };
 document.addEventListener('keydown', e => {
   if(e.target.matches('textarea, input, select')) return;
   if(e.code === 'Space'){ e.preventDefault(); $('#bPlay').click(); }
