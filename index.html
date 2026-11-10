@@ -469,7 +469,14 @@ function initAudio(){
   bus.masterIn.connect(bypass); bypass.connect(outAn);
   outAn.connect(ctx.destination);
 }
-function ensureCtx(){ if(ctx.state === 'suspended') ctx.resume(); return ctx; }
+/* L'iPhone met le son en pause (« interrupted ») quand le micro s'ouvre ou quand des AirPods changent de mode : on le relance */
+function ensureCtx(){ if(ctx.state !== 'running') ctx.resume().catch(() => {}); return ctx; }
+async function wake(){
+  if(ctx.state !== 'running'){
+    try{ await Promise.race([ctx.resume(), new Promise(r => setTimeout(r, 1200))]); }catch(e){}
+  }
+  return ctx.state === 'running';
+}
 function audible(t){ const solo = S.tracks.some(x => x.solo); return !t.mute && (!solo || t.solo); }
 function applyMix(){ S.tracks.forEach(t => t.chain.set(t, audible(t), true)); }
 function setBypass(on){
@@ -542,6 +549,11 @@ async function getMic(){
   if(!navigator.mediaDevices?.getUserMedia) throw new Error('Micro indisponible ici : la page doit être ouverte en ligne (adresse https), pas en aperçu.');
   const free = !S.casque; /* sans casque : on laisse l'iPhone filtrer l'instru qui sort du haut-parleur et régler le gain */
   mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation:free, noiseSuppression:false, autoGainControl:free } });
+  const lbl = (mic.getAudioTracks()[0]?.label || '');
+  if(/airpods|bluetooth|beats|buds/i.test(lbl) && !S.btWarned){
+    S.btWarned = true;
+    toast('Écouteurs Bluetooth détectés : le son arrive avec du retard. Si ta voix est décalée, monte la latence vers 250–300 ms.');
+  }
   const src = ctx.createMediaStreamSource(mic);
   micAnalyser = ctx.createAnalyser(); micAnalyser.fftSize = 1024;
   micData = new Float32Array(micAnalyser.fftSize);
@@ -551,6 +563,7 @@ async function getMic(){
 function releaseMic(){
   if(mic){ mic.getTracks().forEach(tr => tr.stop()); }
   mic = null; micAnalyser = null;
+  setTimeout(() => ensureCtx(), 300);
   $('#meter').style.width = '0%';
 }
 async function record(){
@@ -561,6 +574,7 @@ async function record(){
   try{ await getMic(); }
   catch(e){ toast(e.name === 'NotAllowedError' ? 'Accès au micro refusé. Il faut ouvrir la page en ligne (https) et autoriser le micro.' : (e.message || 'Micro introuvable.')); return; }
   if(S.playing) pause();
+  if(!(await wake())){ releaseMic(); toast('L\'iPhone a coupé le son en branchant le micro. Touche ▶ une fois, puis relance REC.'); return; }
   const chunks = [];
   rec = new MediaRecorder(mic);
   rec.ondataavailable = e => { if(e.data.size) chunks.push(e.data); };
@@ -1409,7 +1423,7 @@ function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add
 function setPlayIcon(){ $('#icoPlay').innerHTML = S.playing ? '<path d="M3 2h4v12H3zM9 2h4v12H9z"/>' : '<path d="M3 2l11 6-11 6z"/>'; }
 function setRecUI(){ $('#bRec').classList.toggle('on', S.recording); $('#playhead').classList.toggle('rec', S.recording); }
 
-$('#bPlay').onclick = () => { if(S.recording){ pause(); return; } S.playing ? pause() : play(); };
+$('#bPlay').onclick = async () => { if(S.recording){ pause(); return; } if(S.playing){ pause(); return; } await wake(); play(); };
 $('#bStop').onclick = () => { const was = S.playing; pause(); if(!was) S.pos = 0; };
 $('#bHome').onclick = () => seek(0);
 $('#bRec').onclick = record;
@@ -1475,13 +1489,15 @@ async function askMicEarly(){
   try{ await getMic(); releaseMic(); }
   catch(e){ /* refusé ou pas encore autorisé : on réessaie au premier toucher */ }
 }
-askMicEarly();
-const firstTouch = () => { ensureCtx(); askMicEarly(); };
+/* Le micro n'est plus ouvert au lancement : il s'ouvre au premier REC seulement */
+const firstTouch = () => ensureCtx();
 /* Micro coupé dès qu'on n'enregistre plus : appli en arrière-plan ou fermée */
 document.addEventListener('visibilitychange', () => { if(document.hidden){ if(S.recording) pause(); else releaseMic(); } });
 window.addEventListener('pagehide', () => releaseMic());
 setInterval(() => { if(mic && !S.recording && !(rec && rec.state === 'recording')) releaseMic(); }, 3000);
 document.addEventListener('pointerdown', firstTouch, { once: true });
+['touchend', 'click'].forEach(ev => document.addEventListener(ev, () => { if(ctx.state !== 'running') ctx.resume().catch(() => {}); }, { passive: true }));
+ctx.onstatechange = () => { if(ctx.state !== 'running' && (S.playing || S.recording)) ctx.resume().catch(() => {}); };
 })();
 </script>
 </body>
