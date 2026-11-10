@@ -61,7 +61,8 @@ button{cursor:pointer}
 .meter.gr i{background:var(--accent);margin-left:auto}
 
 .nav{display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:4px;margin-bottom:10px}
-.nav button{flex:1;height:38px;border:0;border-radius:7px;background:transparent;color:var(--muted);font:700 12px/1 var(--display);text-transform:uppercase;letter-spacing:.1em}
+.nav{overflow-x:auto}
+.nav button{flex:1 0 auto;padding:0 10px;height:38px;border:0;border-radius:7px;background:transparent;color:var(--muted);font:700 12px/1 var(--display);text-transform:uppercase;letter-spacing:.1em}
 .nav button[aria-selected=true]{background:var(--raise);color:var(--fg);box-shadow:inset 0 -2px 0 var(--accent)}
 
 .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;min-width:0}
@@ -150,6 +151,37 @@ button{cursor:pointer}
 
 .toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--raise);border:1px solid var(--line);padding:10px 14px;border-radius:8px;z-index:20;max-width:90vw;opacity:0;transition:opacity .2s;pointer-events:none}
 .toast.show{opacity:1}
+/* Projets */
+.pjgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.pjcard{background:var(--raise);border:1px solid var(--line);border-radius:10px;overflow:hidden;text-align:left;padding:0;display:flex;flex-direction:column}
+.pjcover{aspect-ratio:1/1;max-width:100%;background:#000 center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px}
+.pjinfo{padding:8px 10px 10px;display:flex;flex-direction:column;gap:5px}
+.pjinfo b{font-size:15px;line-height:1.2}
+.pjinfo span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.prog{height:6px;background:var(--bg);border-radius:3px;overflow:hidden}
+.prog i{display:block;height:100%;background:var(--ok)}
+.pjtop{display:grid;grid-template-columns:170px minmax(0,1fr);gap:14px;align-items:start}
+@media (max-width:520px){.pjtop{grid-template-columns:minmax(0,1fr)}.pjcoverbig{max-width:240px}}
+.pjcoverbig{width:100%;aspect-ratio:1/1;border-radius:10px;border:1px dashed var(--muted);background:#000 center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;text-align:center;padding:10px}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.fl{display:flex;flex-direction:column;gap:4px;min-width:0}
+.fl label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.fl input,.fl select,.fl textarea{width:100%;height:38px;background:var(--raise);border:1px solid var(--line);border-radius:6px;padding:0 8px}
+.fl textarea{height:84px;padding:8px;resize:vertical}
+.fl.wide{grid-column:1/-1}
+.trks{border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.trk{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:8px;align-items:center;padding:10px 8px;border-bottom:1px solid var(--line);border-left:4px solid var(--c,#5a6478)}
+.trk:last-child{border-bottom:0}
+.trk .n{font:500 15px var(--mono);color:var(--muted);text-align:center}
+.trk .mainc{display:flex;flex-direction:column;gap:6px;min-width:0}
+.trk .tt{width:100%;height:36px;background:var(--raise);border:1px solid var(--line);border-radius:6px;padding:0 8px;font-weight:700}
+.trk .r2{display:flex;gap:6px;flex-wrap:wrap}
+.trk .r2 select,.trk .r2 input{height:32px;background:var(--raise);border:1px solid var(--line);border-radius:6px;padding:0 6px;font-size:13px;min-width:0}
+.trk .r2 input{flex:1 1 110px}
+.trk .acts{display:flex;flex-direction:column;gap:4px}
+.trk .acts .sbtn{height:28px;width:32px;padding:0}
+.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
 .help{margin-top:12px;color:var(--muted);font-size:12px;line-height:1.6}
 .help kbd{font:11px var(--mono);border:1px solid var(--line);border-radius:4px;padding:1px 5px;background:var(--raise);color:var(--fg)}
 @media (max-width:480px){.sl,.grrow{grid-template-columns:92px minmax(0,1fr) 58px}}
@@ -179,6 +211,7 @@ button{cursor:pointer}
   <button role="tab" data-view="vMix" aria-selected="false">Mixage</button>
   <button role="tab" data-view="vMaster" aria-selected="false">Master</button>
   <button role="tab" data-view="vTexte" aria-selected="false">Texte</button>
+  <button role="tab" data-view="vProjets" aria-selected="false">Projets</button>
 </nav>
 
 <!-- PISTES -->
@@ -278,6 +311,17 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
       <button class="sbtn" id="unsync">Effacer le calage</button>
     </div>
   </div>
+</section>
+
+<!-- PROJETS -->
+<section class="card view" id="vProjets" aria-label="Projets" hidden>
+  <div class="cardhead">
+    <h2 id="pjHead">Projets</h2><span class="spacer"></span>
+    <button class="sbtn" id="pjBack" hidden>← Tous les projets</button>
+    <button class="sbtn primary" id="pjNew">+ Nouveau projet</button>
+  </div>
+  <div class="pad" id="pjBody"></div>
+  <input type="file" id="pjCoverFile" accept="image/*" hidden>
 </section>
 
 <div class="help">
@@ -1226,6 +1270,125 @@ function setTab(p){
 $('#tabW').onclick = () => setTab(false);
 $('#tabP').onclick = () => setTab(true);
 
+/* ---------- Projets : album, EP, single ---------- */
+const PJ_TYPES = ['Single', 'EP', 'Album', 'Mixtape'];
+const PJ_ST = ['Idée', 'Écriture', 'Enregistrement', 'Mix', 'Master', 'Prêt'];
+const PJ_COL = ['#5a6478', '#6fa8ff', '#c58bff', '#f2b544', '#ff8a65', '#4fd1b5'];
+let projects = store.get('projects', []);
+let pjOpen = null, pjDelArm = false;
+function pjSave(){
+  try{ localStorage.setItem('cabine.projects', JSON.stringify(projects)); }
+  catch(e){ toast('Mémoire du téléphone pleine : enlève une pochette ou un projet.'); }
+}
+const pjFind = id => projects.find(p => p.id === id);
+const pjProg = p => p.tracks.length ? Math.round(p.tracks.reduce((a, t) => a + t.st, 0) / (5 * p.tracks.length) * 100) : 0;
+function renderProjets(){
+  const p = pjFind(pjOpen); if(!p) pjOpen = null;
+  $('#pjBack').hidden = !p; $('#pjNew').hidden = !!p;
+  $('#pjHead').textContent = p ? p.type : 'Projets';
+  const body = $('#pjBody');
+  if(!p){
+    if(!projects.length){
+      body.innerHTML = '<p class="note">Aucun projet pour l\'instant. Crée ton premier single, EP ou album : pochette, liste des titres, avancement de chaque morceau, date de sortie.</p>';
+      return;
+    }
+    body.innerHTML = '<div class="pjgrid">' + projects.map(p => {
+      const pr = pjProg(p);
+      return `<button class="pjcard" data-open="${p.id}">
+        <div class="pjcover" style="${p.cover ? `background-image:url(${p.cover})` : ''}">${p.cover ? '' : 'Pas de pochette'}</div>
+        <div class="pjinfo"><span>${esc(p.type)}${p.date ? ' · ' + esc(fmtDate(p.date)) : ''}</span><b>${esc(p.title || 'Sans titre')}</b>
+        <div class="prog"><i style="width:${pr}%"></i></div><span>${p.tracks.length} titre${p.tracks.length > 1 ? 's' : ''} · ${pr} %</span></div>
+      </button>`;
+    }).join('') + '</div>';
+    return;
+  }
+  const pr = pjProg(p);
+  body.innerHTML = `
+    <div class="pjtop">
+      <button class="pjcoverbig" id="pjCover" style="${p.cover ? `background-image:url(${p.cover})` : ''}">${p.cover ? '' : 'Touche pour importer la pochette'}</button>
+      <div class="fgrid">
+        <div class="fl wide"><label for="pjf_title">Titre du projet</label><input id="pjf_title" data-f="title" value="${esc(p.title)}"></div>
+        <div class="fl"><label for="pjf_artist">Artiste</label><input id="pjf_artist" data-f="artist" value="${esc(p.artist)}"></div>
+        <div class="fl"><label for="pjf_type">Format</label><select id="pjf_type" data-f="type">${PJ_TYPES.map(t => `<option ${t === p.type ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+        <div class="fl"><label for="pjf_date">Date de sortie</label><input id="pjf_date" type="date" data-f="date" value="${esc(p.date)}"></div>
+        <div class="fl"><label for="pjf_label">Label / distribution</label><input id="pjf_label" data-f="label" value="${esc(p.label || '')}"></div>
+      </div>
+    </div>
+    <div class="grrow"><span>Avancement</span><div class="prog" style="height:10px"><i style="width:${pr}%"></i></div><output>${pr} %</output></div>
+    <div class="sec">Liste des titres</div>
+    <div class="legend">${PJ_ST.map((s, i) => `<span><i style="background:${PJ_COL[i]}"></i>${s}</span>`).join('')}</div>
+    <div class="trks">${p.tracks.map((t, i) => `
+      <div class="trk" style="--c:${PJ_COL[t.st]}" data-i="${i}">
+        <div class="n">${i + 1}</div>
+        <div class="mainc">
+          <input class="tt" data-tf="title" value="${esc(t.title)}" placeholder="Titre ${i + 1}" aria-label="Titre du morceau ${i + 1}">
+          <div class="r2">
+            <select data-tf="st" aria-label="Étape">${PJ_ST.map((s, k) => `<option value="${k}" ${k === t.st ? 'selected' : ''}>${s}</option>`).join('')}</select>
+            <input data-tf="feat" value="${esc(t.feat)}" placeholder="Feat." aria-label="Featuring">
+            <input data-tf="prod" value="${esc(t.prod || '')}" placeholder="Prod. / beatmaker" aria-label="Producteur">
+          </div>
+        </div>
+        <div class="acts">
+          <button class="sbtn" data-ta="up" aria-label="Monter" ${i ? '' : 'disabled'}>↑</button>
+          <button class="sbtn" data-ta="down" aria-label="Descendre" ${i < p.tracks.length - 1 ? '' : 'disabled'}>↓</button>
+          <button class="sbtn" data-ta="del" aria-label="Supprimer le titre">✕</button>
+        </div>
+      </div>`).join('')}</div>
+    <div class="btns"><button class="sbtn" id="pjAddTrack">+ Ajouter un titre</button></div>
+    <div class="fl wide"><label for="pjf_notes">Notes (idées, budget, clip, promo…)</label><textarea id="pjf_notes" data-f="notes">${esc(p.notes)}</textarea></div>
+    <div class="btns"><button class="sbtn" id="pjDel">Supprimer le projet</button></div>`;
+}
+function fmtDate(d){ try{ return new Date(d + 'T12:00').toLocaleDateString('fr-FR', { day:'numeric', month:'short', year:'numeric' }); }catch(e){ return d; } }
+$('#pjNew').onclick = () => {
+  const p = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), title: '', artist: '', type: 'Single', date: '', label: '', notes: '', cover: null,
+    tracks: [{ title: '', st: 0, feat: '', prod: '' }] };
+  projects.unshift(p); pjSave(); pjOpen = p.id; renderProjets();
+  setTimeout(() => $('#pjf_title')?.focus(), 50);
+};
+$('#pjBack').onclick = () => { pjOpen = null; renderProjets(); };
+$('#pjBody').addEventListener('click', e => {
+  const card = e.target.closest('[data-open]');
+  if(card){ pjOpen = card.dataset.open; pjDelArm = false; renderProjets(); window.scrollTo(0, $('#vProjets').offsetTop - 10); return; }
+  const p = pjFind(pjOpen); if(!p) return;
+  if(e.target.closest('#pjCover')){ $('#pjCoverFile').click(); return; }
+  if(e.target.id === 'pjAddTrack'){ p.tracks.push({ title: '', st: 0, feat: '', prod: '' }); pjSave(); renderProjets(); return; }
+  if(e.target.id === 'pjDel'){
+    if(!pjDelArm){ pjDelArm = true; e.target.textContent = 'Touche encore pour supprimer définitivement'; e.target.classList.add('del', 'confirm'); setTimeout(() => { pjDelArm = false; if(e.target.isConnected){ e.target.textContent = 'Supprimer le projet'; e.target.classList.remove('del', 'confirm'); } }, 3000); return; }
+    projects = projects.filter(x => x !== p); pjSave(); pjOpen = null; pjDelArm = false; renderProjets(); toast('Projet supprimé.'); return;
+  }
+  const b = e.target.closest('[data-ta]'); if(!b) return;
+  const i = +b.closest('.trk').dataset.i, a = b.dataset.ta;
+  if(a === 'del'){ p.tracks.splice(i, 1); }
+  if(a === 'up' && i > 0){ [p.tracks[i - 1], p.tracks[i]] = [p.tracks[i], p.tracks[i - 1]]; }
+  if(a === 'down' && i < p.tracks.length - 1){ [p.tracks[i + 1], p.tracks[i]] = [p.tracks[i], p.tracks[i + 1]]; }
+  pjSave(); renderProjets();
+});
+$('#pjBody').addEventListener('input', e => {
+  const p = pjFind(pjOpen); if(!p) return;
+  const f = e.target.dataset.f, tf = e.target.dataset.tf;
+  if(f){ p[f] = e.target.value; pjSave(); return; }
+  if(tf && tf !== 'st'){ p.tracks[+e.target.closest('.trk').dataset.i][tf] = e.target.value; pjSave(); }
+});
+$('#pjBody').addEventListener('change', e => {
+  const p = pjFind(pjOpen); if(!p) return;
+  if(e.target.dataset.tf === 'st'){ p.tracks[+e.target.closest('.trk').dataset.i].st = +e.target.value; pjSave(); renderProjets(); }
+  if(e.target.dataset.f === 'type'){ renderProjets(); }
+});
+$('#pjCoverFile').addEventListener('change', e => {
+  const f = e.target.files[0]; e.target.value = '';
+  const p = pjFind(pjOpen); if(!f || !p) return;
+  const url = URL.createObjectURL(f), img = new Image();
+  img.onload = () => {
+    const S2 = 600, c = document.createElement('canvas'), k = Math.min(1, S2 / Math.max(img.width, img.height));
+    c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    p.cover = c.toDataURL('image/jpeg', 0.82); URL.revokeObjectURL(url);
+    pjSave(); renderProjets(); toast('Pochette ajoutée.');
+  };
+  img.onerror = () => toast('Image non lue. Essaie un JPG ou un PNG.');
+  img.src = url;
+});
+
 /* ---------- Vues & interface ---------- */
 document.querySelector('.nav').addEventListener('click', e => {
   const b = e.target.closest('button'); if(!b) return;
@@ -1235,6 +1398,7 @@ document.querySelector('.nav').addEventListener('click', e => {
   if(b.dataset.view === 'vMix') renderMix();
   if(b.dataset.view === 'vMaster') renderMaster();
   if(b.dataset.view === 'vTexte' && !$('#viewP').hidden){ curLine = null; renderPrompt(); }
+  if(b.dataset.view === 'vProjets') renderProjets();
 });
 function fmt(s, short){
   s = Math.max(0, s); const m = Math.floor(s / 60), r = s - m * 60;
@@ -1313,6 +1477,10 @@ async function askMicEarly(){
 }
 askMicEarly();
 const firstTouch = () => { ensureCtx(); askMicEarly(); };
+/* Micro coupé dès qu'on n'enregistre plus : appli en arrière-plan ou fermée */
+document.addEventListener('visibilitychange', () => { if(document.hidden){ if(S.recording) pause(); else releaseMic(); } });
+window.addEventListener('pagehide', () => releaseMic());
+setInterval(() => { if(mic && !S.recording && !(rec && rec.state === 'recording')) releaseMic(); }, 3000);
 document.addEventListener('pointerdown', firstTouch, { once: true });
 })();
 </script>
