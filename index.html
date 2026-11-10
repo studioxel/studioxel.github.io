@@ -77,7 +77,7 @@ button{cursor:pointer}
 .inner{position:relative}
 .row{display:flex;border-bottom:1px solid var(--line)}
 .hdr{position:sticky;left:0;z-index:6;width:var(--hdr);flex:none;background:var(--panel);border-right:1px solid var(--line);padding:8px;display:flex;flex-direction:column;gap:6px}
-.lane{position:relative;height:96px;flex:none;background:repeating-linear-gradient(90deg,transparent 0 calc(var(--bar) - 1px),var(--line) calc(var(--bar) - 1px) var(--bar))}
+.lane{position:relative;height:96px;flex:none;background-color:var(--bg);background-image:linear-gradient(to right,var(--line) 1px,transparent 1px);background-size:var(--bar) 100%;background-repeat:repeat-x}
 .ruler .hdr{padding:4px 8px;justify-content:center;font-size:11px;color:var(--muted)}
 .ruler canvas{display:block;cursor:pointer}
 .l1{display:flex;align-items:center;gap:4px}
@@ -523,6 +523,10 @@ async function record(){
       if(len <= raw.sampleRate * 0.1){ toast('Prise trop courte, rien gardé.'); return; }
       const buf = ctx.createBuffer(raw.numberOfChannels, len, raw.sampleRate);
       for(let c = 0; c < raw.numberOfChannels; c++) buf.copyToChannel(raw.getChannelData(c).subarray(from), c);
+      /* Mise à niveau automatique de la prise : crête ramenée à −1 dB */
+      let pk = 0;
+      for(let c = 0; c < buf.numberOfChannels; c++){ const d = buf.getChannelData(c); for(let i = 0; i < d.length; i++){ const a = Math.abs(d[i]); if(a > pk) pk = a; } }
+      if(pk > 1e-4){ const g = Math.min(40, CEIL / pk); for(let c = 0; c < buf.numberOfChannels; c++){ const d = buf.getChannelData(c); for(let i = 0; i < d.length; i++) d[i] *= g; } }
       const tr = recInfo.track;
       tr.takes.push({ buffer: buf, offset: recInfo.pos }); tr.take = tr.takes.length - 1;
       tr.buffer = buf; tr.offset = recInfo.pos;
@@ -576,7 +580,7 @@ function renderTracks(){
           <button class="chip solo" data-act="solo" aria-pressed="${t.solo}" title="Solo">S</button>
         </div>
         <div class="l2">
-          <span>Vol</span><input type="range" min="0" max="1.2" step="0.01" value="${t.vol}" data-act="vol" aria-label="Volume">
+          <span>Vol</span><input type="range" min="0" max="2" step="0.01" value="${t.vol}" data-act="vol" aria-label="Volume">
           <span>Pan</span><input type="range" min="-1" max="1" step="0.05" value="${t.pan}" data-act="pan" aria-label="Panoramique">
         </div>
         <div class="l3">
@@ -728,7 +732,7 @@ const TDEFS = [
   { k:'rev', label:'Reverb', min:0, max:100, step:1, f:v => v + ' %' },
   { k:'dly', label:'Écho',   min:0, max:100, step:1, f:v => v + ' %' },
   { sec:'Niveau' },
-  { k:'vol', own:true, label:'Volume', min:0,  max:1.2, step:0.01, f:v => Math.round(v * 100) + ' %' },
+  { k:'vol', own:true, label:'Volume', min:0,  max:2, step:0.01, f:v => Math.round(v * 100) + ' %' },
   { k:'pan', own:true, label:'Pan',    min:-1, max:1,   step:0.05, f:v => v == 0 ? 'Centre' : (v < 0 ? 'G ' : 'D ') + Math.round(Math.abs(v) * 100) }
 ];
 const toS = (d, v) => d.log ? Math.round(1000 * Math.log(v / d.min) / Math.log(d.max / d.min)) : v;
