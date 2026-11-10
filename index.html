@@ -45,6 +45,7 @@ button{cursor:pointer}
 
 .transport{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:10px}
 .tbtn{height:40px;min-width:44px;padding:0 12px;border-radius:8px;border:1px solid var(--line);background:var(--raise);display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.tbtn:disabled{opacity:.4}
 .tbtn svg{width:16px;height:16px;fill:currentColor}
 .tbtn.rec{color:var(--rec);font-weight:700;letter-spacing:.06em}
 .tbtn.rec.on{background:var(--rec);color:#fff;border-color:var(--rec);animation:pulse 1s infinite}
@@ -222,6 +223,7 @@ details.adv[open] summary{color:var(--accent)}
   <button class="tbtn" id="bPlay" title="Lecture / pause" aria-label="Lecture"><svg viewBox="0 0 16 16" id="icoPlay"><path d="M3 2l11 6-11 6z"/></svg></button>
   <button class="tbtn" id="bStop" title="Stop" aria-label="Stop"><svg viewBox="0 0 16 16"><path d="M3 3h10v10H3z"/></svg></button>
   <button class="tbtn rec" id="bRec" title="Enregistrer sur la piste armée">● REC</button>
+  <button class="tbtn" id="bUndo" disabled title="Annuler la dernière action">↶ Annuler</button>
   <div class="clock" id="clock">0:00.0</div>
   <div class="grp" id="micGrp" hidden>Micro <div class="meter"><i id="meter"></i></div></div>
   <span class="spacer"></span>
@@ -233,7 +235,7 @@ details.adv[open] summary{color:var(--accent)}
     <button class="toggle" id="tCasque" aria-pressed="false" title="Active-le seulement si tu chantes avec un casque ou des écouteurs">Casque</button>
     <button class="toggle" id="tMon" aria-pressed="false" title="Entendre ta voix avec les effets pendant la prise (casque obligatoire)">Retour voix</button>
     <button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-    <span class="grp" id="ver">Version 11</span>
+    <span class="grp" id="ver">Version 12</span>
     <span class="grp" id="latInfo" title="Le retard du téléphone est mesuré et corrigé tout seul à chaque prise">Calage auto</span>
   </div>
 </div>
@@ -359,7 +361,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 </section>
 
 <div class="help">
-  StudioXel · version 11.
+  StudioXel · version 12.
   Arme une piste avec R, puis REC. Chaque prise est gardée dans le menu « Prise ». Glisse un clip pour le décaler.
   Les sons ne sont pas sauvegardés à la fermeture : exporte avant de quitter. Le texte et les projets sont gardés.
 </div>
@@ -635,6 +637,7 @@ async function record(){
       for(let c = 0; c < buf.numberOfChannels; c++){ const d = buf.getChannelData(c); for(let i = 0; i < d.length; i++){ const a = Math.abs(d[i]); if(a > pk) pk = a; } }
       if(pk > 1e-4){ const g = Math.min(40, CEIL / pk); for(let c = 0; c < buf.numberOfChannels; c++){ const d = buf.getChannelData(c); for(let i = 0; i < d.length; i++) d[i] *= g; } }
       const tr = recInfo.track;
+      pushUndo('la prise', false, true);
       tr.takes.push({ buffer: buf, offset: recInfo.pos }); tr.take = tr.takes.length - 1;
       tr.buffer = buf; tr.offset = recInfo.pos;
       await adaptVoice(tr);
@@ -682,6 +685,51 @@ function detectClickLatency(raw, info){
   if(res[3] - res[0] > 25) return null;
   return Math.round((res[1] + res[2]) / 2);
 }
+
+/* ---------- Annuler (retour en arrière) ---------- */
+const undoStack = [];
+let undoAt = 0, undoLbl = '';
+function snapTrack(t){
+  return { id: t.id, name: t.name, color: t.color, preset: t.preset, fx: { ...t.fx }, vr: t.vr, vol: t.vol, pan: t.pan,
+    mute: t.mute, solo: t.solo, arm: t.arm, offset: t.offset, buffer: t.buffer, take: t.take, takes: t.takes.map(k => ({ ...k })),
+    trim: t.trim, atOn: t.atOn, at: { ...t.at }, lv: t.lv ? { ...t.lv } : undefined, vp: t.vp, adapted: t.adapted };
+}
+function pushUndo(label, coalesce, force){
+  if(S.recording && !force) return;
+  const now = Date.now();
+  if(coalesce && label === undoLbl && now - undoAt < 1200){ undoAt = now; return; }
+  undoAt = now; undoLbl = label;
+  undoStack.push({ label, tracks: S.tracks.map(snapTrack), M: { preset: M.preset, low: M.low, high: M.high, glue: M.glue, target: M.target } });
+  if(undoStack.length > 40) undoStack.shift();
+  updUndo();
+}
+function updUndo(){
+  const b = $('#bUndo'); if(!b) return;
+  b.disabled = !undoStack.length;
+  b.title = undoStack.length ? 'Annuler ' + undoStack[undoStack.length - 1].label : 'Rien à annuler';
+}
+function undo(){
+  if(S.recording || busy) return;
+  const u = undoStack.pop();
+  if(!u){ toast('Rien à annuler.'); return; }
+  const was = S.playing; if(was) pause();
+  const old = new Map(S.tracks.map(t => [t.id, t])), keep = new Set(u.tracks.map(x => x.id));
+  S.tracks.filter(t => !keep.has(t.id)).forEach(t => t.chain.kill());
+  S.tracks = u.tracks.map(sn => {
+    let t = old.get(sn.id);
+    if(!t){ t = {}; t.chain = makeChain(ctx, bus); }
+    Object.assign(t, sn, { fx: { ...sn.fx }, at: { ...sn.at }, takes: sn.takes.map(k => ({ ...k })), lv: sn.lv ? { ...sn.lv } : undefined });
+    return t;
+  });
+  if(!trackById(S.sel)) S.sel = S.tracks[0]?.id ?? null;
+  applyMix();
+  Object.assign(M, u.M); mpre.set(); saveM();
+  renderTracks(); renderMix(); renderMaster();
+  if(was) play();
+  undoLbl = ''; updUndo();
+  toast('Annulé : ' + u.label + '.');
+}
+$('#bUndo').onclick = undo;
 
 /* ---------- Pistes ---------- */
 function addTrack(name, preset){
@@ -780,7 +828,7 @@ function dragClip(clip, t){
   clip.addEventListener('pointermove', e => {
     if(sx === undefined) return;
     const dx = e.clientX - sx;
-    if(Math.abs(dx) > 4) moved = true;
+    if(Math.abs(dx) > 4 && !moved){ moved = true; pushUndo('le déplacement du clip'); }
     if(!moved) return;
     t.offset = Math.max(0, so + dx / S.pps);
     clip.style.left = (t.offset * S.pps) + 'px';
@@ -799,6 +847,7 @@ list.addEventListener('click', e => {
   const el = e.target.closest('[data-act]'); if(!el) return;
   const t = trackById(el.closest('.row').dataset.id), act = el.dataset.act;
   if(act === 'arm'){ if(S.recording) return; const v = !t.arm; S.tracks.forEach(x => x.arm = false); t.arm = v; renderTracks(); }
+  if(act === 'mute' || act === 'solo') pushUndo(act === 'mute' ? 'le muet' : 'le solo');
   if(act === 'mute'){ t.mute = !t.mute; el.setAttribute('aria-pressed', t.mute); applyMix(); }
   if(act === 'solo'){ t.solo = !t.solo; el.setAttribute('aria-pressed', t.solo); applyMix(); }
   if(act === 'import'){ importFor = t; $('#file').click(); }
@@ -809,6 +858,7 @@ list.addEventListener('click', e => {
       return;
     }
     delArm = null;
+    pushUndo('la suppression de piste');
     if(S.playing) pause();
     t.chain.kill();
     S.tracks = S.tracks.filter(x => x !== t);
@@ -819,6 +869,7 @@ list.addEventListener('click', e => {
 list.addEventListener('input', e => {
   const el = e.target, act = el.dataset.act; if(!act) return;
   const t = trackById(el.closest('.row').dataset.id);
+  if(act === 'vol' || act === 'pan') pushUndo('le volume', true);
   if(act === 'vol'){ t.vol = +el.value; applyMix(); }
   if(act === 'pan'){ t.pan = +el.value; applyMix(); }
   if(act === 'name'){ t.name = el.value; }
@@ -826,6 +877,7 @@ list.addEventListener('input', e => {
 list.addEventListener('change', e => {
   const el = e.target; if(el.dataset.act !== 'take') return;
   const t = trackById(el.closest('.row').dataset.id);
+  pushUndo('le changement de prise');
   t.take = +el.value; t.buffer = t.takes[t.take].buffer; t.offset = t.takes[t.take].offset;
   restart(); renderTracks();
 });
@@ -836,6 +888,7 @@ $('#file').addEventListener('change', async e => {
   try{
     const buf = await ctx.decodeAudioData(await f.arrayBuffer());
     const t = importFor;
+    pushUndo('l\'import');
     t.takes.push({ buffer: buf, offset: 0 }); t.take = t.takes.length - 1;
     t.buffer = buf; t.offset = 0;
     if(/^(Instru|Piste \d+)$/.test(t.name)) t.name = f.name.replace(/\.[^.]+$/, '').slice(0, 28);
@@ -974,6 +1027,7 @@ $('#strip').addEventListener('input', e => {
   const t = selTrack(); if(!t) return;
   if(e.target.id === 'fxPreset') return;
   const d = TDEFS.find(x => x.k === e.target.dataset.k); if(!d) return;
+  pushUndo('le réglage avancé', true);
   const v = fromS(d, e.target.value);
   if(d.own) t[d.k] = v;
   else if(d.at) t.at[d.k] = v;
@@ -988,6 +1042,7 @@ $('#strip').addEventListener('input', e => {
 async function fxAction(e, t){
   if(!t) return;
   const fb = e.target.closest('.fxbtn'), nb = e.target.closest('.notch button');
+  if((fb && fb.dataset.fx !== 'at') || nb) pushUndo('l\'effet');
   if(fb){
     const k = fb.dataset.fx;
     if(k === 'at'){ await toggleAT(t); return; }
@@ -1020,11 +1075,13 @@ $('#strip').addEventListener('click', e => fxAction(e, selTrack()));
 
 $('#strip').addEventListener('change', e => {
   const t0 = selTrack();
+  if(e.target.id === 'atKey' || e.target.id === 'atScale') pushUndo('la tonalité');
   if(e.target.id === 'atKey'){ t0.at.key = +e.target.value; t0.at.auto = false; if(isTuned(t0)) applyAutotune(t0); return; }
   if(e.target.id === 'atScale'){ t0.at.scale = e.target.value; t0.at.auto = false; if(isTuned(t0)) applyAutotune(t0); return; }
   if(e.target.id !== 'fxPreset') return;
   const t = selTrack(), p = e.target.value;
   if(!FX[p]) return;
+  pushUndo('le style de piste');
   t.preset = p; t.fx = { ...FX[p] };
   t.chain.set(t, audible(t), true);
   if(t.vp) adaptFx(t);
@@ -1206,6 +1263,7 @@ async function detectKeyUI(){
   setBusy(false);
 }
 async function toggleAT(t){
+  pushUndo('l\'auto-tune');
   if(isTuned(t) || t.atOn){
     t.atOn = false;
     if(isTuned(t) && !(S.recording && t.arm)){
@@ -1258,17 +1316,20 @@ function renderMaster(){
 function saveM(){ store.set('master', { preset:M.preset, low:M.low, high:M.high, glue:M.glue, target:M.target, gain:M.gain }); }
 $('#mSliders').addEventListener('input', e => {
   const d = MDEFS.find(x => x.k === e.target.dataset.k); if(!d) return;
+  pushUndo('le master', true);
   M[d.k] = +e.target.value; M.preset = 'perso'; document.querySelectorAll('#mStyle button').forEach(b => b.setAttribute('aria-pressed', 'false'));
   e.target.nextElementSibling.textContent = d.f(M[d.k]);
   mpre.set(); saveM();
 });
 $('#mStyle').addEventListener('click', e => {
   const b = e.target.closest('button'); if(!b) return;
+  pushUndo('le style du master');
   M.preset = b.dataset.p; Object.assign(M, MPRE[M.preset]);
   mpre.set(); renderMaster(); saveM();
 });
 $('#mTarget').addEventListener('click', e => {
   const b = e.target.closest('button'); if(!b) return;
+  pushUndo('le volume du master');
   M.target = +b.dataset.v; renderMaster(); saveM();
   toast('Volume ' + b.textContent.trim() + ' choisi.');
 });
@@ -1356,6 +1417,7 @@ async function autoLevel(t){
 }
 $('#bLevel').onclick = async () => {
   if(busy) return; setBusy(true, 'Équilibrage des pistes…');
+  pushUndo('le rééquilibrage');
   for(const t of S.tracks){ t.vol = 0.85; await autoLevel(t); }
   setBusy(false); renderTracks(); renderMix(); toast('Niveaux rééquilibrés : voix devant, instru derrière.');
 };
@@ -1697,7 +1759,7 @@ $('#tMon').addEventListener('click', () => { if(S.mon && !S.casque) toast('Retou
 $('#zIn').onclick = () => { S.pps = Math.min(200, S.pps * 1.5); renderTracks(); };
 $('#zOut').onclick = () => { S.pps = Math.max(8, S.pps / 1.5); renderTracks(); };
 $('#ruler').addEventListener('click', e => seek(e.offsetX / S.pps));
-$('#addTrack').onclick = () => { addTrack('Piste ' + (S.tracks.length + 1), 'neutre'); renderTracks(); };
+$('#addTrack').onclick = () => { pushUndo('l\'ajout de piste'); addTrack('Piste ' + (S.tracks.length + 1), 'neutre'); renderTracks(); };
 document.addEventListener('keydown', e => {
   if(e.target.matches('textarea, input, select')) return;
   if(e.code === 'Space'){ e.preventDefault(); $('#bPlay').click(); }
