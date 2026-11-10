@@ -63,7 +63,7 @@ button{cursor:pointer}
 
 .nav{display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:4px;margin-bottom:10px}
 .nav{overflow-x:auto}
-.nav button{flex:1 0 auto;padding:0 6px;height:38px;border:0;border-radius:7px;background:transparent;color:var(--muted);font:700 11px/1 var(--display);text-transform:uppercase;letter-spacing:.05em}
+.nav button{flex:1 0 auto;padding:0 5px;height:38px;border:0;border-radius:7px;background:transparent;color:var(--muted);font:700 11px/1 var(--display);text-transform:uppercase;letter-spacing:.05em}
 .nav button[aria-selected=true]{background:var(--raise);color:var(--fg);box-shadow:inset 0 -2px 0 var(--accent)}
 
 .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;min-width:0}
@@ -263,7 +263,7 @@ fieldset.lk[disabled]{opacity:.55}
     <button class="toggle" id="tCasque" aria-pressed="false" title="Active-le seulement si tu chantes avec un casque ou des écouteurs">Casque</button>
     <button class="toggle" id="tMon" aria-pressed="false" title="Entendre ta voix avec les effets pendant la prise (casque obligatoire)">Retour voix</button>
     <button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-    <span class="grp" id="ver">Version 14</span>
+    <span class="grp" id="ver">Version 15</span>
     <span class="grp" id="latInfo" title="Le retard du téléphone est mesuré et corrigé tout seul à chaque prise">Calage auto</span>
   </div>
 </div>
@@ -272,10 +272,11 @@ fieldset.lk[disabled]{opacity:.55}
 
 <nav class="nav" role="tablist" aria-label="Vues">
   <button role="tab" data-view="vPistes" aria-selected="true">Pistes</button>
-  <button role="tab" data-view="vMix" aria-selected="false">Mixage</button>
+  <button role="tab" data-view="vMix" aria-selected="false">Mix</button>
   <button role="tab" data-view="vMaster" aria-selected="false">Master</button>
   <button role="tab" data-view="vTexte" aria-selected="false">Texte</button>
   <button role="tab" data-view="vProjets" aria-selected="false">Projets</button>
+  <button role="tab" data-view="vPartager" aria-selected="false">Partager</button>
 </nav>
 
 <!-- PISTES -->
@@ -285,10 +286,6 @@ fieldset.lk[disabled]{opacity:.55}
     <select id="sessLink" aria-label="Lier à un titre de projet"></select>
     <button class="sbtn" id="sessListBtn" aria-expanded="false">Mes sessions</button>
     <button class="sbtn" id="sessNew">+ Nouvelle</button>
-    <button class="sbtn" id="sessSend">Envoyer la session</button>
-    <button class="sbtn primary" id="sessShare" hidden>Partager le fichier</button>
-    <button class="sbtn" id="sessRecv">Recevoir une session</button>
-    <input type="file" id="sessFile" hidden>
     <span class="sstate" id="sessState"></span>
   </div>
   <div class="sesslist" id="sessList" hidden></div>
@@ -328,7 +325,7 @@ fieldset.lk[disabled]{opacity:.55}
 <section class="card view" id="vMaster" aria-label="Master" hidden>
   <div class="cardhead"><h2>Master</h2></div>
   <div class="pad" id="masterPad">
-    <p class="note">La touche finale : couleur, cohésion et volume au niveau des sons pros, sans jamais saturer.</p>
+    <p class="note">La touche finale : couleur, cohésion et volume au niveau des sons pros, sans jamais saturer. Pour exporter ou partager ton son, va dans l'onglet « Partager ».</p>
     <div class="sec">Style</div>
     <div class="seg" id="mStyle">
       <button data-p="naturel" aria-pressed="false">Naturel</button>
@@ -342,23 +339,7 @@ fieldset.lk[disabled]{opacity:.55}
     </div>
     <p class="note">Streaming pour Spotify, Deezer, YouTube. Fort pour les soirées et les enceintes.</p>
     <div class="btns">
-      <button class="sbtn primary" id="bMaster">Exporter mon son</button>
       <button class="sbtn" id="bAB" aria-pressed="false">Écouter sans master</button>
-    </div>
-    <div class="btns" id="shareRow" hidden>
-      <button class="sbtn primary" id="bShareMp3">Partager (MP3)</button>
-      <button class="sbtn" id="bSaveWav">Enregistrer en WAV</button>
-    </div>
-    <div class="sec">Pour les réseaux</div>
-    <div class="btns">
-      <button class="sbtn" id="bVideo">Créer un extrait vidéo (30 s)</button>
-      <button class="sbtn primary" id="bShareVideo" hidden>Partager la vidéo</button>
-    </div>
-    <p class="note">Format vertical avec ta pochette et le son qui bouge, prêt pour TikTok, Reels ou Shorts. L'extrait part de la position de lecture (ou du début de la boucle). La création prend 30 secondes.</p>
-    <div class="sec">Pour un ingé son</div>
-    <div class="btns">
-      <button class="sbtn" id="bStems">Préparer les pistes séparées</button>
-      <button class="sbtn primary" id="bShareStems" hidden>Partager les pistes</button>
     </div>
     <div class="grrow"><span>Sortie</span><div class="meter wide"><i id="outMeter2"></i></div><output id="outDb">−∞</output></div>
     <details class="adv">
@@ -378,6 +359,40 @@ fieldset.lk[disabled]{opacity:.55}
         </div>
       </div>
     </details>
+  </div>
+</section>
+
+<!-- PARTAGER -->
+<section class="card view" id="vPartager" aria-label="Partager" hidden>
+  <div class="cardhead"><h2>Partager</h2></div>
+  <div class="pad">
+    <div class="sec">Mon son</div>
+    <p class="note">Le master (style et volume réglés dans l'onglet Master) est appliqué automatiquement.</p>
+    <div class="btns"><button class="sbtn primary" id="bMaster">Exporter mon son</button></div>
+    <div class="btns" id="shareRow" hidden>
+      <button class="sbtn primary" id="bShareMp3">Partager (MP3)</button>
+      <button class="sbtn" id="bSaveWav">Enregistrer en WAV</button>
+    </div>
+    <div class="sec">Reel / TikTok / Shorts</div>
+    <div class="btns">
+      <button class="sbtn" id="bVideo">Créer un extrait vidéo (30 s)</button>
+      <button class="sbtn primary" id="bShareVideo" hidden>Partager la vidéo</button>
+    </div>
+    <p class="note">Format vertical avec ta pochette et le son qui bouge, prêt pour TikTok, Reels ou Shorts. L'extrait part de la position de lecture (ou du début de la boucle). La création prend 30 secondes.</p>
+    <div class="sec">Pour un ingé son</div>
+    <p class="note">Chaque piste en WAV avec ses effets, toutes calées au même départ.</p>
+    <div class="btns">
+      <button class="sbtn" id="bStems">Préparer les pistes séparées</button>
+      <button class="sbtn primary" id="bShareStems" hidden>Partager les pistes</button>
+    </div>
+    <div class="sec">Pour un collègue</div>
+    <p class="note">Envoie ta session : ses pistes à lui et les tiennes restent verrouillées chacune pour son propriétaire. Mets ton blaze dans « Réglages » avant.</p>
+    <div class="btns">
+      <button class="sbtn" id="sessSend">Envoyer la session</button>
+      <button class="sbtn primary" id="sessShare" hidden>Partager le fichier</button>
+      <button class="sbtn" id="sessRecv">Recevoir une session</button>
+      <input type="file" id="sessFile" hidden>
+    </div>
   </div>
 </section>
 
@@ -421,7 +436,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 </section>
 
 <div class="help">
-  StudioXel · version 14.
+  StudioXel · version 15.
   Arme une piste avec R, puis REC. Chaque prise est gardée dans le menu « Prise ». Glisse un clip pour le décaler.
   Les sons ne sont pas sauvegardés à la fermeture : exporte avant de quitter. Le texte et les projets sont gardés.
 </div>
