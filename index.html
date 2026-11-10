@@ -62,7 +62,7 @@ button{cursor:pointer}
 
 .nav{display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:4px;margin-bottom:10px}
 .nav{overflow-x:auto}
-.nav button{flex:1 0 auto;padding:0 10px;height:38px;border:0;border-radius:7px;background:transparent;color:var(--muted);font:700 12px/1 var(--display);text-transform:uppercase;letter-spacing:.1em}
+.nav button{flex:1 0 auto;padding:0 6px;height:38px;border:0;border-radius:7px;background:transparent;color:var(--muted);font:700 11px/1 var(--display);text-transform:uppercase;letter-spacing:.05em}
 .nav button[aria-selected=true]{background:var(--raise);color:var(--fg);box-shadow:inset 0 -2px 0 var(--accent)}
 
 .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;min-width:0}
@@ -182,6 +182,24 @@ button{cursor:pointer}
 .trk .acts .sbtn{height:28px;width:32px;padding:0}
 .legend{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--muted)}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+[hidden]{display:none!important}
+.settings{flex-basis:100%;display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding-top:10px;border-top:1px solid var(--line)}
+.fxlist{display:flex;flex-direction:column;gap:8px}
+.fxrow{display:flex;align-items:center;gap:8px 10px;flex-wrap:wrap;background:var(--raise);border:1px solid var(--line);border-radius:12px;padding:8px 10px}
+.fxbtn{height:44px;min-width:170px;border-radius:22px;border:1px solid var(--line);background:var(--bg);font-weight:700;font-size:15px;display:inline-flex;align-items:center;gap:10px;padding:0 16px;color:var(--muted)}
+.fxbtn::before{content:"";width:11px;height:11px;border-radius:50%;background:var(--line);flex:none}
+.fxbtn[aria-pressed=true]{color:var(--fg);border-color:var(--accent)}
+.fxbtn[aria-pressed=true]::before{background:var(--accent);box-shadow:0 0 8px var(--accent)}
+.notch{display:flex;gap:4px;flex-wrap:wrap}
+.notch button{height:34px;padding:0 12px;border-radius:17px;border:1px solid var(--line);background:transparent;font-size:13px;color:var(--muted)}
+.notch button[aria-pressed=true]{background:var(--accent);color:#1a1405;border-color:var(--accent);font-weight:700}
+.fxhint{flex-basis:100%;font-size:12px;color:var(--muted)}
+.atkey{display:flex;gap:6px;flex-basis:100%;flex-wrap:wrap}
+.atkey select{height:34px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:0 8px}
+details.adv{border-top:1px solid var(--line);padding-top:6px}
+details.adv summary{cursor:pointer;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em;padding:8px 0;font-weight:700}
+details.adv[open] summary{color:var(--accent)}
+.advbody{display:flex;flex-direction:column;gap:12px;padding-top:8px}
 .help{margin-top:12px;color:var(--muted);font-size:12px;line-height:1.6}
 .help kbd{font:11px var(--mono);border:1px solid var(--line);border-radius:4px;padding:1px 5px;background:var(--raise);color:var(--fg)}
 @media (max-width:480px){.sl,.grrow{grid-template-columns:92px minmax(0,1fr) 58px}}
@@ -193,17 +211,20 @@ button{cursor:pointer}
 
 <div class="transport" role="toolbar" aria-label="Transport">
   <button class="tbtn" id="bHome" title="Retour au début" aria-label="Retour au début"><svg viewBox="0 0 16 16"><path d="M2 2h2v12H2zM14 2v12L5 8z"/></svg></button>
-  <button class="tbtn" id="bPlay" title="Lecture / pause (Espace)" aria-label="Lecture"><svg viewBox="0 0 16 16" id="icoPlay"><path d="M3 2l11 6-11 6z"/></svg></button>
+  <button class="tbtn" id="bPlay" title="Lecture / pause" aria-label="Lecture"><svg viewBox="0 0 16 16" id="icoPlay"><path d="M3 2l11 6-11 6z"/></svg></button>
   <button class="tbtn" id="bStop" title="Stop" aria-label="Stop"><svg viewBox="0 0 16 16"><path d="M3 3h10v10H3z"/></svg></button>
-  <button class="tbtn rec" id="bRec" title="Enregistrer sur la piste armée (R)">● REC</button>
+  <button class="tbtn rec" id="bRec" title="Enregistrer sur la piste armée">● REC</button>
   <div class="clock" id="clock">0:00.0</div>
-  <label class="grp">BPM <input type="number" id="bpm" min="40" max="220" value="90"></label>
-  <button class="toggle" id="tMetro" aria-pressed="false">Métronome</button>
-  <button class="toggle" id="tCasque" aria-pressed="false" title="Active-le seulement si tu chantes avec un casque ou des écouteurs">Casque</button>
-  <button class="toggle" id="tCount" aria-pressed="true" title="1 mesure de décompte avant la prise">Décompte</button>
-  <label class="grp" title="Décale les prises pour compenser le retard micro + casque">Latence <input type="number" id="lat" min="0" max="600" step="5" value="120"> ms</label>
-  <div class="grp">Micro <div class="meter"><i id="meter"></i></div></div>
-  <div class="grp">Sortie <div class="meter"><i id="outMeter"></i></div></div>
+  <div class="grp" id="micGrp" hidden>Micro <div class="meter"><i id="meter"></i></div></div>
+  <span class="spacer"></span>
+  <button class="tbtn" id="bSet" aria-expanded="false" aria-controls="settings">Réglages</button>
+  <div class="settings" id="settings" hidden>
+    <label class="grp">BPM <input type="number" id="bpm" min="40" max="220" value="90"></label>
+    <button class="toggle" id="tCount" aria-pressed="true" title="1 mesure de décompte avant la prise">Décompte</button>
+    <button class="toggle" id="tMetro" aria-pressed="false">Métronome</button>
+    <button class="toggle" id="tCasque" aria-pressed="false" title="Active-le seulement si tu chantes avec un casque ou des écouteurs">Casque</button>
+    <label class="grp" title="Décale les prises pour compenser le retard micro + casque">Latence <input type="number" id="lat" min="0" max="600" step="5" value="120"> ms</label>
+  </div>
 </div>
 
 <nav class="nav" role="tablist" aria-label="Vues">
@@ -247,41 +268,41 @@ button{cursor:pointer}
 <section class="card view" id="vMaster" aria-label="Master" hidden>
   <div class="cardhead"><h2>Master</h2></div>
   <div class="pad" id="masterPad">
-    <p class="note">Le master donne la couleur finale, colle les pistes entre elles et monte le volume au niveau des sons pros, sans jamais saturer (plafond à −1 dB). Lance « Analyser » après chaque changement de mix.</p>
-    <div class="field"><label for="mPreset">Préréglage</label>
-      <select id="mPreset">
-        <option value="naturel">Naturel</option>
-        <option value="rap">Rap moderne (graves et brillance)</option>
-        <option value="chaud">Chaud</option>
-        <option value="perso">Perso</option>
-      </select>
+    <p class="note">La touche finale : couleur, cohésion et volume au niveau des sons pros, sans jamais saturer.</p>
+    <div class="sec">Style</div>
+    <div class="seg" id="mStyle">
+      <button data-p="naturel" aria-pressed="false">Naturel</button>
+      <button data-p="rap" aria-pressed="false">Rap moderne</button>
+      <button data-p="chaud" aria-pressed="false">Chaud</button>
     </div>
-    <div class="sls" id="mSliders"></div>
-    <div class="sec">Volume final</div>
+    <div class="sec">Volume</div>
     <div class="seg" id="mTarget">
-      <button data-v="-14" aria-pressed="false">Streaming · −14 LUFS</button>
-      <button data-v="-11" aria-pressed="false">Équilibré · −11 LUFS</button>
-      <button data-v="-9" aria-pressed="false">Fort · −9 LUFS</button>
+      <button data-v="-14" aria-pressed="false">Streaming</button>
+      <button data-v="-9" aria-pressed="false">Fort</button>
     </div>
-    <p class="note">Spotify, Deezer et YouTube baissent les sons trop forts : −14 garde toute la dynamique. −9 écrase plus, mais tape plus fort en soirée.</p>
-    <div class="sec">Écoute</div>
+    <p class="note">Streaming pour Spotify, Deezer, YouTube. Fort pour les soirées et les enceintes.</p>
+    <div class="btns">
+      <button class="sbtn primary" id="bMaster">Exporter mon son</button>
+      <button class="sbtn" id="bAB" aria-pressed="false">Écouter sans master</button>
+    </div>
     <div class="grrow"><span>Sortie</span><div class="meter wide"><i id="outMeter2"></i></div><output id="outDb">−∞</output></div>
-    <div class="grrow"><span>Limiteur</span><div class="meter wide gr"><i id="limGr"></i></div><output id="limDb">0 dB</output></div>
-    <div class="btns">
-      <button class="sbtn" id="bAB" aria-pressed="false">Comparer : écouter sans master</button>
-    </div>
-    <div class="sec">Résultat</div>
-    <div class="report">
-      <div class="stat"><span>Mix brut</span><b id="rRaw">–</b></div>
-      <div class="stat"><span>Master</span><b id="rMaster">–</b></div>
-      <div class="stat"><span>Crête max</span><b id="rPeak">–</b></div>
-      <div class="stat"><span>Gain ajouté</span><b id="rGain">–</b></div>
-    </div>
-    <div class="btns">
-      <button class="sbtn" id="bAnalyse">Analyser le mix</button>
-      <button class="sbtn primary" id="bMaster">Exporter le master (WAV)</button>
-      <button class="sbtn" id="bRawExp">Exporter sans master</button>
-    </div>
+    <details class="adv">
+      <summary>Avancé</summary>
+      <div class="advbody">
+        <div class="sls" id="mSliders"></div>
+        <div class="grrow"><span>Limiteur</span><div class="meter wide gr"><i id="limGr"></i></div><output id="limDb">0 dB</output></div>
+        <div class="report">
+          <div class="stat"><span>Mix brut</span><b id="rRaw">–</b></div>
+          <div class="stat"><span>Master</span><b id="rMaster">–</b></div>
+          <div class="stat"><span>Crête max</span><b id="rPeak">–</b></div>
+          <div class="stat"><span>Gain ajouté</span><b id="rGain">–</b></div>
+        </div>
+        <div class="btns">
+          <button class="sbtn" id="bAnalyse">Appliquer le volume à l'écoute</button>
+          <button class="sbtn" id="bRawExp">Exporter sans master</button>
+        </div>
+      </div>
+    </details>
   </div>
 </section>
 
@@ -326,8 +347,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 
 <div class="help">
   Arme une piste avec R, puis REC. Chaque prise est gardée dans le menu « Prise ». Glisse un clip pour le décaler.
-  Les sons ne sont pas sauvegardés à la fermeture : exporte avant de quitter. Le texte est gardé.
-  Raccourcis clavier : <kbd>Espace</kbd> lecture · <kbd>R</kbd> enregistrer · <kbd>T</kbd> caler une ligne.
+  Les sons ne sont pas sauvegardés à la fermeture : exporte avant de quitter. Le texte et les projets sont gardés.
 </div>
 
 <div class="toast" id="toast" role="status"></div>
@@ -484,7 +504,7 @@ function setBypass(on){
   chainOut.gain.setTargetAtTime(on ? 0 : 1, ctx.currentTime, 0.01);
   bypass.gain.setTargetAtTime(on ? 1 : 0, ctx.currentTime, 0.01);
   $('#bAB').setAttribute('aria-pressed', on);
-  $('#bAB').textContent = on ? 'Écoute sans master · retour au master' : 'Comparer : écouter sans master';
+  $('#bAB').textContent = on ? 'Remettre le master' : 'Écouter sans master';
 }
 function now(){ return S.playing ? Math.max(0, playStartPos + (ctx.currentTime - playStartCtx)) : S.pos; }
 
@@ -616,7 +636,7 @@ function addTrack(name, preset){
   const p = preset || 'neutre';
   const t = { id: ++idSeq, name, color: COLORS[(idSeq - 1) % COLORS.length], buffer: null, offset: 0,
     takes: [], take: -1, vol: 0.85, pan: 0, mute: false, solo: false, arm: false, preset: p, fx: { ...FX[p] }, vr: 0,
-    at: { key: 9, scale: 'min', speed: 20, amount: 100 } };
+    at: { key: 9, scale: 'min', speed: 60, amount: 100, auto: true } };
   t.chain = makeChain(ctx, bus); t.chain.set(t, true, false);
   S.tracks.push(t); applyMix();
   return t;
@@ -766,40 +786,73 @@ $('#file').addEventListener('change', async e => {
     t.takes.push({ buffer: buf, offset: 0 }); t.take = t.takes.length - 1;
     t.buffer = buf; t.offset = 0;
     if(/^(Instru|Piste \d+)$/.test(t.name)) t.name = f.name.replace(/\.[^.]+$/, '').slice(0, 28);
-    renderTracks(); toast('« ' + f.name + ' » chargé (' + fmt(buf.duration) + ').');
+    renderTracks();
+    const isInstru = t.preset === 'instru' || !S.tracks.some(x => x !== t && x.buffer);
+    const bpm = isInstru ? detectBpm(buf) : 0;
+    if(bpm){
+      S.bpm = bpm; $('#bpm').value = bpm; store.set('bpm', bpm); bus.setBpm(bpm); renderTracks();
+      toast('« ' + f.name + ' » chargé · tempo détecté : ' + bpm + ' BPM.');
+    } else toast('« ' + f.name + ' » chargé (' + fmt(buf.duration) + ').');
   }catch(err){ toast('Format non lu. Essaie un MP3 ou un WAV.'); }
 });
+
+/* ---------- Détection du tempo (BPM) de l'instru ---------- */
+function detectBpm(buf){
+  const sr = buf.sampleRate, nc = buf.numberOfChannels, hop = Math.round(sr / 100), fps = sr / hop, win = hop * 2;
+  const start = Math.min(Math.floor(buf.length * 0.1), sr * 15), end = Math.min(buf.length, start + sr * 90);
+  const chs = []; for(let c = 0; c < nc; c++) chs.push(buf.getChannelData(c));
+  const nf = Math.floor((end - start - win) / hop);
+  if(nf < fps * 8) return 0;
+  /* énergie par trame, puis montée d'énergie (attaques : kick, snare, hats) */
+  const env = new Float32Array(nf);
+  for(let f = 0; f < nf; f++){
+    let e = 0; const o = start + f * hop;
+    for(let i = 0; i < win; i += 2){ let v = 0; for(let c = 0; c < nc; c++) v += chs[c][o + i]; e += v * v; }
+    env[f] = Math.log(1e-9 + e);
+  }
+  const on = new Float32Array(nf);
+  for(let f = 1; f < nf; f++) on[f] = Math.max(0, env[f] - env[f - 1]);
+  /* grille de temps : pour chaque tempo, on cherche le calage qui tombe le mieux sur les attaques */
+  let best = 0, bs = -Infinity;
+  for(let bpm = 60; bpm <= 180; bpm += 0.5){
+    const P = 60 * fps / bpm;
+    const w = Math.exp(-0.5 * Math.pow(Math.log2(bpm / 95) / 0.7, 2));   /* légère préférence pour le tempo rap autour de 95 */
+    let top = 0;
+    for(let ph = 0; ph < P; ph += 1){
+      let s1 = 0, s2 = 0, n1 = 0;
+      for(let x = ph; x + P / 2 < nf; x += P){ s1 += on[Math.round(x)]; s2 += on[Math.round(x + P / 2)]; n1++; }
+      const sc = n1 ? (s1 + 0.5 * s2) / n1 : 0;
+      if(sc > top) top = sc;
+    }
+    const sc = top * w;
+    if(sc > bs){ bs = sc; best = bpm; }
+  }
+  /* affinage au dixième autour du meilleur */
+  let fine = best, fs = -Infinity;
+  for(let bpm = best - 0.6; bpm <= best + 0.6; bpm += 0.1){
+    const P = 60 * fps / bpm; let top = 0;
+    for(let ph = 0; ph < P; ph += 0.5){
+      let s1 = 0, n1 = 0;
+      for(let x = ph; x < nf; x += P){ s1 += on[Math.round(x)] || 0; n1++; }
+      if(n1 && s1 / n1 > top) top = s1 / n1;
+    }
+    if(top > fs){ fs = top; fine = bpm; }
+  }
+  return best ? Math.round(fine) : 0;
+}
 
 /* ---------- Mixage ---------- */
 const hz = v => v >= 1000 ? (v / 1000).toFixed(v >= 10000 ? 0 : 1) + ' kHz' : Math.round(v) + ' Hz';
 const dbs = v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(1) + ' dB';
 const TDEFS = [
-  { sec:'Retirer la voix' },
-  { k:'vr', own:true, label:'Voix retirée', min:0, max:100, step:1, f:v => v + ' %' },
-  { html:'<p class="note full">Pour un son du commerce importé en stéréo : le curseur enlève ce qui est au centre (la voix principale) et garde la basse, le kick et les instruments placés sur les côtés. Le résultat dépend du mix d\'origine : parfait sur certains sons, des restes de voix ou de reverb sur d\'autres.</p>' },
-  { sec:'Auto-tune' },
-  { atui:true },
-  { k:'speed',  at:true, label:'Vitesse', min:0, max:200, step:5, f:v => v == 0 ? 'Robot' : v + ' ms' },
-  { k:'amount', at:true, label:'Force',   min:0, max:100, step:1, f:v => v + ' %' },
-  { html:'<div class="full btns"><button class="sbtn" id="atDetect">Détecter la tonalité</button><button class="sbtn primary" id="atApply">Appliquer à la prise</button></div><p class="note full">Vitesse 0 : effet robot marqué. Entre 30 et 80 ms : correction naturelle qui garde ton vibrato. L\'auto-tune crée une nouvelle prise (marquée AT) : l\'originale reste dans le menu « Prise » de l\'onglet Pistes.</p>' },
-  { sec:'Nettoyage et égaliseur' },
-  { html:'<canvas id="eq" class="full" aria-label="Courbe d\'égalisation"></canvas>' },
   { k:'hp',   label:'Coupe-bas',     min:20,  max:400,  log:true, f:hz },
   { k:'low',  label:'Graves',        min:-12, max:12,   step:0.5, f:dbs },
   { k:'mid',  label:'Médiums',       min:-12, max:12,   step:0.5, f:dbs },
   { k:'midF', label:'Fréq. médiums', min:200, max:6000, log:true, f:hz },
   { k:'high', label:'Aigus',         min:-12, max:12,   step:0.5, f:dbs },
-  { sec:'Compression' },
-  { k:'thr',    label:'Seuil',              min:-40, max:0,  step:1,   f:v => v + ' dB' },
+  { k:'thr',    label:'Seuil compression', min:-40, max:0,  step:1,   f:v => v + ' dB' },
   { k:'ratio',  label:'Ratio',              min:1,   max:12, step:0.5, f:v => v <= 1 ? 'Off' : v + ':1' },
-  { k:'makeup', label:'Niveau après comp.', min:-12, max:12, step:0.5, f:dbs },
-  { gr:true },
-  { sec:'Effets' },
-  { k:'rev', label:'Reverb', min:0, max:100, step:1, f:v => v + ' %' },
-  { k:'dly', label:'Écho',   min:0, max:100, step:1, f:v => v + ' %' },
-  { sec:'Niveau' },
-  { k:'vol', own:true, label:'Volume', min:0,  max:2, step:0.01, f:v => Math.round(v * 100) + ' %' },
-  { k:'pan', own:true, label:'Pan',    min:-1, max:1,   step:0.05, f:v => v == 0 ? 'Centre' : (v < 0 ? 'G ' : 'D ') + Math.round(Math.abs(v) * 100) }
+  { k:'makeup', label:'Niveau après comp.', min:-12, max:12, step:0.5, f:dbs }
 ];
 const toS = (d, v) => d.log ? Math.round(1000 * Math.log(v / d.min) / Math.log(d.max / d.min)) : v;
 const fromS = (d, s) => d.log ? d.min * Math.pow(d.max / d.min, s / 1000) : +s;
@@ -810,31 +863,51 @@ function sliderHTML(d, v, prefix){
     <output>${d.f(v)}</output></div>`;
 }
 function selTrack(){ return trackById(S.sel) || S.tracks[0]; }
+const LV = { vr:[60, 85, 100], rev:[12, 25, 40], dly:[8, 15, 30] };
+const LVN = { vr:['Un peu', 'Moyen', 'Max'], rev:['Légère', 'Moyenne', 'Forte'], dly:['Léger', 'Moyen', 'Fort'] };
+const AT_SP = [60, 25, 0], AT_N = ['Naturel', 'Marqué', 'Robot'];
+const fxGet = (t, k) => k === 'vr' ? (t.vr || 0) : t.fx[k];
+const fxSet = (t, k, v) => { if(k === 'vr') t.vr = v; else t.fx[k] = v; };
+const nearest = (arr, v) => arr.reduce((b, x, i) => Math.abs(x - v) < Math.abs(arr[b] - v) ? i : b, 0);
+const isTuned = t => !!t.takes[t.take]?.tuned;
+function fxRowHTML(t, k, label, hint){
+  const v = fxGet(t, k), on = v > 0, li = nearest(LV[k], v);
+  return `<div class="fxrow">
+    <button class="fxbtn" data-fx="${k}" aria-pressed="${on}">${label}</button>
+    ${on ? `<div class="notch" data-fx="${k}" role="group" aria-label="Dose">${LVN[k].map((n, i) => `<button data-l="${i}" aria-pressed="${i === li}">${n}</button>`).join('')}</div>` : ''}
+    ${on && hint ? `<div class="fxhint">${hint}</div>` : ''}
+  </div>`;
+}
 function renderMix(){
   const cur = selTrack(); S.sel = cur?.id ?? null;
   $('#mixChips').innerHTML = S.tracks.map(t =>
     `<button class="tchip" data-id="${t.id}" aria-pressed="${t === cur}"><i style="background:${t.color}"></i>${esc(t.name)}</button>`).join('');
   const st = $('#strip');
   if(!cur){ st.innerHTML = '<p class="note">Ajoute une piste dans l\'onglet Pistes.</p>'; return; }
-  let html = `<div class="field"><label for="fxPreset">Préréglage</label><select id="fxPreset">${
+  const tuned = isTuned(cur), ai = nearest(AT_SP, cur.at.speed);
+  let html = `<div class="field"><label for="fxPreset">Style de piste</label><select id="fxPreset">${
     Object.keys(FXNAMES).filter(k => k !== 'perso' || cur.preset === 'perso')
-      .map(k => `<option value="${k}" ${k === cur.preset ? 'selected' : ''}>${FXNAMES[k]}</option>`).join('')}</select></div>`;
-  let open = false;
-  TDEFS.forEach(d => {
-    if(d.sec){ if(open) html += '</div>'; html += `<div class="sec">${d.sec}</div><div class="sls">`; open = true; return; }
-    if(d.gr){ html += `<div class="grrow full"><span>Réduction</span><div class="meter wide gr"><i id="trGr"></i></div><output id="trGrDb">0 dB</output></div>`; return; }
-    if(d.html){ html += d.html; return; }
-    if(d.atui){
-      html += `<div class="full field"><label for="atKey">Tonalité</label>
-        <select id="atKey">${NOTES.map((n, i) => `<option value="${i}" ${i === cur.at.key ? 'selected' : ''}>${n}</option>`).join('')}</select>
-        <select id="atScale" aria-label="Gamme">${Object.keys(SCALES).map(k => `<option value="${k}" ${k === cur.at.scale ? 'selected' : ''}>${SCALES[k].name}</option>`).join('')}</select></div>`;
-      return;
-    }
-    html += sliderHTML(d, d.own ? cur[d.k] : d.at ? cur.at[d.k] : cur.fx[d.k], 'fx_');
-  });
-  if(open) html += '</div>';
+      .map(k => `<option value="${k}" ${k === cur.preset ? 'selected' : ''}>${FXNAMES[k]}</option>`).join('')}</select></div>
+    <div class="fxlist">
+      ${fxRowHTML(cur, 'rev', 'Reverb')}
+      ${fxRowHTML(cur, 'dly', 'Écho')}
+      <div class="fxrow">
+        <button class="fxbtn" data-fx="at" aria-pressed="${tuned}">Auto-tune</button>
+        ${tuned ? `<div class="notch" data-fx="at" role="group" aria-label="Style d'auto-tune">${AT_N.map((n, i) => `<button data-l="${i}" aria-pressed="${i === ai}">${n}</button>`).join('')}</div>
+        <div class="atkey"><select id="atKey" aria-label="Tonalité">${NOTES.map((n, i) => `<option value="${i}" ${i === cur.at.key ? 'selected' : ''}>${n}</option>`).join('')}</select>
+          <select id="atScale" aria-label="Gamme">${Object.keys(SCALES).map(k => `<option value="${k}" ${k === cur.at.scale ? 'selected' : ''}>${SCALES[k].name}</option>`).join('')}</select></div>` : ''}
+      </div>
+      ${fxRowHTML(cur, 'vr', 'Retirer la voix', 'Pour un son du commerce en stéréo : enlève la voix au centre, garde basse et kick.')}
+    </div>
+    <details class="adv"><summary>Avancé : égaliseur et compression</summary>
+      <div class="advbody"><canvas id="eq" aria-label="Courbe d'égalisation"></canvas>
+        <div class="sls">${TDEFS.map(d => sliderHTML(d, cur.fx[d.k], 'fx_')).join('')}</div>
+        <div class="grrow"><span>Réduction</span><div class="meter wide gr"><i id="trGr"></i></div><output id="trGrDb">0 dB</output></div>
+      </div>
+    </details>`;
   st.innerHTML = html;
-  drawEQ();
+  const adv = st.querySelector('details.adv');
+  adv.addEventListener('toggle', () => { if(adv.open) drawEQ(); });
 }
 $('#mixChips').addEventListener('click', e => {
   const b = e.target.closest('.tchip'); if(!b) return;
@@ -855,14 +928,28 @@ $('#strip').addEventListener('input', e => {
   t.chain.set(t, audible(t), true);
   drawEQ();
 });
-$('#strip').addEventListener('click', e => {
-  if(e.target.id === 'atDetect') detectKeyUI();
-  if(e.target.id === 'atApply') applyAutotune();
+$('#strip').addEventListener('click', async e => {
+  const t = selTrack(); if(!t) return;
+  const fb = e.target.closest('.fxbtn'), nb = e.target.closest('.notch button');
+  if(fb){
+    const k = fb.dataset.fx;
+    if(k === 'at'){ await toggleAT(t); return; }
+    t.lv = t.lv || {};
+    if(fxGet(t, k) > 0){ t.lv[k] = nearest(LV[k], fxGet(t, k)); fxSet(t, k, 0); }
+    else fxSet(t, k, LV[k][t.lv[k] ?? 1]);
+    t.chain.set(t, audible(t), true); renderMix(); return;
+  }
+  if(nb){
+    const k = nb.parentElement.dataset.fx, i = +nb.dataset.l;
+    if(k === 'at'){ t.at.speed = AT_SP[i]; if(isTuned(t)) await applyAutotune(t); return; }
+    fxSet(t, k, LV[k][i]); (t.lv = t.lv || {})[k] = i;
+    t.chain.set(t, audible(t), true); renderMix();
+  }
 });
 $('#strip').addEventListener('change', e => {
   const t0 = selTrack();
-  if(e.target.id === 'atKey'){ t0.at.key = +e.target.value; return; }
-  if(e.target.id === 'atScale'){ t0.at.scale = e.target.value; return; }
+  if(e.target.id === 'atKey'){ t0.at.key = +e.target.value; t0.at.auto = false; if(isTuned(t0)) applyAutotune(t0); return; }
+  if(e.target.id === 'atScale'){ t0.at.scale = e.target.value; t0.at.auto = false; if(isTuned(t0)) applyAutotune(t0); return; }
   if(e.target.id !== 'fxPreset') return;
   const t = selTrack(), p = e.target.value;
   if(!FX[p]) return;
@@ -1040,21 +1127,33 @@ async function detectKeyUI(){
   }catch(e){ toast('Analyse impossible : ' + e.message); }
   setBusy(false);
 }
-async function applyAutotune(){
-  const t = selTrack();
+async function toggleAT(t){
+  if(isTuned(t)){
+    const src = t.takes[t.take].src;
+    t.take = src; t.buffer = t.takes[src].buffer; t.offset = t.takes[src].offset;
+    restart(); renderMix(); renderTracks(); toast('Auto-tune coupé : retour à ta voix d\'origine.');
+    return;
+  }
+  await applyAutotune(t);
+}
+async function applyAutotune(t){
+  t = t || selTrack();
   if(!t?.buffer){ toast('Cette piste est vide : enregistre ou importe une voix d\'abord.'); return; }
   if(busy) return; setBusy(true);
   try{
-    const srcIdx = (t.takes[t.take]?.src ?? t.take);
-    const src = sourceBuffer(t);
+    const cur = t.takes[t.take];
+    const srcIdx = cur?.tuned ? cur.src : t.take;
+    const src = t.takes[srcIdx] || { buffer: t.buffer, offset: t.offset };
     const an = await analysePitch(src.buffer);
     if(!an.f0.some(f => f > 0)){ toast('Aucune voix chantée détectée sur cette prise.'); setBusy(false); return; }
+    if(t.at.auto !== false){ const k = detectKey(an.f0); if(k){ t.at.key = k.key; t.at.scale = k.scale; } t.at.auto = false; }
     const sh = shiftCurve(an.f0, t.at, an.hopS / an.sr);
     const out = await psola(src.buffer, an, sh);
-    t.takes.push({ buffer: out, offset: src.offset ?? t.offset, tuned: true, src: srcIdx });
-    t.take = t.takes.length - 1; t.buffer = out; t.offset = src.offset ?? t.offset;
-    restart();
-    toast('Auto-tune appliqué en ' + NOTES[t.at.key] + ' ' + SCALES[t.at.scale].name.toLowerCase() + ' (prise ' + t.takes.length + ' · AT).');
+    const take = { buffer: out, offset: src.offset ?? t.offset, tuned: true, src: srcIdx };
+    if(cur?.tuned) t.takes[t.take] = take; else { t.takes.push(take); t.take = t.takes.length - 1; }
+    t.buffer = out; t.offset = take.offset;
+    restart(); renderMix(); renderTracks();
+    toast('Auto-tune ' + AT_N[nearest(AT_SP, t.at.speed)].toLowerCase() + ' en ' + NOTES[t.at.key] + ' ' + SCALES[t.at.scale].name.toLowerCase() + '.');
   }catch(e){ toast('Auto-tune impossible : ' + e.message); }
   setBusy(false);
 }
@@ -1066,26 +1165,26 @@ const MDEFS = [
   { k:'glue', label:'Cohésion', min:0,  max:100, step:1,   f:v => v + ' %' }
 ];
 function renderMaster(){
-  $('#mPreset').value = M.preset;
+  document.querySelectorAll('#mStyle button').forEach(b => b.setAttribute('aria-pressed', b.dataset.p === M.preset));
   $('#mSliders').innerHTML = MDEFS.map(d => sliderHTML(d, M[d.k], 'm_')).join('');
   document.querySelectorAll('#mTarget button').forEach(b => b.setAttribute('aria-pressed', +b.dataset.v === M.target));
 }
 function saveM(){ store.set('master', { preset:M.preset, low:M.low, high:M.high, glue:M.glue, target:M.target, gain:M.gain }); }
 $('#mSliders').addEventListener('input', e => {
   const d = MDEFS.find(x => x.k === e.target.dataset.k); if(!d) return;
-  M[d.k] = +e.target.value; M.preset = 'perso'; $('#mPreset').value = 'perso';
+  M[d.k] = +e.target.value; M.preset = 'perso'; document.querySelectorAll('#mStyle button').forEach(b => b.setAttribute('aria-pressed', 'false'));
   e.target.nextElementSibling.textContent = d.f(M[d.k]);
   mpre.set(); saveM();
 });
-$('#mPreset').addEventListener('change', e => {
-  const p = e.target.value; M.preset = p;
-  if(MPRE[p]) Object.assign(M, MPRE[p]);
+$('#mStyle').addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b) return;
+  M.preset = b.dataset.p; Object.assign(M, MPRE[M.preset]);
   mpre.set(); renderMaster(); saveM();
 });
 $('#mTarget').addEventListener('click', e => {
   const b = e.target.closest('button'); if(!b) return;
   M.target = +b.dataset.v; renderMaster(); saveM();
-  toast('Cible ' + b.textContent.trim() + '. Relance « Analyser » pour l\'appliquer à l\'écoute.');
+  toast('Volume ' + b.textContent.trim() + ' choisi.');
 });
 $('#bAB').onclick = () => { ensureCtx(); setBypass(!M.bypass); };
 
@@ -1187,7 +1286,7 @@ $('#bAnalyse').onclick = async () => {
 };
 $('#bMaster').onclick = async () => {
   if(busy) return; setBusy(true, 'Mastering en cours…');
-  try{ const out = await runMaster(); if(out) download(out, 'master-studioxel.wav', 'Master exporté en WAV.'); }
+  try{ const out = await runMaster(); if(out) download(out, 'studioxel-master.wav', 'Ton son est exporté.'); }
   catch(e){ toast('Export impossible : ' + e.message); }
   setBusy(false);
 };
@@ -1421,11 +1520,12 @@ function fmt(s, short){
 let toastT;
 function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 3600); }
 function setPlayIcon(){ $('#icoPlay').innerHTML = S.playing ? '<path d="M3 2h4v12H3zM9 2h4v12H9z"/>' : '<path d="M3 2l11 6-11 6z"/>'; }
-function setRecUI(){ $('#bRec').classList.toggle('on', S.recording); $('#playhead').classList.toggle('rec', S.recording); }
+function setRecUI(){ $('#micGrp').hidden = !S.recording; $('#bRec').classList.toggle('on', S.recording); $('#playhead').classList.toggle('rec', S.recording); }
 
 $('#bPlay').onclick = async () => { if(S.recording){ pause(); return; } if(S.playing){ pause(); return; } await wake(); play(); };
 $('#bStop').onclick = () => { const was = S.playing; pause(); if(!was) S.pos = 0; };
 $('#bHome').onclick = () => seek(0);
+$('#bSet').onclick = () => { const st = $('#settings'); st.hidden = !st.hidden; $('#bSet').setAttribute('aria-expanded', !st.hidden); };
 $('#bRec').onclick = record;
 $('#bpm').value = S.bpm;
 $('#bpm').onchange = e => {
@@ -1462,7 +1562,6 @@ function loop(){
   const op = peakOf(outAn, outData);
   outHold = Math.max(op, outHold * 0.95);
   const pct = Math.min(100, outHold * 100) + '%';
-  $('#outMeter').style.width = pct;
   if(!$('#vMaster').hidden){
     $('#outMeter2').style.width = pct;
     $('#outDb').textContent = outHold > 1e-4 ? todb(outHold).toFixed(1) + ' dB' : '−∞';
