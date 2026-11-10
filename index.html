@@ -223,6 +223,8 @@ details.adv[open] summary{color:var(--accent)}
     <button class="toggle" id="tCount" aria-pressed="true" title="1 mesure de décompte avant la prise">Décompte</button>
     <button class="toggle" id="tMetro" aria-pressed="false">Métronome</button>
     <button class="toggle" id="tCasque" aria-pressed="false" title="Active-le seulement si tu chantes avec un casque ou des écouteurs">Casque</button>
+    <button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
+    <span class="grp" id="ver">Version 8</span>
     <label class="grp" title="Décale les prises pour compenser le retard micro + casque">Latence <input type="number" id="lat" min="0" max="600" step="5" value="120"> ms</label>
   </div>
 </div>
@@ -346,6 +348,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 </section>
 
 <div class="help">
+  StudioXel · version 8.
   Arme une piste avec R, puis REC. Chaque prise est gardée dans le menu « Prise ». Glisse un clip pour le décaler.
   Les sons ne sont pas sauvegardés à la fermeture : exporte avant de quitter. Le texte et les projets sont gardés.
 </div>
@@ -1525,6 +1528,7 @@ function setRecUI(){ $('#micGrp').hidden = !S.recording; $('#bRec').classList.to
 $('#bPlay').onclick = async () => { if(S.recording){ pause(); return; } if(S.playing){ pause(); return; } await wake(); play(); };
 $('#bStop').onclick = () => { const was = S.playing; pause(); if(!was) S.pos = 0; };
 $('#bHome').onclick = () => seek(0);
+$('#bReload').onclick = () => { location.replace(location.pathname + '?v=' + Date.now()); };
 $('#bSet').onclick = () => { const st = $('#settings'); st.hidden = !st.hidden; $('#bSet').setAttribute('aria-expanded', !st.hidden); };
 $('#bRec').onclick = record;
 $('#bpm').value = S.bpm;
