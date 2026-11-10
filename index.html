@@ -167,6 +167,7 @@ button{cursor:pointer}
   <div class="clock" id="clock">0:00.0</div>
   <label class="grp">BPM <input type="number" id="bpm" min="40" max="220" value="90"></label>
   <button class="toggle" id="tMetro" aria-pressed="false">Métronome</button>
+  <button class="toggle" id="tCasque" aria-pressed="false" title="Active-le seulement si tu chantes avec un casque ou des écouteurs">Casque</button>
   <button class="toggle" id="tCount" aria-pressed="true" title="1 mesure de décompte avant la prise">Décompte</button>
   <label class="grp" title="Décale les prises pour compenser le retard micro + casque">Latence <input type="number" id="lat" min="0" max="600" step="5" value="120"> ms</label>
   <div class="grp">Micro <div class="meter"><i id="meter"></i></div></div>
@@ -316,7 +317,7 @@ let sources = [], playStartCtx = 0, playStartPos = 0, metroTimer = null, nextBea
 let rec = null, recInfo = null, idSeq = 0;
 const S = {
   tracks: [], pps: 40, pos: 0, playing: false, recording: false, sel: null,
-  bpm: store.get('bpm', 90), metro: false, countIn: store.get('countIn', true), lat: store.get('lat', 120)
+  bpm: store.get('bpm', 90), casque: store.get('casque', false), metro: false, countIn: store.get('countIn', true), lat: store.get('lat', 120)
 };
 const M = Object.assign({ preset:'rap', low:2.5, high:2, glue:45, target:-14, bypass:false, gain:0 }, store.get('master', {}));
 M.bypass = false;
@@ -495,12 +496,18 @@ function startMetro(){
 async function getMic(){
   if(mic) return mic;
   if(!navigator.mediaDevices?.getUserMedia) throw new Error('Micro indisponible ici : la page doit être ouverte en ligne (adresse https), pas en aperçu.');
-  mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation:false, noiseSuppression:false, autoGainControl:false } });
+  const free = !S.casque; /* sans casque : on laisse l'iPhone filtrer l'instru qui sort du haut-parleur et régler le gain */
+  mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation:free, noiseSuppression:false, autoGainControl:free } });
   const src = ctx.createMediaStreamSource(mic);
   micAnalyser = ctx.createAnalyser(); micAnalyser.fftSize = 1024;
   micData = new Float32Array(micAnalyser.fftSize);
   src.connect(micAnalyser);
   return mic;
+}
+function releaseMic(){
+  if(mic){ mic.getTracks().forEach(tr => tr.stop()); }
+  mic = null; micAnalyser = null;
+  $('#meter').style.width = '0%';
 }
 async function record(){
   if(S.recording){ pause(); return; }
@@ -515,6 +522,7 @@ async function record(){
   rec.ondataavailable = e => { if(e.data.size) chunks.push(e.data); };
   const started = new Promise(r => rec.onstart = () => r(ctx.currentTime));
   rec.onstop = async () => {
+    releaseMic();
     try{
       const blob = new Blob(chunks, { type: rec.mimeType });
       const raw = await ctx.decodeAudioData(await blob.arrayBuffer());
@@ -1249,7 +1257,7 @@ $('#bpm').onchange = e => {
 $('#lat').value = S.lat;
 $('#lat').onchange = e => { S.lat = Math.max(0, +e.target.value || 0); store.set('lat', S.lat); };
 const tog = (id, key, persist) => { const b = $(id); b.setAttribute('aria-pressed', S[key]); b.onclick = () => { S[key] = !S[key]; b.setAttribute('aria-pressed', S[key]); if(persist) store.set(key, S[key]); }; };
-tog('#tMetro', 'metro'); tog('#tCount', 'countIn', true);
+tog('#tMetro', 'metro'); tog('#tCount', 'countIn', true); tog('#tCasque', 'casque', true);
 $('#zIn').onclick = () => { S.pps = Math.min(200, S.pps * 1.5); renderTracks(); };
 $('#zOut').onclick = () => { S.pps = Math.max(8, S.pps / 1.5); renderTracks(); };
 $('#ruler').addEventListener('click', e => seek(e.offsetX / S.pps));
@@ -1300,7 +1308,7 @@ loop();
 /* Micro demandé dès l'ouverture, puis au premier toucher si le téléphone exige un geste */
 async function askMicEarly(){
   if(mic) return;
-  try{ await getMic(); }
+  try{ await getMic(); releaseMic(); }
   catch(e){ /* refusé ou pas encore autorisé : on réessaie au premier toucher */ }
 }
 askMicEarly();
