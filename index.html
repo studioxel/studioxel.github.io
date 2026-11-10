@@ -233,8 +233,8 @@ details.adv[open] summary{color:var(--accent)}
     <button class="toggle" id="tCasque" aria-pressed="false" title="Active-le seulement si tu chantes avec un casque ou des écouteurs">Casque</button>
     <button class="toggle" id="tMon" aria-pressed="false" title="Entendre ta voix avec les effets pendant la prise (casque obligatoire)">Retour voix</button>
     <button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-    <span class="grp" id="ver">Version 9</span>
-    <label class="grp" title="Décale les prises pour compenser le retard micro + casque">Latence <input type="number" id="lat" min="0" max="600" step="5" value="120"> ms</label>
+    <span class="grp" id="ver">Version 11</span>
+    <span class="grp" id="latInfo" title="Le retard du téléphone est mesuré et corrigé tout seul à chaque prise">Calage auto</span>
   </div>
 </div>
 
@@ -270,7 +270,7 @@ details.adv[open] summary{color:var(--accent)}
 
 <!-- MIXAGE -->
 <section class="card view" id="vMix" aria-label="Mixage" hidden>
-  <div class="cardhead"><h2>Mixage</h2></div>
+  <div class="cardhead"><h2>Mixage</h2><span class="spacer"></span><button class="sbtn" id="bLevel">Rééquilibrer les niveaux</button></div>
   <div class="pad">
     <div class="chips" id="mixChips"></div>
     <div id="strip" class="pad" style="padding:0"></div>
@@ -359,7 +359,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 </section>
 
 <div class="help">
-  StudioXel · version 9.
+  StudioXel · version 11.
   Arme une piste avec R, puis REC. Chaque prise est gardée dans le menu « Prise ». Glisse un clip pour le décaler.
   Les sons ne sont pas sauvegardés à la fermeture : exporte avant de quitter. Le texte et les projets sont gardés.
 </div>
@@ -396,9 +396,10 @@ let mic = null, micAnalyser = null, micData = null;
 let sources = [], playStartCtx = 0, playStartPos = 0, metroTimer = null, nextBeatT = 0, nextBeatIdx = 0;
 let rec = null, recInfo = null, idSeq = 0;
 let monSrc = null;
+const LAT_DEF = { speaker: 120, wired: 110, bt: 260 };
 const S = {
   tracks: [], pps: 40, pos: 0, playing: false, recording: false, sel: null,
-  bpm: store.get('bpm', 90), casque: store.get('casque', false), mon: store.get('mon', true), metro: false, countIn: store.get('countIn', true), lat: store.get('lat', 120)
+  bpm: store.get('bpm', 90), casque: store.get('casque', false), latMap: store.get('latMap', {}), mon: store.get('mon', true), metro: false, countIn: store.get('countIn', true), lat: store.get('lat', 120)
 };
 const M = Object.assign({ preset:'rap', low:2.5, high:2, glue:45, target:-14, bypass:false, gain:0 }, store.get('master', {}));
 M.bypass = false;
@@ -487,6 +488,7 @@ function makeChain(ac, b){
     if(live) c.fader.gain.setTargetAtTime(fv, ac.currentTime, 0.015); else c.fader.gain.value = fv;
     c.panner.pan.value = t.pan; c.rev.gain.value = f.rev / 100; c.dly.gain.value = f.dly / 100;
     const v = (t.vr || 0) / 100; c.dry.gain.value = 1 - v; c.wet.gain.value = v;
+    c.input.gain.value = t.trim ?? 1;
   };
   c.kill = () => seq.concat([c.rev, c.dly], vrNodes).forEach(n => { try{ n.disconnect(); }catch(e){} });
   return c;
@@ -587,10 +589,7 @@ async function getMic(){
   const free = !S.casque; /* sans casque : on laisse l'iPhone filtrer l'instru qui sort du haut-parleur et régler le gain */
   mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation:free, noiseSuppression:false, autoGainControl:free } });
   const lbl = (mic.getAudioTracks()[0]?.label || '');
-  if(/airpods|bluetooth|beats|buds/i.test(lbl) && !S.btWarned){
-    S.btWarned = true;
-    toast('Écouteurs Bluetooth détectés : le son arrive avec du retard. Si ta voix est décalée, monte la latence vers 250–300 ms.');
-  }
+  S.micLabel = lbl;
   const src = ctx.createMediaStreamSource(mic);
   micAnalyser = ctx.createAnalyser(); micAnalyser.fftSize = 1024;
   micData = new Float32Array(micAnalyser.fftSize);
@@ -623,7 +622,10 @@ async function record(){
     try{
       const blob = new Blob(chunks, { type: rec.mimeType });
       const raw = await ctx.decodeAudioData(await blob.arrayBuffer());
-      const trim = Math.max(0, (recInfo.t0 - recInfo.recStart) + S.lat / 1000);
+      const meas = (!S.casque && recInfo.b != null) ? detectClickLatency(raw, recInfo) : null;
+      if(meas != null){ S.latMap[recInfo.route] = meas; store.set('latMap', S.latMap); }
+      const latMs = latFor(recInfo.route); showLat();
+      const trim = Math.max(0, (recInfo.t0 - recInfo.recStart) + latMs / 1000);
       const from = Math.floor(trim * raw.sampleRate), len = raw.length - from;
       if(len <= raw.sampleRate * 0.1){ toast('Prise trop courte, rien gardé.'); return; }
       const buf = ctx.createBuffer(raw.numberOfChannels, len, raw.sampleRate);
@@ -635,9 +637,11 @@ async function record(){
       const tr = recInfo.track;
       tr.takes.push({ buffer: buf, offset: recInfo.pos }); tr.take = tr.takes.length - 1;
       tr.buffer = buf; tr.offset = recInfo.pos;
+      await adaptVoice(tr);
+      await autoLevel(tr);
       renderTracks();
       if(tr.atOn){ toast('Prise gardée, auto-tune en cours…'); await applyAutotune(tr); }
-      else toast('Prise ' + tr.takes.length + ' gardée sur « ' + tr.name + ' ».');
+      else toast('Prise ' + tr.takes.length + ' gardée sur « ' + tr.name + ' » · niveau calé sur l\'instru.');
     }catch(e){ toast('Impossible de lire la prise : ' + e.message); }
   };
   rec.start();
@@ -646,10 +650,38 @@ async function record(){
   const beat = 60 / S.bpm;
   let t0 = ctx.currentTime + 0.15;
   if(S.countIn){ const b = ctx.currentTime + 0.1; for(let i = 0; i < 4; i++) click(b + i * beat, i === 0); t0 = b + 4 * beat; }
-  recInfo = { track: t, recStart, t0, pos: S.pos };
+  recInfo = { track: t, recStart, t0, pos: S.pos, b: S.countIn ? t0 - 4 * beat : null, beat, route: routeKey() };
   play(t0);
 }
 function finishRec(){ S.recording = false; setRecUI(); if(rec && rec.state !== 'inactive') rec.stop(); }
+
+/* ---------- Calage automatique (latence) ---------- */
+function routeKey(){
+  if(/airpods|bluetooth|beats|buds/i.test(S.micLabel || '')) return 'bt';
+  return S.casque ? 'wired' : 'speaker';
+}
+function latFor(r){
+  if(S.latMap[r] != null) return S.latMap[r];
+  const api = Math.round(((ctx.baseLatency || 0) + (ctx.outputLatency || 0)) * 1000) + 60 + (r === 'bt' ? 150 : 0);
+  return Math.max(LAT_DEF[r], api);
+}
+function showLat(){ const el = $('#latInfo'); if(el) el.textContent = 'Calage auto · ' + latFor(routeKey()) + ' ms'; }
+/* Sans casque, les 4 bips du décompte passent par le haut-parleur et reviennent dans le micro : on mesure le vrai retard */
+function detectClickLatency(raw, info){
+  const sr = raw.sampleRate, d = raw.getChannelData(0), w = Math.round(0.6 * sr), res = [];
+  for(let i = 0; i < 4; i++){
+    const e = Math.round((info.b + i * info.beat - info.recStart) * sr);
+    if(e < 1 || e + w >= d.length) return null;
+    let mx = 0, sum = 0;
+    for(let k = e; k < e + w; k++){ const v = Math.abs(d[k] - d[k - 1]); sum += v; if(v > mx) mx = v; }
+    if(mx < (sum / w) * 10) return null;
+    let k = e; while(k < e + w && Math.abs(d[k] - d[k - 1]) < mx * 0.4) k++;
+    res.push((k - e) / sr * 1000);
+  }
+  res.sort((a, b) => a - b);
+  if(res[3] - res[0] > 25) return null;
+  return Math.round((res[1] + res[2]) / 2);
+}
 
 /* ---------- Pistes ---------- */
 function addTrack(name, preset){
@@ -808,12 +840,14 @@ $('#file').addEventListener('change', async e => {
     t.buffer = buf; t.offset = 0;
     if(/^(Instru|Piste \d+)$/.test(t.name)) t.name = f.name.replace(/\.[^.]+$/, '').slice(0, 28);
     renderTracks();
+    await adaptVoice(t);
+    await autoLevel(t);
     const isInstru = t.preset === 'instru' || !S.tracks.some(x => x !== t && x.buffer);
     const bpm = isInstru ? detectBpm(buf) : 0;
     if(bpm){
       S.bpm = bpm; $('#bpm').value = bpm; store.set('bpm', bpm); bus.setBpm(bpm); renderTracks();
-      toast('« ' + f.name + ' » chargé · tempo détecté : ' + bpm + ' BPM.');
-    } else toast('« ' + f.name + ' » chargé (' + fmt(buf.duration) + ').');
+      toast('« ' + f.name + ' » chargé · ' + bpm + ' BPM · niveau calé.');
+    } else toast('« ' + f.name + ' » chargé · niveau calé.');
   }catch(err){ toast('Format non lu. Essaie un MP3 ou un WAV.'); }
 });
 
@@ -909,6 +943,7 @@ function renderMix(){
   let html = `<div class="field"><label for="fxPreset">Style de piste</label><select id="fxPreset">${
     Object.keys(FXNAMES).filter(k => k !== 'perso' || cur.preset === 'perso')
       .map(k => `<option value="${k}" ${k === cur.preset ? 'selected' : ''}>${FXNAMES[k]}</option>`).join('')}</select></div>
+    ${cur.adapted ? `<p class="note" style="color:var(--ok)">✓ Égaliseur et compression réglés sur ta voix${cur.vp?.f0med ? (cur.vp.f0med < 165 ? ' (voix grave)' : cur.vp.f0med < 255 ? ' (voix médium)' : ' (voix aiguë)') : ''}${cur.vp?.dr > 12 ? ', très dynamique' : ''}.</p>` : ''}
     <div class="fxlist">
       ${fxRowHTML(cur, 'rev', 'Reverb')}
       ${fxRowHTML(cur, 'dly', 'Écho')}
@@ -992,7 +1027,10 @@ $('#strip').addEventListener('change', e => {
   if(!FX[p]) return;
   t.preset = p; t.fx = { ...FX[p] };
   t.chain.set(t, audible(t), true);
+  if(t.vp) adaptFx(t);
+  t.chain.set(t, audible(t), true);
   renderMix();
+  autoLevel(t);
 });
 function cssVar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
 function drawEQ(){
@@ -1039,12 +1077,14 @@ async function analysePitch(buf){
   const W = Math.round(dsr * 0.032), tmin = Math.floor(dsr / 1000), tmax = Math.ceil(dsr / 70), hop = Math.round(dsr * 0.008);
   const frames = Math.max(0, Math.floor((m - W - tmax) / hop));
   const f0 = new Float32Array(frames), d = new Float32Array(tmax + 2), cm = new Float32Array(tmax + 2);
+  let active = 0;
   let peakAll = 0; for(let i = 0; i < m; i++){ const a = Math.abs(x[i]); if(a > peakAll) peakAll = a; }
   const gate = Math.max(0.003, peakAll * 0.03);
   for(let fr = 0; fr < frames; fr++){
     const o = fr * hop;
     let e = 0; for(let j = 0; j < W; j++) e += x[o + j] * x[o + j];
     if(Math.sqrt(e / W) < gate) continue;
+    active++;
     let run = 0, best = -1;
     for(let tau = 1; tau <= tmax + 1; tau++){
       let s = 0; for(let j = 0; j < W; j++){ const df = x[o + j] - x[o + j + tau]; s += df * df; }
@@ -1073,7 +1113,8 @@ async function analysePitch(buf){
     if(j - i < 4) for(let k = i; k < j; k++) med[k] = 0;
     i = j;
   }
-  const res = { f0: med, hopS: hop * D, sr, offS: Math.round(W / 2) * D };
+  let vc = 0; for(let i = 0; i < frames; i++) if(med[i]) vc++;
+  const res = { f0: med, hopS: hop * D, sr, offS: Math.round(W / 2) * D, voicedRatio: active ? vc / active : 0 };
   pitchCache.set(buf, res);
   return res;
 }
@@ -1189,7 +1230,10 @@ async function applyAutotune(t){
     const an = await analysePitch(src.buffer);
     if(!an.f0.some(f => f > 0)){ toast('Aucune voix chantée détectée sur cette prise.'); setBusy(false); return; }
     if(t.at.auto !== false){ const k = detectKey(an.f0); if(k){ t.at.key = k.key; t.at.scale = k.scale; } t.at.auto = false; }
-    const sh = shiftCurve(an.f0, t.at, an.hopS / an.sr);
+    /* l'auto-tune s'adapte : voix rappée (peu de notes tenues) = correction plus douce, voix chantée = plus franche */
+    const mode = nearest(AT_SP, t.at.speed), rapLike = an.voicedRatio < 0.5;
+    const eff = { ...t.at, speed: mode === 0 ? (rapLike ? 90 : 55) : mode === 1 ? 22 : 0, amount: mode === 0 ? (rapLike ? 60 : 90) : 100 };
+    const sh = shiftCurve(an.f0, eff, an.hopS / an.sr);
     const out = await psola(src.buffer, an, sh);
     const take = { buffer: out, offset: src.offset ?? t.offset, tuned: true, src: srcIdx };
     if(cur?.tuned) t.takes[t.take] = take; else { t.takes.push(take); t.take = t.takes.length - 1; }
@@ -1243,6 +1287,78 @@ async function renderRaw(withMaster){
   });
   return off.startRendering();
 }
+/* ---------- Réglages adaptés à la voix de la prise ---------- */
+const VOCAL = new Set(['lead', 'back', 'ambiance']);
+async function voiceProfile(buf){
+  const sr = buf.sampleRate, off = new OfflineAudioContext(5, buf.length, sr);
+  const src = off.createBufferSource(); src.buffer = buf;
+  const mg = off.createChannelMerger(5);
+  [[80, 200], [200, 500], [500, 2000], [2000, 5000], [5000, 10000]].forEach(([lo, hi], i) => {
+    const h = biq(off, 'highpass', lo, 0.707), l = biq(off, 'lowpass', hi, 0.707);
+    src.connect(h); h.connect(l); l.connect(mg, 0, i);
+  });
+  mg.connect(off.destination); src.start();
+  const r = await off.startRendering();
+  const ch = [0, 1, 2, 3, 4].map(i => r.getChannelData(i));
+  const fl = Math.round(sr * 0.05), nf = Math.floor(r.length / fl);
+  const fe = new Float64Array(nf), be = ch.map(() => new Float64Array(nf));
+  for(let f = 0; f < nf; f++){
+    for(let b = 0; b < 5; b++){ let s2 = 0; const d = ch[b]; for(let i = f * fl, e = i + fl; i < e; i++) s2 += d[i] * d[i]; be[b][f] = s2; fe[f] += s2; }
+  }
+  let mx = 0; for(const v of fe) if(v > mx) mx = v;
+  const act = []; for(let f = 0; f < nf; f++) if(fe[f] > mx * 0.01) act.push(f);
+  if(act.length < 10) return null;
+  const band = be.map(a => 10 * Math.log10(act.reduce((s2, f) => s2 + a[f], 0) + 1e-12));
+  const lv = act.map(f => 10 * Math.log10(fe[f] / fl + 1e-12)).sort((a, b) => a - b);
+  const q = p => lv[Math.min(lv.length - 1, Math.floor(p * lv.length))];
+  const an = await analysePitch(buf);
+  const v = Array.from(an.f0).filter(x => x > 0).sort((a, b) => a - b);
+  return { low: band[0] - band[2], mud: band[1] - band[2], pres: band[3] - band[2], sib: band[4] - band[2],
+    p90: q(0.9), dr: q(0.9) - q(0.3), f0lo: v.length ? v[Math.floor(v.length * 0.05)] : 0, f0med: v.length ? v[v.length >> 1] : 0 };
+}
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+function adaptFx(t){
+  const vp = t.vp, base = FX[t.preset]; if(!vp || !base || !VOCAL.has(t.preset)) return;
+  const f = t.fx;
+  f.hp = vp.f0lo ? clamp(Math.round(vp.f0lo * 0.75), 60, t.preset === 'ambiance' ? 260 : 180) : base.hp;
+  f.low = clamp(base.low - Math.max(0, vp.low - 2) * 0.5, -9, 2);
+  const cut = clamp(-(vp.mud - 1), -6, 0), boost = clamp(-7 - vp.pres, 0, 6);
+  if(boost >= -cut){ f.mid = Math.round(clamp(base.mid * 0.5 + boost, 0, 5) * 2) / 2; f.midF = 3000; }
+  else { f.mid = Math.round(cut * 2) / 2; f.midF = 300; }
+  f.high = Math.round(clamp(base.high + (-16 - vp.sib) * 0.5, -3, 5) * 2) / 2;
+  f.thr = Math.round(clamp(vp.p90 - 8 - (vp.dr > 12 ? 3 : 0), -40, -6));
+  f.ratio = (vp.dr > 14 ? 5 : vp.dr > 9 ? 4 : 3) + (t.preset === 'back' ? 1 : 0);
+  f.makeup = 0;
+  t.adapted = true;
+}
+async function adaptVoice(t){
+  if(!t?.buffer || !VOCAL.has(t.preset)) return;
+  try{ t.vp = await voiceProfile(t.buffer); adaptFx(t); t.chain.set(t, audible(t), true); }catch(e){}
+}
+
+/* ---------- Équilibrage automatique : chaque piste calée à sa place par rapport à l'instru ---------- */
+const LEVEL_TARGET = { instru: -18, lead: -15.5, back: -20.5, ambiance: -23, neutre: -18, perso: -18 };
+async function autoLevel(t){
+  if(!t?.buffer) return;
+  try{
+    const sr = t.buffer.sampleRate;
+    const off = new OfflineAudioContext(2, t.buffer.length, sr);
+    const b = makeBus(off); b.masterIn.connect(off.destination);
+    const probe = { ...t, fx: { ...t.fx, rev: 0, dly: 0 }, vol: 1, pan: 0, trim: 1 };
+    const c = makeChain(off, b); c.set(probe, true, false);
+    const src = off.createBufferSource(); src.buffer = t.buffer; src.connect(c.input); src.start(0);
+    const L = await lufs(await off.startRendering());
+    if(!isFinite(L)) return;
+    const target = LEVEL_TARGET[t.preset] ?? -18;
+    t.trim = dbl(Math.max(-24, Math.min(24, target - L)));
+    t.chain.set(t, audible(t), true);
+  }catch(e){}
+}
+$('#bLevel').onclick = async () => {
+  if(busy) return; setBusy(true, 'Équilibrage des pistes…');
+  for(const t of S.tracks){ t.vol = 0.85; await autoLevel(t); }
+  setBusy(false); renderTracks(); renderMix(); toast('Niveaux rééquilibrés : voix devant, instru derrière.');
+};
 async function lufs(buf){
   const off = new OfflineAudioContext(buf.numberOfChannels, buf.length, buf.sampleRate);
   const s = off.createBufferSource(); s.buffer = buf;
@@ -1575,8 +1691,6 @@ $('#bpm').onchange = e => {
   S.bpm = Math.min(220, Math.max(40, +e.target.value || 90)); e.target.value = S.bpm; store.set('bpm', S.bpm);
   bus.setBpm(S.bpm); renderTracks(); restart();
 };
-$('#lat').value = S.lat;
-$('#lat').onchange = e => { S.lat = Math.max(0, +e.target.value || 0); store.set('lat', S.lat); };
 const tog = (id, key, persist) => { const b = $(id); b.setAttribute('aria-pressed', S[key]); b.onclick = () => { S[key] = !S[key]; b.setAttribute('aria-pressed', S[key]); if(persist) store.set(key, S[key]); }; };
 tog('#tMetro', 'metro'); tog('#tCount', 'countIn', true); tog('#tCasque', 'casque', true); tog('#tMon', 'mon', true);
 $('#tMon').addEventListener('click', () => { if(S.mon && !S.casque) toast('Retour voix : marche seulement avec « Casque » activé, sinon ça siffle (larsen).'); });
@@ -1623,7 +1737,8 @@ function loop(){
 
 initAudio();
 [['Instru','instru'], ['Lead','lead'], ['Back','back'], ['Ambiance','ambiance']].forEach(([n, p]) => addTrack(n, p));
-renderTracks(); renderMaster(); lstat();
+renderTracks(); renderMaster(); lstat(); showLat();
+$('#tCasque').addEventListener('click', showLat);
 loop();
 
 /* Micro demandé dès l'ouverture, puis au premier toucher si le téléphone exige un geste */
