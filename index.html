@@ -21,7 +21,7 @@
   --display:"Archivo","Arial Narrow",system-ui,sans-serif;
   --body:"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
-  --hdr:204px;
+  --hdr:216px;
   color-scheme:dark;
 }
 *{box-sizing:border-box}
@@ -79,22 +79,26 @@ button{cursor:pointer}
 .inner{position:relative}
 .row{display:flex;border-bottom:1px solid var(--line)}
 .hdr{position:sticky;left:0;z-index:6;width:var(--hdr);flex:none;background:var(--panel);border-right:1px solid var(--line);padding:8px;display:flex;flex-direction:column;gap:6px}
-.lane{position:relative;height:96px;flex:none;background-color:var(--bg);background-image:linear-gradient(to right,var(--line) 1px,transparent 1px);background-size:var(--bar) 100%;background-repeat:repeat-x}
+.lane{position:relative;min-height:150px;align-self:stretch;flex:none;background-color:var(--bg);background-image:linear-gradient(to right,var(--line) 1px,transparent 1px);background-size:var(--bar) 100%;background-repeat:repeat-x}
 .ruler .hdr{padding:4px 8px;justify-content:center;font-size:11px;color:var(--muted)}
 .ruler canvas{display:block;cursor:pointer}
 .l1{display:flex;align-items:center;gap:4px}
-.swatch{width:4px;align-self:stretch;border-radius:2px;flex:none}
-.name{flex:1;min-width:0;background:transparent;border:1px solid transparent;border-radius:4px;padding:2px 4px;font-weight:700}
+.swatch{width:14px;align-self:stretch;min-height:30px;border-radius:5px;flex:none;border:0;padding:0;cursor:pointer}
+.swatch[aria-expanded=true]{outline:2px solid var(--fg);outline-offset:2px}
+.pal{display:flex;flex-wrap:wrap;gap:6px;padding:6px;border-radius:10px;background:var(--bg);border:1px solid var(--line)}
+.pal button{width:30px;height:30px;border-radius:50%;border:2px solid transparent;padding:0}
+.pal button[aria-pressed=true]{border-color:var(--fg);box-shadow:0 0 0 2px var(--bg) inset}
+.name{flex:1;min-width:0;background:transparent;border:1px solid transparent;border-radius:4px;padding:2px 4px;font-weight:700;font-size:15px}
 .name:focus{border-color:var(--line);background:var(--raise)}
-.chip{width:26px;height:24px;border-radius:5px;border:1px solid var(--line);background:var(--raise);font:700 11px/1 var(--mono);padding:0}
+.chip{width:34px;height:32px;border-radius:7px;border:1px solid var(--line);background:var(--raise);font:700 13px/1 var(--mono);padding:0;flex:none}
 .chip.arm[aria-pressed=true]{background:var(--rec);border-color:var(--rec);color:#fff}
 .chip.mute[aria-pressed=true]{background:#5a6478;border-color:#5a6478}
 .chip.solo[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#1a1405}
 .l2{display:grid;grid-template-columns:auto 1fr;gap:2px 6px;align-items:center;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
-.l2 input{width:100%;accent-color:var(--accent);height:14px}
-.l3{display:flex;gap:4px;align-items:center}
-.l3 .sbtn{height:24px;padding:0 7px;font-size:11px}
-.l3 select{height:24px;background:var(--raise);border:1px solid var(--line);border-radius:5px;font-size:11px;max-width:74px}
+.l2 input{width:100%;accent-color:var(--accent);height:22px}
+.l3{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.l3 .sbtn{height:30px;padding:0 9px;font-size:12px}
+.l3 select{height:30px;background:var(--raise);border:1px solid var(--line);border-radius:5px;font-size:11px;max-width:74px}
 .del.confirm{background:var(--rec);border-color:var(--rec);color:#fff}
 .clip{position:absolute;top:8px;bottom:8px;border-radius:6px;overflow:hidden;cursor:grab;touch-action:none;border:1px solid}
 .clip canvas{display:block;height:100%;pointer-events:none}
@@ -236,6 +240,46 @@ details.adv[open] summary{color:var(--accent)}
 fieldset.lk{border:0;margin:0;padding:0;min-width:0}
 fieldset.lk[disabled]{opacity:.55}
 .lknote{color:var(--accent)!important}
+.transport{position:sticky;top:env(safe-area-inset-top,0px);z-index:15;box-shadow:0 8px 18px rgba(0,0,0,.35)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:16;background:var(--bg)}
+.fxzone{display:flex;flex-direction:column;gap:5px}
+.fxchips{display:flex;flex-wrap:wrap;gap:5px}
+.fxc{height:32px;padding:0 10px;border-radius:16px;border:1px solid var(--line);background:var(--bg);font-size:12px;font-weight:700;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
+.fxc::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--line);flex:none}
+.fxc[aria-pressed=true]{color:var(--fg);border-color:var(--accent)}
+.fxc[aria-pressed=true]::before{background:var(--accent);box-shadow:0 0 6px var(--accent)}
+.fxc.open{background:var(--raise)}
+.fxc:disabled{opacity:.5}
+.dose{display:flex;gap:4px;flex-wrap:wrap;padding:5px;border-radius:10px;background:var(--bg);border:1px solid var(--accent)}
+.dose button{height:30px;padding:0 9px;border-radius:15px;border:1px solid var(--line);background:transparent;font-size:12px;color:var(--muted)}
+.dose button[aria-pressed=true]{background:var(--accent);color:#1a1405;border-color:var(--accent);font-weight:700}
+.dose button.off{color:var(--rec);border-color:transparent}
+.phead{flex-wrap:nowrap}
+.tblk{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px}
+.stitle{font:700 15px/1.2 var(--display);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.phead .mk{flex:none}
+.plusbtn{width:42px;height:42px;border-radius:50%;border:0;background:var(--accent);color:#1a1405;font:700 28px/1 var(--display);display:inline-flex;align-items:center;justify-content:center;transition:transform .2s;flex:none}
+.plusbtn[aria-expanded=true]{transform:rotate(45deg)}
+@media (prefers-reduced-motion:reduce){.plusbtn{transition:none}}
+.zoom{width:38px;padding:0;display:inline-flex;align-items:center;justify-content:center}
+.zoom svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.plusmenu{padding:12px 10px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:12px;background:var(--raise)}
+.plusmenu .sec{padding-top:0;border-top:0}
+.pmrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.pmbtn{height:42px;padding:0 14px;border-radius:8px;border:1px solid var(--line);background:var(--bg);font-weight:700;font-size:14px}
+.plusmenu .sessbar{padding:0;border:0}
+.plusmenu .sesslist{padding:0;border:0}
+.zoom[aria-pressed=true]{background:var(--accent);color:#1a1405;border-color:var(--accent)}
+.selband{position:absolute;z-index:5;background:color-mix(in srgb,var(--accent) 28%,transparent);border:2px solid var(--accent);border-radius:6px;touch-action:none;cursor:grab}
+.selband:active{cursor:grabbing}
+#inner.selmode .lane,#inner.selmode .clip{touch-action:none;cursor:crosshair}
+.selbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--accent) 10%,var(--panel))}
+.selbar .selinfo{flex-basis:100%;font:500 12px var(--mono);color:var(--accent)}
+.selbar select{height:38px;background:var(--raise);border:1px solid var(--line);border-radius:6px;padding:0 8px;min-width:0;flex:1 1 120px}
+.selbar .sbtn{height:38px;padding:0 12px;font-size:13px}
+.selbar .note{flex-basis:100%;margin:0}
+.sbtn.keep[aria-pressed=true]{background:var(--ok);border-color:var(--ok);color:#06231c}
+.row.kept .clip{box-shadow:inset 0 0 0 2px var(--ok)}
 .help{margin-top:12px;color:var(--muted);font-size:12px;line-height:1.6}
 .help kbd{font:11px var(--mono);border:1px solid var(--line);border-radius:4px;padding:1px 5px;background:var(--raise);color:var(--fg)}
 @media (max-width:480px){.sl,.grrow{grid-template-columns:92px minmax(0,1fr) 58px}}
@@ -263,12 +307,12 @@ fieldset.lk[disabled]{opacity:.55}
     <button class="toggle" id="tCasque" aria-pressed="false" title="Active-le seulement si tu chantes avec un casque ou des écouteurs">Casque</button>
     <button class="toggle" id="tMon" aria-pressed="false" title="Entendre ta voix avec les effets pendant la prise (casque obligatoire)">Retour voix</button>
     <button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-    <span class="grp" id="ver">Version 15</span>
+    <span class="grp" id="ver">Version 19</span>
     <span class="grp" id="latInfo" title="Le retard du téléphone est mesuré et corrigé tout seul à chaque prise">Calage auto</span>
   </div>
 </div>
 
-<div class="card quick" id="quick" aria-label="Effets en direct"></div>
+<div class="card quick" id="quick" aria-label="Effets en direct" hidden></div>
 
 <nav class="nav" role="tablist" aria-label="Vues">
   <button role="tab" data-view="vPistes" aria-selected="true">Pistes</button>
@@ -281,21 +325,40 @@ fieldset.lk[disabled]{opacity:.55}
 
 <!-- PISTES -->
 <section class="card view" id="vPistes" aria-label="Pistes">
-  <div class="sessbar">
-    <input id="sessName" placeholder="Nom de la session" aria-label="Nom de la session">
-    <select id="sessLink" aria-label="Lier à un titre de projet"></select>
-    <button class="sbtn" id="sessListBtn" aria-expanded="false">Mes sessions</button>
-    <button class="sbtn" id="sessNew">+ Nouvelle</button>
-    <span class="sstate" id="sessState"></span>
+  <div class="cardhead phead">
+    <div class="tblk"><b class="stitle" id="sessTitle">Nouvelle session</b><span class="sstate" id="sessState"></span></div>
+    <button class="mk" id="loopPill" hidden>⟳ Boucle ✕</button>
+    <button class="sbtn zoom" id="selBtn" aria-pressed="false" aria-label="Mode sélection" title="Sélectionner une bande"><svg viewBox="0 0 24 24"><path d="M4 7V4h3M17 4h3v3M20 17v3h-3M7 20H4v-3M10 4h4M10 20h4M4 10v4M20 10v4"/></svg></button>
+    <button class="sbtn zoom" id="zOut" aria-label="Dézoomer"><svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"/><path d="M15 15l5 5M7 10h6"/></svg></button>
+    <button class="sbtn zoom" id="zIn" aria-label="Zoomer"><svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"/><path d="M15 15l5 5M7 10h6M10 7v6"/></svg></button>
+    <button class="plusbtn" id="plusBtn" aria-expanded="false" aria-controls="plusMenu" aria-label="Plus d'options">+</button>
   </div>
-  <div class="sesslist" id="sessList" hidden></div>
-  <div class="cardhead">
-    <h2>Pistes</h2><span class="spacer"></span>
-    <button class="sbtn" id="mkAdd">+ Repère</button>
-    <button class="toggle" id="loopBtn" aria-pressed="false">Boucle</button>
-    <div class="notch" id="loopBars" hidden><button data-b="2">2 mes.</button><button data-b="4">4 mes.</button><button data-b="8">8 mes.</button></div>
-    <button class="sbtn" id="zOut" aria-label="Dézoomer">−</button>
-    <button class="sbtn" id="zIn" aria-label="Zoomer">+</button>
+  <div class="selbar" id="selBar" hidden>
+    <span class="selinfo" id="selInfo"></span>
+    <button class="sbtn del" id="selDel">Supprimer</button>
+    <select id="selTo" aria-label="Piste de destination"></select>
+    <button class="sbtn primary" id="selMoveTo">Déplacer</button>
+    <button class="sbtn" id="selCopyTo">Copier</button>
+    <button class="sbtn" id="selClear" aria-label="Annuler la sélection">✕</button>
+    <p class="note">Glisse la bande jaune pour la déplacer dans le temps ou vers une autre piste.</p>
+  </div>
+  <div class="plusmenu" id="plusMenu" hidden>
+    <div class="pmrow">
+      <button class="pmbtn" id="addTrack">+ Nouvelle piste</button>
+      <button class="pmbtn" id="mkAdd">Poser un repère ici</button>
+      <button class="toggle" id="loopBtn" aria-pressed="false">Boucle</button>
+      <div class="notch" id="loopBars" hidden><button data-b="2">2 mes.</button><button data-b="4">4 mes.</button><button data-b="8">8 mes.</button></div>
+    </div>
+    <div class="sec">Session</div>
+    <div class="sessbar">
+      <input id="sessName" placeholder="Nom de la session" aria-label="Nom de la session">
+      <select id="sessLink" aria-label="Lier à un titre de projet"></select>
+    </div>
+    <div class="pmrow">
+      <button class="pmbtn" id="sessListBtn" aria-expanded="false">Mes sessions</button>
+      <button class="pmbtn" id="sessNew">+ Nouvelle session</button>
+    </div>
+    <div class="sesslist" id="sessList" hidden></div>
   </div>
   <div class="mkrow" id="mkRow"></div>
   <div class="scroller" id="scroller">
@@ -303,13 +366,11 @@ fieldset.lk[disabled]{opacity:.55}
       <div class="row ruler"><div class="hdr">Touche la règle pour te placer</div><canvas id="ruler" height="26"></canvas></div>
       <div id="list"></div>
       <div class="loopband" id="loopBand" hidden></div>
+      <div class="selband" id="selBand" hidden></div>
       <div class="playhead" id="playhead"></div>
     </div>
   </div>
-  <div class="addrow">
-    <button class="sbtn" id="addTrack">+ Ajouter une piste</button>
-    <input type="file" id="file" accept="audio/*" hidden>
-  </div>
+  <input type="file" id="file" accept="audio/*" hidden>
 </section>
 
 <!-- MIXAGE -->
@@ -436,9 +497,12 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 </section>
 
 <div class="help">
-  StudioXel · version 15.
-  Arme une piste avec R, puis REC. Chaque prise est gardée dans le menu « Prise ». Glisse un clip pour le décaler.
-  Les sons ne sont pas sauvegardés à la fermeture : exporte avant de quitter. Le texte et les projets sont gardés.
+  StudioXel · version 19.
+  Touche la pastille de couleur à gauche du nom d'une piste pour changer sa couleur.
+  🔓 sur une piste verrouille une prise réussie : plus de réenregistrement, de coupe ni de déplacement par erreur.
+  ⧉ duplique une piste. Le bouton de sélection (à côté des loupes) permet de sélectionner une bande pour la supprimer, la déplacer ou la copier sur une autre piste.
+  Chaque piste a ses effets : touche Reverb, Écho, Doubler ou Auto-tune pour les allumer, retouche-les pour doser.
+  Arme une piste avec R, puis REC. Tout se sauvegarde tout seul dans le téléphone. Le « + » regroupe pistes, repères, boucle et sessions.
 </div>
 
 <div class="toast" id="toast" role="status"></div>
@@ -449,7 +513,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
 const COLORS = ['#6fa8ff','#f2b544','#c58bff','#4fd1b5','#ff8a65','#9be15d','#ff7eb6'];
-const HDR = 204, CEIL = Math.pow(10, -1 / 20);
+const HDR = 216, CEIL = Math.pow(10, -1 / 20);
 const store = {
   get(k, d){ try{ const v = localStorage.getItem('cabine.' + k); return v === null ? d : JSON.parse(v); }catch(e){ return d; } },
   set(k, v){ try{ localStorage.setItem('cabine.' + k, JSON.stringify(v)); }catch(e){} }
@@ -473,6 +537,10 @@ let mic = null, micAnalyser = null, micData = null;
 let sources = [], playStartCtx = 0, playStartPos = 0, metroTimer = null, nextBeatT = 0, nextBeatIdx = 0;
 let rec = null, recInfo = null, idSeq = 0;
 let monSrc = null;
+let doseOpen = null;
+let colorOpen = null;
+const PALETTE = ['#6fa8ff', '#38bdf8', '#4fd1b5', '#9be15d', '#f2b544', '#ff8a65', '#ff4b4b', '#ff7eb6', '#c58bff', '#e7eaf0'];
+let bandSel = null, selDrag = null, bandDrag = null;
 const LAT_DEF = { speaker: 120, wired: 110, bt: 260 };
 const S0 = 1;
 const S = {
@@ -784,7 +852,7 @@ let undoAt = 0, undoLbl = '';
 function snapTrack(t){
   return { id: t.id, name: t.name, color: t.color, preset: t.preset, fx: { ...t.fx }, vr: t.vr, vol: t.vol, pan: t.pan,
     mute: t.mute, solo: t.solo, arm: t.arm, offset: t.offset, buffer: t.buffer, take: t.take, takes: t.takes.map(k => ({ ...k })),
-    trim: t.trim, atOn: t.atOn, at: { ...t.at }, lv: t.lv ? { ...t.lv } : undefined, vp: t.vp, adapted: t.adapted, semi: t.semi, bpmOrig: t.bpmOrig, origTake: t.origTake, uid: t.uid, owner: t.owner, ownerName: t.ownerName };
+    trim: t.trim, atOn: t.atOn, at: { ...t.at }, lv: t.lv ? { ...t.lv } : undefined, vp: t.vp, adapted: t.adapted, semi: t.semi, bpmOrig: t.bpmOrig, origTake: t.origTake, uid: t.uid, owner: t.owner, ownerName: t.ownerName, keep: t.keep };
 }
 function pushUndo(label, coalesce, force){
   if(S.recording && !force) return;
@@ -819,6 +887,7 @@ function undo(){
   Object.assign(M, u.M); mpre.set(); saveM();
   S.markers = u.markers || []; if(u.bpm && u.bpm !== S.bpm){ S.bpm = u.bpm; $('#bpm').value = u.bpm; bus.setBpm(u.bpm); }
   scheduleSave();
+  bandSel = null;
   renderTracks(); renderMix(); renderMaster();
   if(was) play();
   undoLbl = ''; updUndo();
@@ -853,27 +922,31 @@ function renderTracks(){
   S.tracks.forEach(t => {
     const row = document.createElement('div');
     const lk = isLocked(t);
-    row.className = 'row' + (lk ? ' locked' : ''); row.dataset.id = t.id;
+    row.className = 'row' + (lk ? ' locked' : '') + (t.keep ? ' kept' : ''); row.dataset.id = t.id;
     const takes = t.takes.length > 1
-      ? `<select data-act="take" aria-label="Prise">${t.takes.map((tk, i) => `<option value="${i}" ${i === t.take ? 'selected' : ''}>Prise ${i + 1}${tk.tuned ? ' · AT' : ''}${tk.xf ? ' · modifiée' : ''}${tk.punch ? ' · retouchée' : ''}</option>`).join('')}</select>` : '';
+      ? `<select data-act="take" aria-label="Prise" ${t.keep ? 'disabled' : ''}>${t.takes.map((tk, i) => `<option value="${i}" ${i === t.take ? 'selected' : ''}>Prise ${i + 1}${tk.tuned ? ' · AT' : ''}${tk.xf ? ' · modifiée' : ''}${tk.punch ? ' · retouchée' : ''}</option>`).join('')}</select>` : '';
     row.innerHTML = `
       <div class="hdr">
-        <div class="l1"><span class="swatch" style="background:${t.color}"></span>
+        <div class="l1"><button class="swatch" data-act="color" style="background:${t.color}" aria-expanded="${colorOpen === t.id}" aria-label="Couleur de la piste" title="Changer la couleur"></button>
           <input class="name" data-act="name" value="${esc(t.name)}" aria-label="Nom de la piste" ${lk ? 'disabled' : ''}>
           <button class="chip arm" data-act="arm" aria-pressed="${t.arm}" title="Armer pour l'enregistrement">R</button>
           <button class="chip mute" data-act="mute" aria-pressed="${t.mute}" title="Muet">M</button>
           <button class="chip solo" data-act="solo" aria-pressed="${t.solo}" title="Solo">S</button>
         </div>
+        ${colorOpen === t.id ? `<div class="pal" role="group" aria-label="Couleurs">${PALETTE.map(c => `<button data-act="setcolor" data-c="${c}" style="background:${c}" aria-pressed="${c.toLowerCase() === String(t.color).toLowerCase()}" aria-label="Couleur ${c}"></button>`).join('')}</div>` : ''}
         <div class="l2">
           <span>Vol</span><input type="range" min="0" max="2" step="0.01" value="${t.vol}" data-act="vol" aria-label="Volume" ${lk ? 'disabled' : ''}>
           <span>Pan</span><input type="range" min="-1" max="1" step="0.05" value="${t.pan}" data-act="pan" aria-label="Panoramique" ${lk ? 'disabled' : ''}>
         </div>
-        ${t.ownerName ? `<div class="lockb">${lk ? '🔒 Verrouillée · ' : '✓ '}${esc(t.ownerName)}</div>` : ''}
+        <div class="fxzone">${fxZoneHTML(t)}</div>
+        ${t.ownerName && S.tracks.some(x => x.owner && x.owner !== ME.id) ? `<div class="lockb">${lk ? '🔒 Verrouillée · ' : '✓ '}${esc(t.ownerName)}</div>` : ''}
         <div style="display:none">
         </div>
         <div class="l3">
           <button class="sbtn" data-act="import">Importer</button>${takes}
           <span style="flex:1"></span>
+          <button class="sbtn keep" data-act="keep" aria-pressed="${!!t.keep}" aria-label="${t.keep ? 'Déverrouiller la prise' : 'Verrouiller la prise'}" title="${t.keep ? 'Prise verrouillée' : 'Verrouiller la prise'}">${t.keep ? '🔒' : '🔓'}</button>
+          <button class="sbtn" data-act="dup" aria-label="Dupliquer la piste" title="Dupliquer">⧉</button>
           <button class="sbtn del" data-act="del" aria-label="Supprimer la piste">✕</button>
         </div>
       </div>
@@ -887,17 +960,18 @@ function renderTracks(){
       const cv = document.createElement('canvas');
       cv.width = Math.min(w, 32000); cv.height = 78; cv.style.width = w + 'px';
       clip.appendChild(cv);
-      clip.insertAdjacentHTML('beforeend', `<span style="color:${t.color}">${esc(t.name)}</span>`);
+      clip.insertAdjacentHTML('beforeend', `<span style="color:${t.color}">${esc(t.name)}${t.keep ? ' · 🔒 validée' : ''}</span>`);
       lane.appendChild(clip);
       drawWave(cv, t.buffer, t.color);
       dragClip(clip, t);
     }else{
       lane.insertAdjacentHTML('beforeend', `<div class="empty">${t.arm ? 'Prête à enregistrer' : 'Vide · importe un fichier ou arme la piste'}</div>`);
     }
-    lane.addEventListener('click', e => { if(e.target === lane) seek(e.offsetX / S.pps); });
+    lane.addEventListener('click', e => { if(e.target === lane && !S.selMode) seek(e.offsetX / S.pps); });
     list.appendChild(row);
   });
   renderQuick();
+  drawSel();
 }
 function drawWave(cv, buf, color){
   const g = cv.getContext('2d'), w = cv.width, h = cv.height;
@@ -928,7 +1002,7 @@ function drawRuler(cv){
 }
 function dragClip(clip, t){
   let sx, so, moved;
-  clip.addEventListener('pointerdown', e => { if(S.recording || isLocked(t)) return; sx = e.clientX; so = t.offset; moved = false; clip.setPointerCapture(e.pointerId); });
+  clip.addEventListener('pointerdown', e => { if(S.recording || isLocked(t) || S.selMode || t.keep) return; sx = e.clientX; so = t.offset; moved = false; clip.setPointerCapture(e.pointerId); });
   clip.addEventListener('pointermove', e => {
     if(sx === undefined) return;
     const dx = e.clientX - sx;
@@ -950,12 +1024,27 @@ let importFor = null, delArm = null;
 list.addEventListener('click', e => {
   const el = e.target.closest('[data-act]'); if(!el) return;
   const t = trackById(el.closest('.row').dataset.id), act = el.dataset.act;
-  if(['arm', 'import', 'del'].includes(act) && isLocked(t)){ lockToast(t); return; }
+  if(['arm', 'import', 'del', 'keep', 'color', 'setcolor'].includes(act) && isLocked(t)){ lockToast(t); return; }
+  if(act === 'color'){ colorOpen = colorOpen === t.id ? null : t.id; renderTracks(); return; }
+  if(act === 'setcolor'){
+    pushUndo('la couleur de la piste');
+    t.color = el.dataset.c; colorOpen = null;
+    renderTracks(); if(!$('#vMix').hidden) renderMix(); scheduleSave(); return;
+  }
+  if(['arm', 'import', 'del'].includes(act) && t.keep){ keepToast(); return; }
+  if(act === 'keep'){
+    pushUndo(t.keep ? 'le déverrouillage de la prise' : 'le verrouillage de la prise');
+    t.keep = !t.keep; if(t.keep) t.arm = false;
+    renderTracks(); scheduleSave();
+    toast(t.keep ? '🔒 Prise de « ' + t.name + ' » verrouillée : plus de réenregistrement, de coupe ni de déplacement possible.' : '🔓 Prise de « ' + t.name + ' » déverrouillée.');
+    return;
+  }
   if(act === 'arm'){ if(S.recording) return; const v = !t.arm; S.tracks.forEach(x => x.arm = false); t.arm = v; renderTracks(); }
   if(act === 'mute' || act === 'solo') pushUndo(act === 'mute' ? 'le muet' : 'le solo');
   if(act === 'mute'){ t.mute = !t.mute; el.setAttribute('aria-pressed', t.mute); applyMix(); }
   if(act === 'solo'){ t.solo = !t.solo; el.setAttribute('aria-pressed', t.solo); applyMix(); }
   if(act === 'import'){ importFor = t; $('#file').click(); }
+  if(act === 'dup'){ dupTrack(t); return; }
   if(act === 'del'){
     if(delArm !== t){
       delArm = t; el.classList.add('confirm'); el.textContent = 'Sûr ?';
@@ -984,6 +1073,7 @@ list.addEventListener('change', e => {
   const el = e.target; if(el.dataset.act !== 'take') return;
   const t = trackById(el.closest('.row').dataset.id);
   if(isLocked(t)){ lockToast(t); renderTracks(); return; }
+  if(t.keep){ keepToast(); renderTracks(); return; }
   pushUndo('le changement de prise');
   t.take = +el.value; t.buffer = t.takes[t.take].buffer; t.offset = t.takes[t.take].offset;
   restart(); renderTracks();
@@ -1158,44 +1248,62 @@ $('#strip').addEventListener('input', e => {
   t.chain.set(t, audible(t), true);
   drawEQ();
 });
-async function fxAction(e, t){
+async function fxDo(t, k, i){
   if(!t) return;
-  if(isLocked(t) && e.target.closest('button')){ lockToast(t); return; }
-  const fb = e.target.closest('.fxbtn'), nb = e.target.closest('.notch button');
-  if((fb && fb.dataset.fx !== 'at') || nb) pushUndo('l\'effet');
-  if(fb){
-    const k = fb.dataset.fx;
-    if(k === 'at'){ await toggleAT(t); return; }
-    t.lv = t.lv || {};
+  if(isLocked(t)){ lockToast(t); return; }
+  if(k === 'at' && t.keep){ keepToast(); return; }
+  if(k === 'at'){
+    if(i === undefined){ await toggleAT(t); refreshFx(); return; }
+    if(isTuned(t)) pushUndo('l\'auto-tune');
+    t.at.speed = AT_SP[i];
+    if(isTuned(t) && !(S.recording && t.arm)) await applyAutotune(t);
+    refreshFx(); scheduleSave(); return;
+  }
+  pushUndo('l\'effet');
+  t.lv = t.lv || {};
+  if(i === undefined){
     if(fxGet(t, k) > 0){ t.lv[k] = nearest(LV[k], fxGet(t, k)); fxSet(t, k, 0); }
     else fxSet(t, k, LV[k][t.lv[k] ?? 1]);
-    t.chain.set(t, audible(t), true); refreshFx(); return;
-  }
-  if(nb){
-    const k = nb.parentElement.dataset.fx, i = +nb.dataset.l;
-    if(k === 'at'){ t.at.speed = AT_SP[i]; if(isTuned(t) && !(S.recording && t.arm)) await applyAutotune(t); else refreshFx(); return; }
-    fxSet(t, k, LV[k][i]); (t.lv = t.lv || {})[k] = i;
-    t.chain.set(t, audible(t), true); refreshFx();
-  }
+  } else { fxSet(t, k, LV[k][i]); t.lv[k] = i; }
+  t.chain.set(t, audible(t), true); refreshFx(); scheduleSave();
+}
+async function fxAction(e, t){
+  if(!t) return;
+  const fb = e.target.closest('.fxbtn'), nb = e.target.closest('.notch button');
+  if(fb) return fxDo(t, fb.dataset.fx);
+  if(nb) return fxDo(t, nb.parentElement.dataset.fx, +nb.dataset.l);
 }
 function refreshFx(){ if(!$('#vMix').hidden) renderMix(); else renderQuick(); }
 const quickTrack = () => S.tracks.find(x => x.arm) || selTrack();
-function renderQuick(){
-  const q = $('#quick'), t = quickTrack();
-  if(!t){ q.innerHTML = ''; return; }
-  const on = isTuned(t) || !!t.atOn, ai = nearest(AT_SP, t.at.speed);
-  q.innerHTML = (isLocked(t) ? '<fieldset class="lk" disabled>' : '<fieldset class="lk">') + `<div class="qhead"><span>Effets en direct</span>${isLocked(t) ? '<span>🔒 ' + esc(t.ownerName) + '</span>' : ''}<b style="color:${t.color}">${esc(t.name)}</b>${S.recording ? '<span class="qrec">● en prise</span>' : ''}</div>
-    <div class="qrow">${fxRowHTML(t, 'rev', 'Reverb')}${fxRowHTML(t, 'dly', 'Écho')}${fxRowHTML(t, 'dbl', 'Doubler')}
-      <div class="fxrow"><button class="fxbtn" data-fx="at" aria-pressed="${on}">Auto-tune</button>
-      ${on ? `<div class="notch" data-fx="at" role="group" aria-label="Style d'auto-tune">${AT_N.map((n, i) => `<button data-l="${i}" aria-pressed="${i === ai}">${n}</button>`).join('')}</div>` : ''}</div>
-    </div></fieldset>`;
+/* Effets propres à chaque piste, directement dans la piste */
+const TFX_NAMES = { rev: 'Reverb', dly: 'Écho', dbl: 'Doubler', at: 'Auto-tune', vr: 'Sans voix' };
+const tfxKeys = t => t.preset === 'instru' ? ['vr'] : ['rev', 'dly', 'dbl', 'at'];
+const tfxOn = (t, k) => k === 'at' ? (isTuned(t) || !!t.atOn) : fxGet(t, k) > 0;
+function fxZoneHTML(t){
+  const lk = isLocked(t);
+  let h = '<div class="fxchips">' + tfxKeys(t).map(k => {
+    const open = doseOpen && doseOpen.id === t.id && doseOpen.k === k;
+    return `<button class="fxc${open ? ' open' : ''}" data-tfx="${k}" aria-pressed="${tfxOn(t, k)}" ${lk ? 'disabled' : ''}>${TFX_NAMES[k]}</button>`;
+  }).join('') + '</div>';
+  if(!lk && doseOpen && doseOpen.id === t.id && tfxOn(t, doseOpen.k)){
+    const k = doseOpen.k, names = k === 'at' ? AT_N : LVN[k];
+    const cur = k === 'at' ? nearest(AT_SP, t.at.speed) : nearest(LV[k], fxGet(t, k));
+    h += `<div class="dose" data-tfx="${k}" role="group" aria-label="Dose de ${TFX_NAMES[k]}">${names.map((n, i) => `<button data-l="${i}" aria-pressed="${i === cur}">${n}</button>`).join('')}<button class="off" data-l="off" aria-label="Couper ${TFX_NAMES[k]}">✕ Couper</button></div>`;
+  }
+  return h;
 }
+function updRowFx(t){
+  const z = document.querySelector(`.row[data-id="${t.id}"] .fxzone`);
+  if(z) z.innerHTML = fxZoneHTML(t);
+}
+function renderQuick(){ S.tracks.forEach(updRowFx); }
 $('#quick').addEventListener('click', e => fxAction(e, quickTrack()));
 $('#strip').addEventListener('click', e => fxAction(e, selTrack()));
 
 $('#strip').addEventListener('change', e => {
   const t0 = selTrack();
   if(isLocked(t0)) return;
+  if(t0.keep && (e.target.id === 'atKey' || e.target.id === 'atScale')){ keepToast(); renderMix(); return; }
   if(e.target.id === 'atKey' || e.target.id === 'atScale') pushUndo('la tonalité');
   if(e.target.id === 'atKey'){ t0.at.key = +e.target.value; t0.at.auto = false; if(isTuned(t0)) applyAutotune(t0); return; }
   if(e.target.id === 'atScale'){ t0.at.scale = e.target.value; t0.at.auto = false; if(isTuned(t0)) applyAutotune(t0); return; }
@@ -1916,9 +2024,10 @@ async function saveSession(){
   try{
     if(!sess.id){ sess.id = uid('s'); sess.created = Date.now(); store.set('sessId', sess.id); }
     if(!sess.name) sess.name = defaultSessName();
+    showSessTitle();
     const tracks = S.tracks.map(t => ({
       name: t.name, color: t.color, preset: t.preset, fx: t.fx, vr: t.vr, vol: t.vol, pan: t.pan, mute: t.mute, solo: t.solo,
-      uid: t.uid, owner: t.owner, ownerName: t.ownerName, take: t.take, trim: t.trim, atOn: t.atOn, at: t.at, lv: t.lv, vp: t.vp, adapted: t.adapted, semi: t.semi, bpmOrig: t.bpmOrig, origTake: t.origTake,
+      uid: t.uid, owner: t.owner, ownerName: t.ownerName, keep: !!t.keep, take: t.take, trim: t.trim, atOn: t.atOn, at: t.at, lv: t.lv, vp: t.vp, adapted: t.adapted, semi: t.semi, bpmOrig: t.bpmOrig, origTake: t.origTake,
       takes: t.takes.map(k => ({ aid: bufAid(k.buffer), offset: k.offset, tuned: k.tuned, src: k.src, xf: k.xf, punch: k.punch }))
     }));
     for(const t of S.tracks) for(const k of t.takes){
@@ -1946,7 +2055,7 @@ async function loadSession(id){
   undoStack.length = 0; updUndo();
   for(const tr of rec.tracks){
     const t = addTrack(tr.name, FX[tr.preset] ? tr.preset : 'neutre'); t.preset = tr.preset;
-    Object.assign(t, { uid: tr.uid || t.uid, owner: tr.owner || null, ownerName: tr.ownerName || '', color: tr.color, fx: { ...FX.neutre, ...tr.fx }, vr: tr.vr || 0, vol: tr.vol, pan: tr.pan, mute: tr.mute, solo: tr.solo,
+    Object.assign(t, { keep: !!tr.keep, uid: tr.uid || t.uid, owner: tr.owner || null, ownerName: tr.ownerName || '', color: tr.color, fx: { ...FX.neutre, ...tr.fx }, vr: tr.vr || 0, vol: tr.vol, pan: tr.pan, mute: tr.mute, solo: tr.solo,
       trim: tr.trim, atOn: tr.atOn, at: { ...t.at, ...tr.at }, lv: tr.lv, vp: tr.vp, adapted: tr.adapted, semi: tr.semi, bpmOrig: tr.bpmOrig, origTake: tr.origTake });
     t.takes = [];
     for(const k of tr.takes){
@@ -2012,6 +2121,7 @@ function linkLabel(link){
   return i < 0 ? '' : (p.title || 'Sans titre') + ' · ' + (i + 1) + '. ' + (p.tracks[i].title || 'Titre ' + (i + 1));
 }
 function renderSessBar(){
+  showSessTitle();
   $('#sessName').value = sess.name || '';
   let html = '<option value="">Lier à un titre de projet…</option>';
   projects.forEach(p => p.tracks.forEach((t, i) => {
@@ -2043,7 +2153,7 @@ $('#sessList').addEventListener('click', e => {
 });
 $('#sessListBtn').onclick = () => { const b = $('#sessList'); b.hidden = !b.hidden; $('#sessListBtn').setAttribute('aria-expanded', !b.hidden); if(!b.hidden) renderSessList(); };
 $('#sessNew').onclick = newSession;
-$('#sessName').addEventListener('input', e => { sess.name = e.target.value; scheduleSave(); });
+$('#sessName').addEventListener('input', e => { sess.name = e.target.value; showSessTitle(); scheduleSave(); });
 $('#sessLink').addEventListener('change', e => { sess.link = e.target.value; scheduleSave(); if(!$('#vProjets').hidden) renderProjets(); });
 document.addEventListener('visibilitychange', () => { if(document.hidden){ clearTimeout(saveTimer); saveSession(); } });
 async function startSessions(){
@@ -2088,6 +2198,7 @@ function drawLoopBand(){
   if(S.loop.on){ el.style.left = (HDR + S.loop.start * S.pps) + 'px'; el.style.width = (S.loop.bars * barLen() * S.pps) + 'px'; }
 }
 function renderLoopUI(){
+  const lp = $('#loopPill'); if(lp){ lp.hidden = !S.loop.on; lp.textContent = '⟳ Boucle ' + S.loop.bars + ' mes. ✕'; }
   $('#loopBtn').setAttribute('aria-pressed', S.loop.on);
   $('#loopBars').hidden = !S.loop.on;
   $('#loopBars').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', +b.dataset.b === S.loop.bars));
@@ -2206,6 +2317,7 @@ async function transformInstru(t){
 $('#strip').addEventListener('click', async e => {
   const b = e.target.closest('.stepper button'); if(!b) return;
   const t = selTrack(); if(!t || busy) return;
+  if(t.keep){ keepToast(); return; }
   const kind = b.parentElement.dataset.xf, d = +b.dataset.d;
   pushUndo(kind === 'semi' ? 'la tonalité de l\'instru' : 'la vitesse de l\'instru');
   if(t.origTake == null){ t.origTake = t.take; t.bpmOrig = t.bpmOrig || S.bpm; t.semi = t.semi || 0; }
@@ -2478,6 +2590,205 @@ $('#sessFile').addEventListener('change', async e => {
   }catch(err){ toast('Session illisible : ' + err.message); sessReady = true; }
   setBusy(false);
 });
+
+/* ---------- Dupliquer une piste ---------- */
+function keepToast(){ toast('🔒 Prise verrouillée : touche le cadenas de la piste pour la déverrouiller.'); }
+function dupTrack(t){
+  if(S.recording) return;
+  pushUndo('la duplication de piste');
+  claimNext = true;
+  const c = addTrack(t.name + ' (copie)', FX[t.preset] ? t.preset : 'neutre');
+  S.tracks.pop(); S.tracks.splice(S.tracks.indexOf(t) + 1, 0, c);
+  const k = t.takes[t.take];
+  Object.assign(c, { preset: t.preset, fx: { ...t.fx }, vr: t.vr, vol: t.vol, pan: t.pan, trim: t.trim, at: { ...t.at }, atOn: t.atOn,
+    lv: t.lv ? { ...t.lv } : undefined, vp: t.vp, adapted: t.adapted });
+  if(k){ c.takes = [{ ...k, src: undefined }]; c.take = 0; c.buffer = k.buffer; c.offset = k.offset; }
+  c.chain.set(c, audible(c), true);
+  renderTracks(); toast('Piste « ' + t.name + ' » dupliquée.');
+}
+
+/* ---------- Sélection d'une bande : supprimer, déplacer, copier vers une autre piste ---------- */
+function bufSlice(buf, s0, s1){
+  const out = ctx.createBuffer(buf.numberOfChannels, Math.max(1, s1 - s0), buf.sampleRate);
+  for(let c = 0; c < buf.numberOfChannels; c++) out.copyToChannel(buf.getChannelData(c).subarray(s0, s1), c);
+  return out;
+}
+function resampleTo(buf, sr){
+  if(buf.sampleRate === sr) return buf;
+  const r = buf.sampleRate / sr, n = Math.floor(buf.length / r), out = ctx.createBuffer(buf.numberOfChannels, n, sr);
+  for(let c = 0; c < buf.numberOfChannels; c++){
+    const a = buf.getChannelData(c), d = out.getChannelData(c);
+    for(let i = 0; i < n; i++){ const x = i * r, j = Math.floor(x), f = x - j; d[i] = (a[j] || 0) * (1 - f) + (a[j + 1] || 0) * f; }
+  }
+  return out;
+}
+function rangeIdx(t, a, b){
+  const sr = t.buffer.sampleRate, n = t.buffer.length;
+  return [clamp(Math.round((a - t.offset) * sr), 0, n), clamp(Math.round((b - t.offset) * sr), 0, n)];
+}
+function extractRange(t, a, b){
+  if(!t.buffer) return null;
+  const sr = t.buffer.sampleRate, [s0, s1] = rangeIdx(t, a, b);
+  if(s1 - s0 < sr * 0.02) return null;
+  const out = bufSlice(t.buffer, s0, s1), F = Math.min(Math.round(sr * 0.005), (s1 - s0) >> 2);
+  for(let c = 0; c < out.numberOfChannels; c++){ const d = out.getChannelData(c), L = d.length; for(let i = 0; i < F; i++){ d[i] *= i / F; d[L - 1 - i] *= i / F; } }
+  return { buf: out, start: t.offset + s0 / sr };
+}
+function silenceRange(t, a, b){
+  const buf = t.buffer, sr = buf.sampleRate, n = buf.length, F = Math.round(sr * 0.005), [s0, s1] = rangeIdx(t, a, b);
+  const out = ctx.createBuffer(buf.numberOfChannels, n, sr);
+  for(let c = 0; c < buf.numberOfChannels; c++){
+    const d = out.getChannelData(c); d.set(buf.getChannelData(c));
+    d.fill(0, s0, s1);
+    for(let k = 0; k < F; k++){ if(s0 - 1 - k >= 0) d[s0 - 1 - k] *= k / F; if(s1 + k < n) d[s1 + k] *= k / F; }
+  }
+  return out;
+}
+function overwriteAt(t, seg, at){
+  if(!t.buffer) return { buffer: seg, offset: at };
+  const base = t.buffer, sr = base.sampleRate; seg = resampleTo(seg, sr);
+  const s0 = Math.min(t.offset, at), e0 = Math.max(t.offset + base.duration, at + seg.duration);
+  const nch = Math.max(base.numberOfChannels, seg.numberOfChannels), out = ctx.createBuffer(nch, Math.ceil((e0 - s0) * sr) + 1, sr);
+  const B0 = Math.round((t.offset - s0) * sr), P = Math.round((at - s0) * sr), L = seg.length, F = Math.min(Math.round(sr * 0.005), L >> 2);
+  for(let c = 0; c < nch; c++){
+    const o = out.getChannelData(c), g = seg.getChannelData(Math.min(c, seg.numberOfChannels - 1));
+    o.set(base.getChannelData(Math.min(c, base.numberOfChannels - 1)), B0);
+    for(let i = 0; i < L && P + i < o.length; i++){ const w = i < F ? i / F : i > L - F ? (L - i) / F : 1; o[P + i] = o[P + i] * (1 - w) + g[i] * w; }
+  }
+  return { buffer: out, offset: s0 };
+}
+function setTrackBuf(t, buf, off){
+  if(t.take < 0 || !t.takes[t.take]){ t.takes = [{ buffer: buf, offset: off }]; t.take = 0; }
+  else t.takes[t.take] = { ...t.takes[t.take], buffer: buf, offset: off };
+  t.buffer = buf; t.offset = off; claim(t);
+}
+function drawSel(){
+  const band = $('#selBand'), bar = $('#selBar');
+  const row = bandSel && document.querySelector(`.row[data-id="${bandSel.tid}"]`);
+  if(!S.selMode || !bandSel || !row){ if(!row) bandSel = null; band.hidden = true; bar.hidden = true; return; }
+  band.hidden = false; band.style.transform = '';
+  band.style.left = (HDR + bandSel.a * S.pps) + 'px'; band.style.width = Math.max(3, (bandSel.b - bandSel.a) * S.pps) + 'px';
+  band.style.top = row.offsetTop + 'px'; band.style.height = row.offsetHeight + 'px';
+  const ok = bandSel.b - bandSel.a >= 0.05;
+  bar.hidden = !ok; if(!ok) return;
+  const src = trackById(bandSel.tid);
+  $('#selInfo').textContent = 'Bande ' + fmt(bandSel.a) + ' → ' + fmt(bandSel.b) + ' (' + (bandSel.b - bandSel.a).toFixed(1) + ' s) · ' + (src?.name || '');
+  const cur = $('#selTo').value;
+  $('#selTo').innerHTML = S.tracks.filter(t => !isLocked(t) && !t.keep).map(t => `<option value="${t.id}">Vers ${esc(t.name)}${t === src ? ' (même piste)' : ''}</option>`).join('');
+  const idx = S.tracks.indexOf(src), next = S.tracks.slice(idx + 1).find(t => !isLocked(t) && !t.keep) || S.tracks.slice(0, idx).reverse().find(t => !isLocked(t) && !t.keep) || src;
+  $('#selTo').value = (cur && S.tracks.some(t => String(t.id) === cur && !isLocked(t) && !t.keep)) ? cur : String(next.id);
+}
+function bandMove(src, tgt, a, b, at, copy){
+  if(!src || !tgt) return;
+  if(isLocked(tgt)){ lockToast(tgt); drawSel(); return; }
+  if(tgt.keep || (!copy && src.keep)){ keepToast(); drawSel(); return; }
+  const ex = extractRange(src, a, b);
+  if(!ex){ toast('Il n\'y a pas de son dans cette bande.'); drawSel(); return; }
+  pushUndo(copy ? 'la copie de la bande' : 'le déplacement de la bande');
+  const was = S.playing; if(was) pause();
+  if(!copy) setTrackBuf(src, silenceRange(src, a, b), src.offset);
+  const at2 = Math.max(0, at + (ex.start - a));
+  const r = overwriteAt(tgt, ex.buf, at2); setTrackBuf(tgt, r.buffer, r.offset);
+  bandSel = { tid: tgt.id, a: at2, b: at2 + ex.buf.duration };
+  renderTracks(); if(was) play();
+  toast((copy ? 'Bande copiée' : 'Bande déplacée') + (tgt !== src ? ' sur « ' + tgt.name + ' »' : '') + ' à ' + fmt(at2) + '.');
+}
+$('#selBtn').onclick = () => {
+  if(S.recording) return;
+  S.selMode = !S.selMode;
+  $('#selBtn').setAttribute('aria-pressed', S.selMode);
+  $('#inner').classList.toggle('selmode', S.selMode);
+  if(!S.selMode) bandSel = null;
+  drawSel();
+  if(S.selMode) toast('Mode sélection : glisse le doigt sur une piste pour sélectionner une bande.');
+};
+list.addEventListener('pointerdown', e => {
+  if(!S.selMode || S.recording) return;
+  const lane = e.target.closest('.lane'); if(!lane) return;
+  const t = trackById(lane.closest('.row').dataset.id); if(!t) return;
+  if(isLocked(t)){ lockToast(t); return; }
+  if(t.keep){ keepToast(); return; }
+  e.preventDefault();
+  const r = lane.getBoundingClientRect(), x0 = Math.max(0, (e.clientX - r.left) / S.pps);
+  selDrag = { r, x0 };
+  bandSel = { tid: t.id, a: x0, b: x0 }; drawSel();
+  try{ lane.setPointerCapture(e.pointerId); }catch(err){}
+});
+list.addEventListener('pointermove', e => {
+  if(!selDrag) return;
+  const x = Math.max(0, (e.clientX - selDrag.r.left) / S.pps);
+  bandSel.a = Math.min(selDrag.x0, x); bandSel.b = Math.max(selDrag.x0, x); drawSel();
+});
+const endSel = () => { if(!selDrag) return; selDrag = null; if(bandSel && bandSel.b - bandSel.a < 0.05) bandSel = null; drawSel(); };
+list.addEventListener('pointerup', endSel);
+list.addEventListener('pointercancel', endSel);
+const bandEl = $('#selBand');
+bandEl.addEventListener('pointerdown', e => {
+  if(!bandSel || S.recording) return;
+  e.preventDefault(); e.stopPropagation();
+  bandDrag = { x: e.clientX, y: e.clientY, moved: false };
+  try{ bandEl.setPointerCapture(e.pointerId); }catch(err){}
+});
+bandEl.addEventListener('pointermove', e => {
+  if(!bandDrag) return;
+  const dx = e.clientX - bandDrag.x, dy = e.clientY - bandDrag.y;
+  if(Math.abs(dx) > 4 || Math.abs(dy) > 4) bandDrag.moved = true;
+  if(bandDrag.moved) bandEl.style.transform = `translate(${dx}px, ${dy}px)`;
+});
+const endBand = e => {
+  if(!bandDrag) return;
+  const d = bandDrag; bandDrag = null;
+  if(!d.moved || e.type === 'pointercancel'){ drawSel(); return; }
+  const rows = [...document.querySelectorAll('#list .row')];
+  let row = rows.find(r => { const b = r.getBoundingClientRect(); return e.clientY >= b.top && e.clientY < b.bottom; });
+  if(!row) row = e.clientY < rows[0].getBoundingClientRect().top ? rows[0] : rows[rows.length - 1];
+  const src = trackById(bandSel.tid), tgt = trackById(row.dataset.id);
+  bandMove(src, tgt, bandSel.a, bandSel.b, Math.max(0, bandSel.a + (e.clientX - d.x) / S.pps), false);
+};
+bandEl.addEventListener('pointerup', endBand);
+bandEl.addEventListener('pointercancel', endBand);
+$('#selDel').onclick = () => {
+  const t = bandSel && trackById(bandSel.tid); if(!t?.buffer) return;
+  if(isLocked(t)){ lockToast(t); return; }
+  if(t.keep){ keepToast(); return; }
+  pushUndo('la suppression de la bande');
+  const was = S.playing; if(was) pause();
+  setTrackBuf(t, silenceRange(t, bandSel.a, bandSel.b), t.offset);
+  bandSel = null; renderTracks(); if(was) play();
+  toast('Bande supprimée.');
+};
+$('#selMoveTo').onclick = () => { if(bandSel) bandMove(trackById(bandSel.tid), trackById($('#selTo').value), bandSel.a, bandSel.b, bandSel.a, false); };
+$('#selCopyTo').onclick = () => { if(bandSel) bandMove(trackById(bandSel.tid), trackById($('#selTo').value), bandSel.a, bandSel.b, bandSel.a, true); };
+$('#selClear').onclick = () => { bandSel = null; drawSel(); };
+
+/* ---------- Page principale : effets par piste, menu « + » ---------- */
+function showSessTitle(){ const h = $('#sessTitle'); if(h) h.textContent = sess.name || 'Nouvelle session'; }
+list.addEventListener('click', async e => {
+  const c = e.target.closest('.fxc'), d = e.target.closest('.dose button');
+  if(!c && !d) return;
+  const t = trackById(e.target.closest('.row').dataset.id); if(!t) return;
+  if(isLocked(t)){ lockToast(t); return; }
+  if(c){
+    const k = c.dataset.tfx;
+    if(!tfxOn(t, k)){ doseOpen = { id: t.id, k }; await fxDo(t, k); }
+    else if(doseOpen && doseOpen.id === t.id && doseOpen.k === k) doseOpen = null;
+    else doseOpen = { id: t.id, k };
+    updRowFx(t); return;
+  }
+  const k = d.parentElement.dataset.tfx, l = d.dataset.l;
+  if(l === 'off'){ doseOpen = null; await fxDo(t, k); }
+  else await fxDo(t, k, +l);
+  updRowFx(t);
+});
+function closePlus(){ $('#plusMenu').hidden = true; $('#plusBtn').setAttribute('aria-expanded', 'false'); }
+$('#plusBtn').onclick = () => {
+  const m = $('#plusMenu'); m.hidden = !m.hidden;
+  $('#plusBtn').setAttribute('aria-expanded', !m.hidden);
+  if(!m.hidden) renderSessBar();
+};
+$('#plusMenu').addEventListener('click', e => { if(e.target.closest('#addTrack, #mkAdd, #sessNew, [data-open]')) setTimeout(closePlus, 0); });
+$('#loopPill').onclick = () => { if(S.recording) return; S.loop.on = false; renderLoopUI(); };
+showSessTitle();
 
 /* ---------- Vues & interface ---------- */
 document.querySelector('.nav').addEventListener('click', e => {
