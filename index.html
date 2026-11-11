@@ -100,7 +100,7 @@ button{cursor:pointer}
 .l3 .sbtn{height:30px;padding:0 9px;font-size:12px}
 .l3 select{height:30px;background:var(--raise);border:1px solid var(--line);border-radius:5px;font-size:11px;max-width:74px}
 .del.confirm{background:var(--rec);border-color:var(--rec);color:#fff}
-.clip{position:absolute;top:8px;bottom:8px;border-radius:6px;overflow:hidden;cursor:grab;touch-action:none;border:1px solid;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.clip{position:absolute;top:8px;bottom:8px;border-radius:6px;overflow:hidden;cursor:pointer;touch-action:pan-x pan-y;border:1px solid;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .clip.pressing{outline:3px solid var(--accent);outline-offset:-3px;transition:outline-color .4s}
 .clip canvas{display:block;height:100%;pointer-events:none}
 .clip span{position:absolute;left:6px;top:3px;font-size:10px;font-weight:700;opacity:.85;pointer-events:none;white-space:nowrap}
@@ -317,7 +317,7 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
     <span class="grp" id="outInfo"></span>
     <button class="toggle" id="tMon" aria-pressed="false" title="Entendre ta voix avec les effets pendant la prise (casque obligatoire)">Retour voix</button>
     <button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-    <span class="grp" id="ver">Version 25</span>
+    <span class="grp" id="ver">Version 26</span>
     <span class="grp" id="latInfo" title="Le retard du téléphone est mesuré et corrigé tout seul à chaque prise">Calage auto</span>
   </div>
 </div>
@@ -348,6 +348,7 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
       <button class="sbtn" id="selListen">▶ Écouter</button>
       <button class="sbtn" id="selStart">Début ici</button>
       <button class="sbtn" id="selEnd">Fin ici</button>
+      <button class="sbtn" id="selAll">Toute la prise</button>
     </div>
     <div class="selrow">
       <button class="sbtn del" id="selDel">🗑 Supprimer</button>
@@ -515,10 +516,10 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 </section>
 
 <div class="help">
-  StudioXel · version 25.
+  StudioXel · version 26.
   Touche la pastille de couleur à gauche du nom d'une piste pour changer sa couleur.
   🔓 sur une piste verrouille une prise réussie : plus de réenregistrement, de coupe ni de déplacement par erreur.
-  ⧉ duplique une piste. Appui long sur une prise : la phrase est sélectionnée pour la supprimer, la déplacer ou la copier.
+  Glisse le doigt pour avancer dans la timeline. Touche une prise pour placer la lecture. Appui long : la phrase est sélectionnée pour la supprimer, la déplacer ou la copier. ⧉ duplique une piste.
   Chaque piste a ses effets : touche Reverb, Écho, Doubler ou Auto-tune pour les allumer, retouche-les pour doser.
   Arme une piste avec R, puis REC. Tout se sauvegarde tout seul dans le téléphone. Le « + » regroupe pistes, repères, boucle et sessions.
 </div>
@@ -1053,42 +1054,34 @@ function drawRuler(cv){
   S.markers.forEach(m => { const x = Math.round(m.t * S.pps); g.fillRect(x, 0, 2, h); g.fillText(m.name, x + 4, h - 3); });
 }
 function dragClip(clip, t){
-  let sx, so, moved, lpTimer = null, lpDone = false;
+  /* touche courte = placer la lecture · appui long = sélectionner la phrase · glisser = faire défiler */
+  let sx, sy, lpTimer = null, lpDone = false, moved = false;
   const cancelLp = () => { if(lpTimer){ clearTimeout(lpTimer); lpTimer = null; } clip.classList.remove('pressing'); };
   clip.addEventListener('contextmenu', e => e.preventDefault());
   clip.addEventListener('pointerdown', e => {
     if(S.recording) return;
-    lpDone = false; sx = e.clientX; so = t.offset; moved = false;
-    try{ clip.setPointerCapture(e.pointerId); }catch(err){}
+    sx = e.clientX; sy = e.clientY; lpDone = false; moved = false;
     const r = clip.parentElement.getBoundingClientRect(), at = (e.clientX - r.left) / S.pps;
-    clip.classList.add('pressing');
     lpTimer = setTimeout(() => {
-      lpTimer = null; lpDone = true; clip.classList.remove('pressing');
+      lpTimer = null; if(moved) return;
+      lpDone = true; clip.classList.remove('pressing');
       if(isLocked(t)){ lockToast(t); return; }
       if(t.keep){ keepToast(); return; }
       selectPhrase(t, at);
     }, 450);
+    setTimeout(() => { if(lpTimer && !moved) clip.classList.add('pressing'); }, 150);
   });
   clip.addEventListener('pointermove', e => {
     if(sx === undefined) return;
-    const dx = e.clientX - sx;
-    if(Math.abs(dx) > 8) cancelLp();
-    if(lpDone || isLocked(t) || t.keep) return;
-    if(Math.abs(dx) > 8 && !moved){ moved = true; pushUndo('le déplacement du clip'); }
-    if(!moved) return;
-    t.offset = Math.max(0, so + dx / S.pps);
-    clip.parentElement.querySelectorAll('.clip').forEach(c => { c.style.left = ((t.offset + (+c.dataset.rel || 0)) * S.pps) + 'px'; });
+    if(Math.abs(e.clientX - sx) > 10 || Math.abs(e.clientY - sy) > 10){ moved = true; cancelLp(); }
   });
-  const up = e => {
+  clip.addEventListener('pointerup', e => {
     if(sx === undefined) return;
     cancelLp();
-    if(lpDone){ sx = undefined; return; }
-    if(!moved){ if(e.type === 'pointerup'){ const r = clip.parentElement.getBoundingClientRect(); seek((e.clientX - r.left) / S.pps); } }
-    else { if(t.takes[t.take]) t.takes[t.take].offset = t.offset; restart(); }
+    if(!lpDone && !moved){ const r = clip.parentElement.getBoundingClientRect(); seek((e.clientX - r.left) / S.pps); }
     sx = undefined;
-  };
-  clip.addEventListener('pointerup', up);
-  clip.addEventListener('pointercancel', up);
+  });
+  clip.addEventListener('pointercancel', () => { moved = true; cancelLp(); sx = undefined; });
 }
 
 const list = $('#list');
@@ -2992,6 +2985,11 @@ function selectPhrase(t, at){
 }
 $('#selStart').onclick = () => { if(!bandSel) return; const p = now(); if(p >= bandSel.b - 0.05){ toast('Place la lecture avant la fin de la sélection.'); return; } bandSel.a = Math.max(0, p); drawSel(); };
 $('#selEnd').onclick = () => { if(!bandSel) return; const p = now(); if(p <= bandSel.a + 0.05){ toast('Place la lecture après le début de la sélection.'); return; } bandSel.b = p; drawSel(); };
+$('#selAll').onclick = () => {
+  const t = bandSel && trackById(bandSel.tid); if(!t?.buffer) return;
+  bandSel.a = t.offset; bandSel.b = t.offset + t.buffer.duration; drawSel();
+  toast('Toute la prise est sélectionnée : glisse la bande pour la déplacer.');
+};
 $('#selListen').onclick = () => {
   if(!bandSel || S.recording) return;
   if(S.playing) pause();
@@ -3075,6 +3073,8 @@ window.addEventListener('resize', () => { if(!$('#vMix').hidden) drawEQ(); });
 
 const peakOf = (an, buf) => { an.getFloatTimeDomainData(buf); let p = 0; for(let i = 0; i < buf.length; i++){ const a = Math.abs(buf[i]); if(a > p) p = a; } return p; };
 const sc = $('#scroller'), ph = $('#playhead'), clock = $('#clock');
+let userScrollAt = 0;
+['touchstart', 'touchmove', 'wheel', 'pointerdown'].forEach(ev => sc.addEventListener(ev, () => { userScrollAt = Date.now(); }, { passive: true }));
 let outHold = 0;
 function loop(){
   if(S.listenEnd != null){ if(!S.playing || S.recording) S.listenEnd = null; else if(now() >= S.listenEnd){ const a = bandSel ? bandSel.a : S.listenEnd; S.listenEnd = null; pause(); S.pos = a; } }
@@ -3086,7 +3086,7 @@ function loop(){
   const p = now(), x = HDR + p * S.pps;
   ph.style.left = x + 'px';
   clock.textContent = fmt(p);
-  if(S.playing && !$('#vPistes').hidden){
+  if(S.playing && !$('#vPistes').hidden && Date.now() - userScrollAt > 2500){
     if(x > sc.scrollLeft + sc.clientWidth - 40 || x < sc.scrollLeft + HDR) sc.scrollLeft = x - HDR - 40;
   }
   if(micAnalyser) $('#meter').style.width = Math.min(100, peakOf(micAnalyser, micData) * 110) + '%';
