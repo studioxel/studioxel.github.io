@@ -305,6 +305,24 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
 .reelrec{position:fixed;inset:0;z-index:40;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:max(12px,env(safe-area-inset-top,0px)) 12px max(12px,env(safe-area-inset-bottom,0px))}
 #rrBox canvas{display:block;height:min(76vh,calc((100vw - 24px) * 16 / 9));width:auto;max-width:100%;aspect-ratio:9/16;border-radius:12px}
 .rrtxt{color:#e7eaf0;font:700 15px var(--display);text-align:center;max-width:90vw}
+.reelstudio{display:grid;grid-template-columns:150px minmax(0,1fr);gap:14px;align-items:start}
+@media (max-width:520px){.reelstudio{grid-template-columns:minmax(0,1fr)}.rsprev{flex-direction:row;align-items:flex-end;justify-content:center}#rsCanvas{width:140px}}
+.rsprev{display:flex;flex-direction:column;gap:8px;align-items:center}
+#rsCanvas{width:150px;max-width:100%;aspect-ratio:9/16;border-radius:12px;background:#000;border:1px solid var(--line)}
+.rscol{display:flex;flex-direction:column;gap:10px;min-width:0}
+.rslab{font:800 13px var(--display);color:var(--accent);letter-spacing:.04em}
+.rsgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.rscard{min-height:64px;border-radius:12px;border:1px solid var(--line);background:var(--raise);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-weight:700;font-size:13px;padding:6px}
+.rscard span{font-size:24px;line-height:1}
+.rscard[aria-pressed=true]{border:2px solid var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--raise))}
+.rsscroll{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
+.rsfilt{flex:none;width:76px;border:2px solid transparent;border-radius:10px;background:transparent;padding:2px;display:flex;flex-direction:column;gap:4px;align-items:center;font-size:11px;font-weight:700;color:var(--muted)}
+.rsfilt canvas{width:68px;height:121px;border-radius:8px;background:#000;display:block}
+.rsfilt[aria-pressed=true]{border-color:var(--accent);color:var(--fg)}
+.rschips{display:flex;flex-wrap:wrap;gap:6px}
+.rscustom{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 10px;align-items:center;font-size:12px;color:var(--muted)}
+.rscustom input{width:100%;accent-color:var(--accent)}
+.rsgo{height:52px!important;font-size:17px!important;padding:0 22px!important}
 .help{margin-top:12px;color:var(--muted);font-size:12px;line-height:1.6}
 .help kbd{font:11px var(--mono);border:1px solid var(--line);border-radius:4px;padding:1px 5px;background:var(--raise);color:var(--fg)}
 @media (max-width:480px){.sl,.grrow{grid-template-columns:92px minmax(0,1fr) 58px}}
@@ -334,7 +352,7 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
     <span class="grp" id="outInfo"></span>
     <button class="toggle" id="tMon" aria-pressed="false" title="Entendre ta voix avec les effets pendant la prise (casque obligatoire)">Retour voix</button>
     <button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-    <span class="grp" id="ver">Version 29</span>
+    <span class="grp" id="ver">Version 30</span>
     <span class="grp" id="latInfo" title="Le retard du téléphone est mesuré et corrigé tout seul à chaque prise">Calage auto</span>
   </div>
 </div>
@@ -471,20 +489,37 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
       <button class="sbtn" id="bSaveWav">Enregistrer en WAV</button>
     </div>
     <div class="sec">Reel / TikTok / Shorts</div>
-    <div class="seg" id="reelMode" role="group" aria-label="Fond de la vidéo">
-      <button data-m="app" aria-pressed="false">Vue appli</button>
-      <button data-m="photo" aria-pressed="false">Photo / affiche</button>
-      <button data-m="video" aria-pressed="false">Ma vidéo</button>
-      <button data-m="selfie" aria-pressed="false">Selfie en direct</button>
+    <div class="reelstudio">
+      <div class="rsprev">
+        <canvas id="rsCanvas" width="270" height="480" aria-label="Aperçu de la vidéo"></canvas>
+        <button class="sbtn" id="rsPlay">▶ Aperçu</button>
+      </div>
+      <div class="rscol">
+        <div class="rslab">1 · Le fond</div>
+        <div class="rsgrid" id="reelMode" role="group" aria-label="Fond"></div>
+        <div class="reelpick" id="reelPick"></div>
+        <div class="rslab">2 · Le look</div>
+        <div class="rsscroll" id="reelFilter" role="group" aria-label="Filtre"></div>
+        <div class="rslab">3 · Les effets</div>
+        <div class="rschips" id="reelFx" role="group" aria-label="Effets"></div>
+        <div class="rslab">4 · La durée</div>
+        <div class="seg" id="reelLen" role="group" aria-label="Durée"></div>
+        <div class="rscustom" id="reelCustom" hidden>
+          <label for="rcA">Début</label><input type="range" id="rcA" min="0" max="60" step="0.5" value="0">
+          <label for="rcB">Fin</label><input type="range" id="rcB" min="0" max="60" step="0.5" value="30">
+        </div>
+        <p class="note" id="reelLenInfo"></p>
+        <div class="rslab">5 · Les textes</div>
+        <div class="rschips" id="reelText" role="group" aria-label="Textes"></div>
+      </div>
     </div>
-    <div class="reelpick" id="reelPick"></div>
     <input type="file" id="reelImgFile" accept="image/*" hidden>
     <input type="file" id="reelVidFile" accept="video/*" hidden>
     <div class="btns">
-      <button class="sbtn" id="bVideo">Créer l'extrait (30 s)</button>
+      <button class="sbtn primary rsgo" id="bVideo">🎬 Créer mon Reel</button>
       <button class="sbtn primary" id="bShareVideo" hidden>Partager la vidéo</button>
     </div>
-    <p class="note">Quel que soit le fond, la vidéo est signée StudioXel : petit logo et lien en haut, et l'appli qui tourne en transparence en bas. Tes paroles s'affichent si tu les as calées dans le prompteur. L'extrait part de la position de lecture (ou du début de la boucle).</p>
+    <p class="note">Ta vidéo est toujours signée StudioXel, en discret : petit logo et lien en haut, l'appli qui tourne en transparence en bas.</p>
     <div class="sec">Pour un ingé son</div>
     <p class="note">Chaque piste en WAV avec ses effets, toutes calées au même départ.</p>
     <div class="btns">
@@ -542,7 +577,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 </section>
 
 <div class="help">
-  StudioXel · version 29.
+  StudioXel · version 30.
   Touche la pastille de couleur à gauche du nom d'une piste pour changer sa couleur.
   🔓 sur une piste verrouille une prise réussie : plus de réenregistrement, de coupe ni de déplacement par erreur.
   Glisse le doigt pour avancer dans la timeline. Touche une prise pour placer la lecture. Appui long : la phrase est sélectionnée pour la supprimer, la déplacer ou la copier. ⧉ duplique une piste.
@@ -644,65 +679,94 @@ function makeMasterPre(ac){
   return m;
 }
 function makeChain(ac, b){
+  /* Chaîne d'une piste. Les effets éteints sont débranchés : ils ne coûtent rien au téléphone (sinon le son grésille). */
   const c = {
     input: ac.createGain(), hp: biq(ac, 'highpass', 20, 0.707), low: biq(ac, 'lowshelf', 120),
     mid: biq(ac, 'peaking', 1000, 1), high: biq(ac, 'highshelf', 8000), comp: ac.createDynamicsCompressor(),
     makeup: ac.createGain(), fader: ac.createGain(), panner: ac.createStereoPanner(), rev: ac.createGain(), dly: ac.createGain()
   };
   c.comp.attack.value = 0.005; c.comp.release.value = 0.12; c.comp.knee.value = 6;
-  /* Retrait de voix : on passe en mid/side, on retire le centre au-dessus de ~160 Hz (voix), on garde basse, kick et stéréo */
   c.input.channelCount = 2; c.input.channelCountMode = 'explicit'; c.input.channelInterpretation = 'speakers';
-  const sp = ac.createChannelSplitter(2), mg = ac.createChannelMerger(2);
-  const lm = ac.createGain(), rm = ac.createGain(), ls = ac.createGain(), rs = ac.createGain();
-  lm.gain.value = 0.5; rm.gain.value = 0.5; ls.gain.value = 0.5; rs.gain.value = -0.5;
-  const midN = ac.createGain(), side = ac.createGain(), neg = ac.createGain(), midOut = ac.createGain();
-  neg.gain.value = -1;
-  c.dry = ac.createGain(); c.wet = ac.createGain();
-  const lp1 = biq(ac, 'lowpass', 160, 0.707), lp2 = biq(ac, 'lowpass', 160, 0.707);
-  c.input.connect(sp);
-  sp.connect(lm, 0); sp.connect(ls, 0); sp.connect(rm, 1); sp.connect(rs, 1);
-  lm.connect(midN); rm.connect(midN); ls.connect(side); rs.connect(side);
-  midN.connect(c.dry); c.dry.connect(midOut);
-  midN.connect(lp1); lp1.connect(lp2); lp2.connect(c.wet); c.wet.connect(midOut);
-  midOut.connect(mg, 0, 0); midOut.connect(mg, 0, 1);
-  side.connect(mg, 0, 0); side.connect(neg); neg.connect(mg, 0, 1);
-  mg.connect(c.hp);
-  const vrNodes = [sp, mg, lm, rm, ls, rs, midN, side, neg, midOut, c.dry, c.wet, lp1, lp2];
-  const seq = [c.hp, c.low, c.mid, c.high, c.comp, c.makeup, c.fader, c.panner];
-  for(let i = 0; i < seq.length - 1; i++) seq[i].connect(seq[i + 1]);
-  seq.unshift(c.input);
-  c.panner.connect(b.masterIn);
-  c.panner.connect(c.rev); c.rev.connect(b.revIn);
-  c.panner.connect(c.dly); c.dly.connect(b.dlyIn);
-  /* Doublage : deux copies légèrement décalées et modulées, à gauche et à droite */
-  c.dbl = ac.createGain(); c.dbl.gain.value = 0;
-  const dL = ac.createDelay(0.1), dR = ac.createDelay(0.1); dL.delayTime.value = 0.019; dR.delayTime.value = 0.027;
-  const oL = ac.createOscillator(), oR = ac.createOscillator(), gL = ac.createGain(), gR = ac.createGain();
-  oL.frequency.value = 0.31; oR.frequency.value = 0.23; gL.gain.value = 0.0018; gR.gain.value = 0.0022;
-  oL.connect(gL); gL.connect(dL.delayTime); oR.connect(gR); gR.connect(dR.delayTime); oL.start(0); oR.start(0);
-  const pL = ac.createStereoPanner(), pR = ac.createStereoPanner(); pL.pan.value = -0.85; pR.pan.value = 0.85;
-  const hpD = biq(ac, 'highpass', 200);
-  c.fader.connect(c.dbl); c.dbl.connect(hpD); hpD.connect(dL); hpD.connect(dR); dL.connect(pL); dR.connect(pR);
-  pL.connect(b.masterIn); pR.connect(b.masterIn); pL.connect(c.rev); pR.connect(c.rev);
-  const dblNodes = [c.dbl, dL, dR, oL, oR, gL, gR, pL, pR, hpD];
+  c.hp.connect(c.low); c.low.connect(c.mid); c.mid.connect(c.high);
+  c.makeup.connect(c.fader); c.fader.connect(c.panner); c.panner.connect(b.masterIn);
+  let vrOn = null, compOn = null, revOn = false, dlyOn = false, dblN = null;
+  const safe = f => { try{ f(); }catch(e){} };
+  /* Retrait de voix (mid/side), branché seulement quand il sert */
+  let vr = null;
+  const setVr = on => {
+    if(on === vrOn) return; vrOn = on;
+    safe(() => c.input.disconnect());
+    if(on){
+      if(!vr){
+        const sp = ac.createChannelSplitter(2), mg = ac.createChannelMerger(2);
+        const lm = ac.createGain(), rm = ac.createGain(), ls = ac.createGain(), rs = ac.createGain();
+        lm.gain.value = 0.5; rm.gain.value = 0.5; ls.gain.value = 0.5; rs.gain.value = -0.5;
+        const midN = ac.createGain(), side = ac.createGain(), neg = ac.createGain(), midOut = ac.createGain(); neg.gain.value = -1;
+        const dry = ac.createGain(), wet = ac.createGain(), lp1 = biq(ac, 'lowpass', 160, 0.707), lp2 = biq(ac, 'lowpass', 160, 0.707);
+        sp.connect(lm, 0); sp.connect(ls, 0); sp.connect(rm, 1); sp.connect(rs, 1);
+        lm.connect(midN); rm.connect(midN); ls.connect(side); rs.connect(side);
+        midN.connect(dry); dry.connect(midOut); midN.connect(lp1); lp1.connect(lp2); lp2.connect(wet); wet.connect(midOut);
+        midOut.connect(mg, 0, 0); midOut.connect(mg, 0, 1); side.connect(mg, 0, 0); side.connect(neg); neg.connect(mg, 0, 1);
+        vr = { sp, mg, dry, wet, nodes: [sp, mg, lm, rm, ls, rs, midN, side, neg, midOut, dry, wet, lp1, lp2] };
+      }
+      c.input.connect(vr.sp); vr.mg.connect(c.hp);
+    } else {
+      if(vr) safe(() => vr.mg.disconnect());
+      c.input.connect(c.hp);
+    }
+  };
+  /* Compresseur, contourné quand il ne compresse pas */
+  const setComp = on => {
+    if(on === compOn) return; compOn = on;
+    safe(() => c.high.disconnect()); safe(() => c.comp.disconnect());
+    if(on){ c.high.connect(c.comp); c.comp.connect(c.makeup); } else c.high.connect(c.makeup);
+  };
+  const setRev = on => { if(on === revOn) return; revOn = on; if(on){ c.panner.connect(c.rev); c.rev.connect(b.revIn); } else { safe(() => c.panner.disconnect(c.rev)); safe(() => c.rev.disconnect()); } };
+  const setDly = on => { if(on === dlyOn) return; dlyOn = on; if(on){ c.panner.connect(c.dly); c.dly.connect(b.dlyIn); } else { safe(() => c.panner.disconnect(c.dly)); safe(() => c.dly.disconnect()); } };
+  /* Doublage : créé à l'allumage, détruit à l'extinction */
+  const setDbl = amt => {
+    if(amt > 0 && !dblN){
+      const g0 = ac.createGain(), dL = ac.createDelay(0.1), dR = ac.createDelay(0.1); dL.delayTime.value = 0.019; dR.delayTime.value = 0.027;
+      const oL = ac.createOscillator(), oR = ac.createOscillator(), gL = ac.createGain(), gR = ac.createGain();
+      oL.frequency.value = 0.31; oR.frequency.value = 0.23; gL.gain.value = 0.0018; gR.gain.value = 0.0022;
+      oL.connect(gL); gL.connect(dL.delayTime); oR.connect(gR); gR.connect(dR.delayTime); oL.start(); oR.start();
+      const pL = ac.createStereoPanner(), pR = ac.createStereoPanner(); pL.pan.value = -0.85; pR.pan.value = 0.85;
+      const hpD = biq(ac, 'highpass', 200);
+      c.fader.connect(g0); g0.connect(hpD); hpD.connect(dL); hpD.connect(dR); dL.connect(pL); dR.connect(pR);
+      pL.connect(b.masterIn); pR.connect(b.masterIn);
+      if(revOn){ pL.connect(c.rev); pR.connect(c.rev); }
+      dblN = { g0, nodes: [g0, dL, dR, oL, oR, gL, gR, pL, pR, hpD], osc: [oL, oR] };
+    }
+    if(amt <= 0 && dblN){ safe(() => c.fader.disconnect(dblN.g0)); dblN.osc.forEach(o => safe(() => o.stop())); dblN.nodes.forEach(n => safe(() => n.disconnect())); dblN = null; }
+    if(dblN) dblN.g0.gain.value = amt;
+  };
   c.set = (t, on, live) => {
     const f = t.fx;
     c.hp.frequency.value = f.hp; c.low.gain.value = f.low; c.mid.gain.value = f.mid; c.mid.frequency.value = f.midF; c.high.gain.value = f.high;
-    if(f.ratio <= 1){ c.comp.threshold.value = 0; c.comp.ratio.value = 1; }
-    else { c.comp.threshold.value = f.thr; c.comp.ratio.value = f.ratio; }
+    if(f.ratio > 1){ c.comp.threshold.value = f.thr; c.comp.ratio.value = f.ratio; }
+    setComp(f.ratio > 1);
     c.makeup.gain.value = dbl(f.makeup);
     const fv = on ? t.vol : 0;
     if(live) c.fader.gain.setTargetAtTime(fv, ac.currentTime, 0.015); else c.fader.gain.value = fv;
-    c.panner.pan.value = t.pan; c.rev.gain.value = f.rev / 100; c.dly.gain.value = f.dly / 100;
-    const v = (t.vr || 0) / 100; c.dry.gain.value = 1 - v; c.wet.gain.value = v;
+    c.panner.pan.value = t.pan;
+    c.rev.gain.value = f.rev / 100; c.dly.gain.value = f.dly / 100;
+    setRev(f.rev > 0); setDly(f.dly > 0);
+    const v = (t.vr || 0) / 100;
+    setVr(v > 0); if(vr){ vr.dry.gain.value = 1 - v; vr.wet.gain.value = v; }
     c.input.gain.value = t.trim ?? 1;
-    c.dbl.gain.value = (f.dbl || 0) / 100;
+    setDbl((f.dbl || 0) / 100);
   };
-  c.kill = () => { try{ oL.stop(); oR.stop(); }catch(e){} seq.concat([c.rev, c.dly], vrNodes, dblNodes).forEach(n => { try{ n.disconnect(); }catch(e){} }); };
+  c.kill = () => {
+    setDbl(0);
+    [c.input, c.hp, c.low, c.mid, c.high, c.comp, c.makeup, c.fader, c.panner, c.rev, c.dly].forEach(n => safe(() => n.disconnect()));
+    if(vr) vr.nodes.forEach(n => safe(() => n.disconnect()));
+  };
+  setVr(false); setComp(false);
   return c;
 }
 function initAudio(){
-  ctx = new (window.AudioContext || window.webkitAudioContext)();
+  try{ ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'playback' }); }
+  catch(e){ ctx = new (window.AudioContext || window.webkitAudioContext)(); }
   bus = makeBus(ctx);
   mpre = makeMasterPre(ctx);
   bus.masterIn.connect(mpre.input);
@@ -2559,9 +2623,15 @@ function wrapLines(g, text, maxW, maxLines){
   return out;
 }
 const loadImg = src => new Promise(r => { if(!src) return r(null); const im = new Image(); im.onload = () => r(im); im.onerror = () => r(null); im.src = src; });
-/* ---------- Extrait vidéo : fond au choix, StudioXel toujours en filigrane ---------- */
+/* ---------- Studio Reel : fond, look, effets, durée — StudioXel toujours en filigrane ---------- */
 let reelMode = store.get('reelMode', 'app'), reelImg = null, reelVid = null, camStream = null, camVid = null, reelStop = false;
-function stopCam(){ if(camStream){ camStream.getTracks().forEach(tr => tr.stop()); } camStream = null; camVid = null; }
+const REEL_FILTERS = [['none', 'Original'], ['nb', 'Noir & blanc'], ['vintage', 'Vintage'], ['rouge', 'Rouge & noir'], ['chaud', 'Chaud'], ['froid', 'Froid'], ['neon', 'Néon'], ['contraste', 'Contraste']];
+const REEL_FX = [['pulse', '🔊 Pulsation'], ['flash', '⚡ Flash sur le temps'], ['shake', '💥 Secousse'], ['glitch', '📺 Glitch'], ['zoom', '🔍 Zoom lent'], ['grain', '🎞️ Grain'], ['vignette', '🌑 Vignette']];
+const REEL_LEN = [['15', '15 s'], ['30', '30 s'], ['60', '1 min'], ['all', 'Tout le morceau'], ['custom', 'Sur mesure']];
+const REEL_MODES = [['app', '📱', 'Vue appli'], ['photo', '🖼️', 'Photo / affiche'], ['video', '🎬', 'Ma vidéo'], ['selfie', '🤳', 'Selfie en direct']];
+const RO = Object.assign({ filter: 'none', fx: { pulse: true }, len: '30', a: 0, b: 30, lyrics: true, title: true }, store.get('reelOpts', {}));
+const saveRO = () => store.set('reelOpts', RO);
+function stopCam(){ if(camStream) camStream.getTracks().forEach(tr => tr.stop()); camStream = null; camVid = null; }
 async function startCam(){
   if(camStream) return;
   if(!navigator.mediaDevices?.getUserMedia) throw new Error('caméra indisponible ici');
@@ -2569,119 +2639,91 @@ async function startCam(){
   camVid = document.createElement('video'); camVid.playsInline = true; camVid.muted = true; camVid.className = 'mirror';
   camVid.setAttribute('playsinline', ''); camVid.srcObject = camStream; await camVid.play();
 }
-function renderReelPick(){
-  document.querySelectorAll('#reelMode button').forEach(b => b.setAttribute('aria-pressed', b.dataset.m === reelMode));
-  const box = $('#reelPick');
-  if(reelMode === 'app') box.innerHTML = '<p class="note">La vidéo montre ta session qui tourne : pistes, vagues, titre et paroles.</p>';
-  if(reelMode === 'photo') box.innerHTML = `<div class="rprev">${reelImg ? `<img src="${reelImg.src}" alt="Image choisie">` : 'Aucune image'}</div><button class="sbtn" id="reelImgBtn">${reelImg ? 'Changer' : 'Choisir'} la photo ou l'affiche</button>`;
-  if(reelMode === 'video') box.innerHTML = `<div class="rprev" id="vidBox">${reelVid ? '' : 'Aucune vidéo'}</div><button class="sbtn" id="reelVidBtn">${reelVid ? 'Changer' : 'Choisir'} la vidéo</button><p class="note">Une vidéo de ta galerie : elle tourne sans son, ton morceau par-dessus.</p>`;
-  if(reelMode === 'selfie') box.innerHTML = `<div class="rprev" id="camBox">${camStream ? '' : 'Caméra éteinte'}</div><button class="sbtn" id="camBtn">${camStream ? 'Couper' : 'Allumer'} la caméra</button><p class="note">Tu te filmes pendant que ton son passe : 3, 2, 1… et ça tourne. Mets des écouteurs pour bien t'entendre.</p>`;
-  if(reelMode === 'video' && reelVid){ $('#vidBox').appendChild(reelVid); }
-  if(reelMode === 'selfie' && camVid){ $('#camBox').appendChild(camVid); camVid.play().catch(() => {}); }
+const songLen = () => Math.max(1, trackEnd());
+/* fenêtre de l'extrait selon la durée choisie */
+function reelWindow(){
+  const L = songLen();
+  if(RO.len === 'all') return { start: 0, dur: L };
+  if(RO.len === 'custom'){ const a = clamp(RO.a, 0, L - 1), b = clamp(RO.b, a + 1, L); return { start: a, dur: b - a }; }
+  const want = +RO.len, start = clamp(S.loop.on ? S.loop.start : S.pos, 0, Math.max(0, L - 1));
+  return { start, dur: Math.min(want, L - start) };
 }
-$('#reelMode').addEventListener('click', e => {
-  const b = e.target.closest('button'); if(!b) return;
-  reelMode = b.dataset.m; store.set('reelMode', reelMode);
-  if(reelMode !== 'selfie') stopCam();
-  renderReelPick();
-});
-$('#reelPick').addEventListener('click', async e => {
-  if(e.target.id === 'reelImgBtn') $('#reelImgFile').click();
-  if(e.target.id === 'reelVidBtn') $('#reelVidFile').click();
-  if(e.target.id === 'camBtn'){
-    if(camStream){ stopCam(); renderReelPick(); return; }
-    try{ await startCam(); renderReelPick(); }
-    catch(err){ toast(err.name === 'NotAllowedError' ? 'Accès à la caméra refusé : autorise-le dans les réglages de Safari.' : 'Caméra impossible : ' + err.message); }
-  }
-});
-$('#reelImgFile').addEventListener('change', async e => {
-  const f = e.target.files[0]; e.target.value = ''; if(!f) return;
-  const im = await loadImg(URL.createObjectURL(f));
-  if(!im){ toast('Image non lue. Essaie un JPG ou un PNG.'); return; }
-  reelImg = im; renderReelPick();
-});
-$('#reelVidFile').addEventListener('change', async e => {
-  const f = e.target.files[0]; e.target.value = ''; if(!f) return;
-  const v = document.createElement('video');
-  v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.loop = true; v.preload = 'auto';
-  v.src = URL.createObjectURL(f);
-  const ok = await new Promise(r => { v.onloadeddata = () => r(true); v.onerror = () => r(false); setTimeout(() => r(v.readyState >= 2), 8000); });
-  if(!ok){ toast('Vidéo non lue. Essaie une vidéo filmée avec l\'iPhone.'); return; }
-  reelVid = v; renderReelPick();
-});
-document.addEventListener('visibilitychange', () => { if(document.hidden && !S.reelRec) stopCam(); });
-$('#rrStop').onclick = () => { reelStop = true; };
-renderReelPick();
-
-$('#bVideo').onclick = async () => {
-  if(busy) return;
-  if(!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream){ toast('Ce navigateur ne sait pas créer de vidéo.'); return; }
-  if(reelMode === 'photo' && !reelImg){ toast('Choisis d\'abord une photo ou une affiche.'); return; }
-  if(reelMode === 'video' && !reelVid){ toast('Choisis d\'abord une vidéo.'); return; }
-  if(reelMode === 'selfie' && !camStream){
-    try{ await startCam(); renderReelPick(); }
-    catch(err){ toast(err.name === 'NotAllowedError' ? 'Accès à la caméra refusé : autorise-le dans les réglages de Safari.' : 'Caméra impossible : ' + err.message); return; }
-  }
-  setBusy(true, 'Préparation de l\'extrait…');
-  const ov = $('#reelRec');
-  try{
-    ensureCtx(); unlockSpeaker();
-    const out = lastMaster || await runMaster(); if(!out){ setBusy(false); return; }
-    lastMaster = out;
-    const start = clamp(S.loop.on ? S.loop.start : S.pos, 0, Math.max(0, out.duration - 5)), dur = Math.min(30, out.duration - start);
-    const cues = lyricCues();
-    const W = 720, H = 1280, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
-    const g = cv.getContext('2d'), cs = coverSource();
-    await new Promise(r => { const im = cs.img; if(!im || im.complete) r(); else { im.onload = r; im.onerror = r; } });
-    const logo = await loadImg(document.querySelector('link[rel="apple-touch-icon"]')?.href);
-    const trs = S.tracks.filter(t => t.buffer && audible(t)).slice(0, 6).map(t => {
-      const env = envOf(t.buffer); let pk = 0; for(const v of env) if(v > pk) pk = v;
-      const sr = t.buffer.sampleRate;
-      return { t, env, pk: pk || 1, segs: segsOf(t.buffer).map(sg => [t.offset + sg.s0 / sr, t.offset + sg.s1 / sr]),
-        fx: tfxKeys(t).filter(k => tfxOn(t, k)).map(k => TFX_NAMES[k]).join(' · ') };
-    });
-    const title = cs.title || sess.name || 'Session', artist = cs.artist || ME.name || '';
-    const FONT = 'Archivo, system-ui, sans-serif', MONO = '"IBM Plex Mono", ui-monospace, monospace';
-    const BG = '#11141b', PANEL = '#181c26', MUTED = '#8b94a8', ACC = '#f2b544';
-    const round = (x, y, w, h, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); };
-    const fit = (txt, mw) => { if(g.measureText(txt).width <= mw) return txt; while(txt.length > 1 && g.measureText(txt + '…').width > mw) txt = txt.slice(0, -1); return txt + '…'; };
-    const waves = (tr, x0, y, w, hh, ws, win, alpha) => {
-      const pps = w / win, t = tr.t, mid = y + hh / 2;
-      g.globalAlpha = alpha; g.fillStyle = t.color;
-      for(let x = 0; x < w; x += 3){
-        const fi = Math.floor((ws + x / pps - t.offset) * 100);
-        if(fi < 0 || fi >= tr.env.length) continue;
-        const v = tr.env[fi] / tr.pk; if(v <= 0) continue;
-        const bh = Math.max(2, v * hh); g.fillRect(x0 + x, mid - bh / 2, 2, bh);
-      }
-      g.globalAlpha = 1;
-    };
-    const lyrics = (pos, y0, shadow) => {
-      if(!cues.length) return;
-      let k = -1; for(let i = 0; i < cues.length; i++) if(cues[i].t <= pos + 0.05) k = i;
-      const cur = k >= 0 && (k + 1 < cues.length || pos - cues[k].t < 6) ? cues[k] : null, nxt = cues[k + 1];
-      g.textAlign = 'center'; g.textBaseline = 'alphabetic'; let ly = y0;
-      if(cur){ g.font = `800 40px ${FONT}`; g.lineWidth = 8; g.strokeStyle = shadow; g.fillStyle = '#FFFFFF';
-        for(const ln of wrapLines(g, cur.text, 660, 2)){ g.strokeText(ln, W / 2, ly); g.fillText(ln, W / 2, ly); ly += 50; } }
-      if(nxt && nxt.t - pos < 8){ g.font = `600 28px ${FONT}`; g.lineWidth = 6; g.strokeStyle = shadow; g.fillStyle = '#c9cfdb'; const l2 = wrapLines(g, nxt.text, 660, 1)[0]; g.strokeText(l2, W / 2, ly + 4); g.fillText(l2, W / 2, ly + 4); }
-    };
-    const brandMark = (shadow) => {
-      g.save();
-      if(shadow){ g.shadowColor = 'rgba(0,0,0,.7)'; g.shadowBlur = 10; }
-      g.globalAlpha = 0.9;
-      if(logo) g.drawImage(logo, 24, 24, 40, 40);
-      g.textBaseline = 'middle'; g.textAlign = 'left'; g.font = `900 22px ${FONT}`;
-      g.fillStyle = '#F4EFE6'; g.fillText('STUDIO', 72, 38); const sw = g.measureText('STUDIO').width;
-      g.fillStyle = '#D7261E'; g.fillText('XEL', 72 + sw, 38);
-      g.font = `600 15px ${FONT}`; g.fillStyle = '#e7eaf0'; g.fillText(SXL_URL, 72, 58);
-      g.restore();
-    };
-    /* fond « vue appli » */
-    const drawApp = pos => {
-      const HX = 196, LX = 206, LW = W - LX - 16, WIN = 7, PPS = LW / WIN, PH = 0.3, ws = pos - WIN * PH;
-      const top = 210, bottom = cues.length ? 1030 : 1210, rowH = Math.min(220, (bottom - top - 34) / Math.max(1, trs.length));
-      g.fillStyle = BG; g.fillRect(0, 0, W, H);
-      const im = cs.img;
+/* filtres : modes de fusion du canvas, rendus identiques sur iPhone */
+function applyFilter(g, f, W, H){
+  if(!f || f === 'none') return;
+  const fill = (op, col, a) => { g.globalCompositeOperation = op; g.globalAlpha = a; g.fillStyle = col; g.fillRect(0, 0, W, H); };
+  const self = a => { g.globalCompositeOperation = 'overlay'; g.globalAlpha = a; g.drawImage(g.canvas, 0, 0, g.canvas.width, g.canvas.height, 0, 0, W, H); };
+  g.save();
+  if(f === 'nb'){ fill('saturation', '#808080', 1); self(0.25); }
+  if(f === 'vintage'){ fill('saturation', '#808080', 0.55); fill('multiply', '#f3dcb2', 0.9); fill('lighten', '#2a1c10', 0.6); }
+  if(f === 'rouge'){ fill('saturation', '#808080', 1); self(0.35); fill('multiply', '#ff3b3b', 0.6); }
+  if(f === 'chaud'){ fill('soft-light', '#ff8a2a', 0.6); }
+  if(f === 'froid'){ fill('soft-light', '#2a7bff', 0.6); }
+  if(f === 'neon'){ self(0.4); fill('overlay', '#ff2bd6', 0.35); fill('soft-light', '#00e5ff', 0.45); }
+  if(f === 'contraste'){ self(0.65); }
+  g.restore();
+}
+let noiseTile = null;
+function noise(){
+  if(noiseTile) return noiseTile;
+  const c = document.createElement('canvas'); c.width = c.height = 160; const g = c.getContext('2d'), d = g.createImageData(160, 160);
+  for(let i = 0; i < d.data.length; i += 4){ const v = Math.random() * 255; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255; }
+  g.putImageData(d, 0, 0); return (noiseTile = c);
+}
+/* moteur de rendu partagé par l'aperçu et l'enregistrement */
+async function reelEngine(){
+  const cues = lyricCues(), cs = coverSource();
+  await new Promise(r => { const im = cs.img; if(!im || im.complete) r(); else { im.onload = r; im.onerror = r; } });
+  const logo = await loadImg(document.querySelector('link[rel="apple-touch-icon"]')?.href);
+  const trs = S.tracks.filter(t => t.buffer && audible(t)).slice(0, 6).map(t => {
+    const env = envOf(t.buffer); let pk = 0; for(const v of env) if(v > pk) pk = v;
+    const sr = t.buffer.sampleRate;
+    return { t, env, pk: pk || 1, segs: segsOf(t.buffer).map(sg => [t.offset + sg.s0 / sr, t.offset + sg.s1 / sr]),
+      fx: tfxKeys(t).filter(k => tfxOn(t, k)).map(k => TFX_NAMES[k]).join(' · ') };
+  });
+  const title = cs.title || sess.name || 'Session', artist = cs.artist || ME.name || '';
+  const W = 720, H = 1280, FONT = 'Archivo, system-ui, sans-serif', MONO = '"IBM Plex Mono", ui-monospace, monospace';
+  const BG = '#11141b', PANEL = '#181c26', MUTED = '#8b94a8', ACC = '#f2b544';
+  let g;
+  const round = (x, y, w, h, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); };
+  const fit = (txt, mw) => { if(g.measureText(txt).width <= mw) return txt; while(txt.length > 1 && g.measureText(txt + '…').width > mw) txt = txt.slice(0, -1); return txt + '…'; };
+  const waves = (tr, x0, y, w, hh, ws, win, alpha) => {
+    const pps = w / win, t = tr.t, mid = y + hh / 2;
+    g.globalAlpha = alpha; g.fillStyle = t.color;
+    for(let x = 0; x < w; x += 3){
+      const fi = Math.floor((ws + x / pps - t.offset) * 100);
+      if(fi < 0 || fi >= tr.env.length) continue;
+      const v = tr.env[fi] / tr.pk; if(v <= 0) continue;
+      const bh = Math.max(2, v * hh); g.fillRect(x0 + x, mid - bh / 2, 2, bh);
+    }
+    g.globalAlpha = 1;
+  };
+  const lyrics = (pos, y0, shadow) => {
+    if(!RO.lyrics || !cues.length) return;
+    let k = -1; for(let i = 0; i < cues.length; i++) if(cues[i].t <= pos + 0.05) k = i;
+    const cur = k >= 0 && (k + 1 < cues.length || pos - cues[k].t < 6) ? cues[k] : null, nxt = cues[k + 1];
+    g.textAlign = 'center'; g.textBaseline = 'alphabetic'; let ly = y0;
+    if(cur){ g.font = `800 40px ${FONT}`; g.lineWidth = 8; g.strokeStyle = shadow; g.fillStyle = '#FFFFFF';
+      for(const ln of wrapLines(g, cur.text, 660, 2)){ g.strokeText(ln, W / 2, ly); g.fillText(ln, W / 2, ly); ly += 50; } }
+    if(nxt && nxt.t - pos < 8){ g.font = `600 28px ${FONT}`; g.lineWidth = 6; g.strokeStyle = shadow; g.fillStyle = '#c9cfdb'; const l2 = wrapLines(g, nxt.text, 660, 1)[0]; g.strokeText(l2, W / 2, ly + 4); g.fillText(l2, W / 2, ly + 4); }
+  };
+  const brandMark = shadow => {
+    g.save();
+    if(shadow){ g.shadowColor = 'rgba(0,0,0,.7)'; g.shadowBlur = 10; }
+    g.globalAlpha = 0.9;
+    if(logo) g.drawImage(logo, 24, 24, 40, 40);
+    g.textBaseline = 'middle'; g.textAlign = 'left'; g.font = `900 22px ${FONT}`;
+    g.fillStyle = '#F4EFE6'; g.fillText('STUDIO', 72, 38); const sw = g.measureText('STUDIO').width;
+    g.fillStyle = '#D7261E'; g.fillText('XEL', 72 + sw, 38);
+    g.font = `600 15px ${FONT}`; g.fillStyle = '#e7eaf0'; g.fillText(SXL_URL, 72, 58);
+    g.restore();
+  };
+  const drawApp = pos => {
+    const HX = 196, LX = 206, LW = W - LX - 16, WIN = 7, PPS = LW / WIN, PH = 0.3, ws = pos - WIN * PH;
+    const top = 210, bottom = (RO.lyrics && cues.length) ? 1030 : 1210, rowH = Math.min(220, (bottom - top - 34) / Math.max(1, trs.length));
+    g.fillStyle = BG; g.fillRect(0, 0, W, H);
+    const im = cs.img;
+    if(RO.title){
       if(im && im.naturalWidth){
         const r = im.naturalWidth / im.naturalHeight; let sx = 0, sy = 0, sww = im.naturalWidth, shh = im.naturalHeight;
         if(r > 1){ sww = shh; sx = (im.naturalWidth - sww) / 2; } else { shh = sww; sy = (im.naturalHeight - shh) / 2; }
@@ -2690,81 +2732,240 @@ $('#bVideo').onclick = async () => {
       g.textAlign = 'left'; g.textBaseline = 'alphabetic';
       g.fillStyle = '#e7eaf0'; g.font = `800 32px ${FONT}`; g.fillText(fit(title, W - 132 - 230), 132, 126);
       if(artist){ g.fillStyle = '#D7261E'; g.font = `700 24px ${FONT}`; g.fillText(fit(artist, W - 132 - 230), 132, 162); }
-      g.textAlign = 'right'; g.fillStyle = '#e7eaf0'; g.font = `500 36px ${MONO}`; g.fillText(fmt(pos), W - 24, 140);
-      g.fillStyle = ACC; g.beginPath(); g.moveTo(W - 196, 116); g.lineTo(W - 196, 140); g.lineTo(W - 176, 128); g.closePath(); g.fill();
-      g.fillStyle = PANEL; g.fillRect(0, top - 10, W, 34);
-      g.font = `400 15px ${MONO}`; g.textAlign = 'left'; g.fillStyle = MUTED;
-      for(let sec = Math.ceil(ws); sec < ws + WIN; sec++){ const x = LX + (sec - ws) * PPS; g.fillRect(x, top + 12, 1, 10); if(sec % 2 === 0) g.fillText(fmt(sec, true), x + 4, top + 8); }
-      trs.forEach((tr, k) => {
-        const t = tr.t, y = top + 30 + k * rowH, hh = rowH - 10;
-        g.fillStyle = PANEL; g.fillRect(0, y, HX, hh);
-        g.fillStyle = BG; g.fillRect(LX - 4, y, W - LX + 4, hh);
-        g.fillStyle = t.color; round(12, y + 12, 10, hh - 24, 4); g.fill();
-        g.fillStyle = '#e7eaf0'; g.font = `800 24px ${FONT}`; g.textAlign = 'left'; g.fillText(t.name.slice(0, 11), 34, y + 40);
-        if(tr.fx){ g.fillStyle = ACC; g.font = `700 15px ${FONT}`; wrapLines(g, tr.fx, HX - 40, 2).forEach((ln, i) => g.fillText(ln, 34, y + 68 + i * 20)); }
-        if(t.keep){ g.fillStyle = '#4fd1b5'; g.font = `700 15px ${FONT}`; g.fillText('🔒 validée', 34, y + hh - 14); }
-        g.save(); g.beginPath(); g.rect(LX, y, LW, hh); g.clip();
-        for(const [a, b] of tr.segs){
-          if(b < ws || a > ws + WIN) continue;
-          const xa = LX + (a - ws) * PPS, xb = LX + (b - ws) * PPS;
-          g.fillStyle = t.color + '22'; g.strokeStyle = t.color + '88'; g.lineWidth = 2;
-          round(xa, y + 6, xb - xa, hh - 12, 8); g.fill(); g.stroke();
-        }
-        waves(tr, LX, y + 12, LW, hh - 24, ws, WIN, 1);
-        g.restore();
-      });
-      const px = LX + LW * PH;
-      g.fillStyle = '#e7eaf0'; g.fillRect(px - 1, top - 10, 3, Math.min(bottom, top + 30 + trs.length * rowH) - top + 10);
-      g.beginPath(); g.moveTo(px - 9, top - 10); g.lineTo(px + 10, top - 10); g.lineTo(px + 0.5, top + 2); g.closePath(); g.fill();
-      lyrics(pos, 1095, BG);
-      /* filigrane en haut */
-      g.fillStyle = BG; g.fillRect(0, 0, W, 76);
-      brandMark(false);
-    };
-    /* fond choisi par l'utilisateur (photo, vidéo, selfie) */
-    const cover = (el, mirror) => {
-      const sw0 = el.videoWidth || el.naturalWidth, sh0 = el.videoHeight || el.naturalHeight;
-      g.fillStyle = '#000'; g.fillRect(0, 0, W, H);
-      if(!sw0 || !sh0) return;
-      const k = Math.max(W / sw0, H / sh0), dw = sw0 * k, dh = sh0 * k;
-      g.save(); if(mirror){ g.translate(W, 0); g.scale(-1, 1); }
-      g.drawImage(el, (W - dw) / 2, (H - dh) / 2, dw, dh); g.restore();
-    };
-    const drawOver = pos => {
-      /* bas : dégradé léger + l'appli qui tourne en transparence */
-      const grd = g.createLinearGradient(0, 900, 0, H); grd.addColorStop(0, 'rgba(0,0,0,0)'); grd.addColorStop(1, 'rgba(0,0,0,.6)');
-      g.fillStyle = grd; g.fillRect(0, 900, W, H - 900);
-      const rows = trs.slice(0, 4), x0 = 28, w = W - 56, top = 1110, hh = 140, rh = hh / Math.max(1, rows.length), WIN = 8, ws = pos - WIN * 0.3;
-      g.globalAlpha = 0.18; g.fillStyle = '#000'; round(x0 - 8, top - 10, w + 16, hh + 20, 12); g.fill(); g.globalAlpha = 1;
-      rows.forEach((tr, k) => waves(tr, x0, top + k * rh + 4, w, rh - 8, ws, WIN, 0.55));
-      const px = x0 + w * 0.3;
-      g.globalAlpha = 0.75; g.fillStyle = '#ffffff'; g.fillRect(px - 1, top - 8, 2, hh + 16); g.globalAlpha = 1;
-      g.save(); g.shadowColor = 'rgba(0,0,0,.7)'; g.shadowBlur = 8; g.globalAlpha = 0.85;
-      g.textAlign = 'right'; g.textBaseline = 'alphabetic'; g.font = `500 22px ${MONO}`; g.fillStyle = '#ffffff'; g.fillText(fmt(pos), W - 28, top - 18);
+    }
+    g.textAlign = 'right'; g.textBaseline = 'alphabetic'; g.fillStyle = '#e7eaf0'; g.font = `500 36px ${MONO}`; g.fillText(fmt(pos), W - 24, 140);
+    g.fillStyle = ACC; g.beginPath(); g.moveTo(W - 196, 116); g.lineTo(W - 196, 140); g.lineTo(W - 176, 128); g.closePath(); g.fill();
+    g.fillStyle = PANEL; g.fillRect(0, top - 10, W, 34);
+    g.font = `400 15px ${MONO}`; g.textAlign = 'left'; g.fillStyle = MUTED;
+    for(let sec = Math.ceil(ws); sec < ws + WIN; sec++){ const x = LX + (sec - ws) * PPS; g.fillRect(x, top + 12, 1, 10); if(sec % 2 === 0) g.fillText(fmt(sec, true), x + 4, top + 8); }
+    trs.forEach((tr, k) => {
+      const t = tr.t, y = top + 30 + k * rowH, hh = rowH - 10;
+      g.fillStyle = PANEL; g.fillRect(0, y, HX, hh);
+      g.fillStyle = BG; g.fillRect(LX - 4, y, W - LX + 4, hh);
+      g.fillStyle = t.color; round(12, y + 12, 10, hh - 24, 4); g.fill();
+      g.fillStyle = '#e7eaf0'; g.font = `800 24px ${FONT}`; g.textAlign = 'left'; g.fillText(t.name.slice(0, 11), 34, y + 40);
+      if(tr.fx){ g.fillStyle = ACC; g.font = `700 15px ${FONT}`; wrapLines(g, tr.fx, HX - 40, 2).forEach((ln, i) => g.fillText(ln, 34, y + 68 + i * 20)); }
+      g.save(); g.beginPath(); g.rect(LX, y, LW, hh); g.clip();
+      for(const [a, b] of tr.segs){
+        if(b < ws || a > ws + WIN) continue;
+        const xa = LX + (a - ws) * PPS, xb = LX + (b - ws) * PPS;
+        g.fillStyle = t.color + '22'; g.strokeStyle = t.color + '88'; g.lineWidth = 2;
+        round(xa, y + 6, xb - xa, hh - 12, 8); g.fill(); g.stroke();
+      }
+      waves(tr, LX, y + 12, LW, hh - 24, ws, WIN, 1);
       g.restore();
-      lyrics(pos, 990, 'rgba(0,0,0,.85)');
-      brandMark(true);
-    };
+    });
+    const px = LX + LW * PH;
+    g.fillStyle = '#e7eaf0'; g.fillRect(px - 1, top - 10, 3, Math.min(bottom, top + 30 + trs.length * rowH) - top + 10);
+    g.beginPath(); g.moveTo(px - 9, top - 10); g.lineTo(px + 10, top - 10); g.lineTo(px + 0.5, top + 2); g.closePath(); g.fill();
+  };
+  const cover = (el, mirror) => {
+    g.fillStyle = '#000'; g.fillRect(0, 0, W, H);
+    if(!el) return;
+    const sw0 = el.videoWidth || el.naturalWidth, sh0 = el.videoHeight || el.naturalHeight;
+    if(!sw0 || !sh0) return;
+    const k = Math.max(W / sw0, H / sh0), dw = sw0 * k, dh = sh0 * k;
+    g.save(); if(mirror){ g.translate(W, 0); g.scale(-1, 1); }
+    g.drawImage(el, (W - dw) / 2, (H - dh) / 2, dw, dh); g.restore();
+  };
+  const overUser = pos => {
+    const grd = g.createLinearGradient(0, 860, 0, H); grd.addColorStop(0, 'rgba(0,0,0,0)'); grd.addColorStop(1, 'rgba(0,0,0,.6)');
+    g.fillStyle = grd; g.fillRect(0, 860, W, H - 860);
+    const rows = trs.slice(0, 4), x0 = 28, w = W - 56, top = 1110, hh = 140, rh = hh / Math.max(1, rows.length), WIN = 8, ws = pos - WIN * 0.3;
+    g.globalAlpha = 0.18; g.fillStyle = '#000'; round(x0 - 8, top - 10, w + 16, hh + 20, 12); g.fill(); g.globalAlpha = 1;
+    rows.forEach((tr, k) => waves(tr, x0, top + k * rh + 4, w, rh - 8, ws, WIN, 0.55));
+    const px = x0 + w * 0.3;
+    g.globalAlpha = 0.75; g.fillStyle = '#ffffff'; g.fillRect(px - 1, top - 8, 2, hh + 16); g.globalAlpha = 1;
+    g.save(); g.shadowColor = 'rgba(0,0,0,.75)'; g.shadowBlur = 8;
+    g.textBaseline = 'alphabetic';
+    g.globalAlpha = 0.85; g.textAlign = 'right'; g.font = `500 22px ${MONO}`; g.fillStyle = '#ffffff'; g.fillText(fmt(pos), W - 28, top - 18);
+    if(RO.title){ g.globalAlpha = 1; g.textAlign = 'left'; g.font = `800 30px ${FONT}`; g.fillStyle = '#ffffff'; g.fillText(fit(title, W - 220), 28, top - 46); if(artist){ g.font = `700 22px ${FONT}`; g.fillStyle = '#ff5a52'; g.fillText(fit(artist, W - 220), 28, top - 16); } }
+    g.restore();
+    lyrics(pos, (RO.title ? 930 : 990), 'rgba(0,0,0,.85)');
+    brandMark(true);
+  };
+  /* dessine une image de la vidéo : pos = temps du morceau, p = avancement 0..1, lvl = niveau du son 0..1 */
+  const render = (gg, pos, p, lvl) => {
+    g = gg;
+    const fx = RO.fx || {}, beat = pos * S.bpm / 60, bi = Math.floor(beat), ph = beat - bi;
+    g.save();
+    let sc = 1; if(fx.pulse) sc *= 1 + lvl * 0.07; if(fx.zoom) sc *= 1 + 0.14 * p;
+    let tx = 0, ty = 0; if(fx.shake && ph < 0.12){ const a = (1 - ph / 0.12) * 14 * (0.4 + lvl); tx = (Math.sin(bi * 12.9) * a); ty = (Math.cos(bi * 7.3) * a); }
+    if(sc !== 1 || tx || ty){ g.translate(W / 2 + tx, H / 2 + ty); g.scale(sc, sc); g.translate(-W / 2, -H / 2); }
+    if(reelMode === 'app') drawApp(pos);
+    else cover(reelMode === 'photo' ? reelImg : reelMode === 'video' ? reelVid : camVid, reelMode === 'selfie');
+    g.restore();
+    applyFilter(g, RO.filter, W, H);
+    if(fx.glitch && ph < 0.1 && bi % 2 === 0){
+      for(let i = 0; i < 5; i++){ const y = ((bi * 97 + i * 263) % 1200), h = 20 + ((bi + i) * 37) % 60, dx = ((i % 2) ? 1 : -1) * (12 + ((bi * 13 + i * 7) % 30)); g.drawImage(g.canvas, 0, y, W, h, dx, y, W, h); }
+      g.save(); g.globalCompositeOperation = 'screen'; g.globalAlpha = 0.25; g.fillStyle = (bi % 4) ? '#00e5ff' : '#ff2bd6'; g.fillRect(0, 0, W, H); g.restore();
+    }
+    if(fx.flash){ const a = 0.32 * Math.exp(-ph * 9) * (bi % 4 === 0 ? 1.4 : 0.8); if(a > 0.01){ g.save(); g.globalAlpha = a; g.fillStyle = '#fff'; g.fillRect(0, 0, W, H); g.restore(); } }
+    if(fx.grain){ g.save(); g.globalAlpha = 0.09; g.globalCompositeOperation = 'overlay'; const n = noise(); const ox = (Math.random() * 160) | 0, oy = (Math.random() * 160) | 0; g.fillStyle = g.createPattern(n, 'repeat'); g.translate(-ox, -oy); g.fillRect(ox, oy, W, H); g.restore(); }
+    if(fx.vignette){ const rg = g.createRadialGradient(W / 2, H / 2, H * 0.28, W / 2, H / 2, H * 0.72); rg.addColorStop(0, 'rgba(0,0,0,0)'); rg.addColorStop(1, 'rgba(0,0,0,.65)'); g.fillStyle = rg; g.fillRect(0, 0, W, H); }
+    if(reelMode === 'app'){ lyrics(pos, 1095, BG); g.fillStyle = BG; g.fillRect(0, 0, W, 76); brandMark(false); }
+    else overUser(pos);
+  };
+  return { render, W, H };
+}
+
+/* ---------- interface du studio Reel ---------- */
+let reelEng = null, prevFull = null, prevTimer = null, rsPlaying = false;
+function reelBase(){ if(!prevFull){ prevFull = document.createElement('canvas'); prevFull.width = 720; prevFull.height = 1280; } return prevFull; }
+async function refreshReel(full){
+  if($('#vPartager').hidden) return;
+  if(full || !reelEng) reelEng = await reelEngine();
+  const { start } = reelWindow(), c = reelBase(), g = c.getContext('2d');
+  if(!rsPlaying){
+    reelEng.render(g, start, 0, 0.3);
+    const pv = $('#rsCanvas'); pv.getContext('2d').drawImage(c, 0, 0, pv.width, pv.height);
+  }
+  /* vignettes des filtres : le vrai rendu de ta vidéo */
+  if(full){
+    const fo = RO.filter; RO.filter = 'none'; const fxo = RO.fx; RO.fx = {};
+    reelEng.render(g, start, 0, 0); RO.filter = fo; RO.fx = fxo;
+    const base = document.createElement('canvas'); base.width = 108; base.height = 192; base.getContext('2d').drawImage(c, 0, 0, 108, 192);
+    document.querySelectorAll('#reelFilter canvas').forEach(tc => { const tg = tc.getContext('2d'); tg.globalCompositeOperation = 'source-over'; tg.globalAlpha = 1; tg.drawImage(base, 0, 0); applyFilter(tg, tc.dataset.f, 108, 192); });
+  }
+}
+function renderReelUI(){
+  $('#reelMode').innerHTML = REEL_MODES.map(([m, e, l]) => `<button class="rscard" data-m="${m}" aria-pressed="${m === reelMode}"><span>${e}</span>${l}</button>`).join('');
+  const box = $('#reelPick');
+  box.innerHTML = reelMode === 'photo' ? `<button class="sbtn" id="reelImgBtn">${reelImg ? '🔁 Changer' : '➕ Choisir'} la photo ou l'affiche</button>`
+    : reelMode === 'video' ? `<button class="sbtn" id="reelVidBtn">${reelVid ? '🔁 Changer' : '➕ Choisir'} la vidéo</button><span class="note">Elle tourne sans son, ton morceau par-dessus.</span>`
+    : reelMode === 'selfie' ? `<button class="sbtn" id="camBtn">${camStream ? '📷 Couper' : '📷 Allumer'} la caméra</button><span class="note">3, 2, 1… tu te filmes pendant que ton son passe. Mets des écouteurs.</span>`
+    : '';
+  box.hidden = reelMode === 'app';
+  $('#reelFilter').innerHTML = REEL_FILTERS.map(([f, l]) => `<button class="rsfilt" data-f="${f}" aria-pressed="${f === RO.filter}"><canvas width="108" height="192" data-f="${f}"></canvas><span>${l}</span></button>`).join('');
+  $('#reelFx').innerHTML = REEL_FX.map(([k, l]) => `<button class="fxc" data-x="${k}" aria-pressed="${!!(RO.fx || {})[k]}">${l}</button>`).join('');
+  $('#reelLen').innerHTML = REEL_LEN.map(([k, l]) => `<button data-l="${k}" aria-pressed="${k === RO.len}">${l}</button>`).join('');
+  $('#reelText').innerHTML = `<button class="fxc" data-t="lyrics" aria-pressed="${RO.lyrics}">📝 Paroles</button><button class="fxc" data-t="title" aria-pressed="${RO.title}">🏷️ Titre & artiste</button>`;
+  const cu = $('#reelCustom'); cu.hidden = RO.len !== 'custom';
+  if(RO.len === 'custom'){
+    const L = songLen(); RO.a = clamp(RO.a, 0, L - 1); RO.b = clamp(RO.b, RO.a + 1, L);
+    $('#rcA').max = $('#rcB').max = L.toFixed(1); $('#rcA').value = RO.a; $('#rcB').value = RO.b;
+  }
+  const w = reelWindow();
+  $('#reelLenInfo').textContent = 'De ' + fmt(w.start, true) + ' à ' + fmt(w.start + w.dur, true) + ' · ' + fmt(w.dur, true) + (w.dur > 90 ? ' · la création prend le temps de l\'extrait' : '');
+  refreshReel(true);
+}
+$('#reelMode').addEventListener('click', async e => {
+  const b = e.target.closest('[data-m]'); if(!b) return;
+  reelMode = b.dataset.m; store.set('reelMode', reelMode);
+  if(reelMode !== 'selfie') stopCam();
+  if(reelMode === 'photo' && !reelImg) $('#reelImgFile').click();
+  if(reelMode === 'video' && !reelVid) $('#reelVidFile').click();
+  if(reelMode === 'selfie' && !camStream){ try{ await startCam(); }catch(err){ toast(err.name === 'NotAllowedError' ? 'Accès à la caméra refusé : autorise-le dans les réglages de Safari.' : 'Caméra impossible : ' + err.message); } }
+  renderReelUI();
+});
+$('#reelPick').addEventListener('click', async e => {
+  if(e.target.id === 'reelImgBtn') $('#reelImgFile').click();
+  if(e.target.id === 'reelVidBtn') $('#reelVidFile').click();
+  if(e.target.id === 'camBtn'){
+    if(camStream){ stopCam(); renderReelUI(); return; }
+    try{ await startCam(); renderReelUI(); }
+    catch(err){ toast(err.name === 'NotAllowedError' ? 'Accès à la caméra refusé : autorise-le dans les réglages de Safari.' : 'Caméra impossible : ' + err.message); }
+  }
+});
+$('#reelImgFile').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = ''; if(!f) return;
+  const im = await loadImg(URL.createObjectURL(f));
+  if(!im){ toast('Image non lue. Essaie un JPG ou un PNG.'); return; }
+  reelImg = im; renderReelUI();
+});
+$('#reelVidFile').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = ''; if(!f) return;
+  const v = document.createElement('video');
+  v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.loop = true; v.preload = 'auto';
+  v.src = URL.createObjectURL(f);
+  const ok = await new Promise(r => { v.onloadeddata = () => r(true); v.onerror = () => r(false); setTimeout(() => r(v.readyState >= 2), 8000); });
+  if(!ok){ toast('Vidéo non lue. Essaie une vidéo filmée avec l\'iPhone.'); return; }
+  reelVid = v; renderReelUI();
+});
+$('#reelFilter').addEventListener('click', e => { const b = e.target.closest('[data-f]'); if(!b) return; RO.filter = b.dataset.f; saveRO(); document.querySelectorAll('#reelFilter .rsfilt').forEach(x => x.setAttribute('aria-pressed', x.dataset.f === RO.filter)); refreshReel(false); });
+$('#reelFx').addEventListener('click', e => { const b = e.target.closest('[data-x]'); if(!b) return; RO.fx = RO.fx || {}; RO.fx[b.dataset.x] = !RO.fx[b.dataset.x]; saveRO(); b.setAttribute('aria-pressed', !!RO.fx[b.dataset.x]); refreshReel(false); });
+$('#reelText').addEventListener('click', e => { const b = e.target.closest('[data-t]'); if(!b) return; RO[b.dataset.t] = !RO[b.dataset.t]; saveRO(); b.setAttribute('aria-pressed', RO[b.dataset.t]); refreshReel(false); });
+$('#reelLen').addEventListener('click', e => {
+  const b = e.target.closest('[data-l]'); if(!b) return;
+  RO.len = b.dataset.l;
+  if(RO.len === 'custom' && !(RO.b > RO.a)){ const w = reelWindow(); RO.a = w.start; RO.b = w.start + Math.min(30, songLen() - w.start); }
+  if(RO.len === 'custom'){ const { start } = { start: clamp(S.loop.on ? S.loop.start : S.pos, 0, songLen()) }; if(RO.a === 0 && RO.b === 30){ RO.a = start; RO.b = Math.min(songLen(), start + 30); } }
+  saveRO(); renderReelUI();
+});
+['rcA', 'rcB'].forEach(id => $('#' + id).addEventListener('input', e => {
+  const L = songLen(), v = +e.target.value;
+  if(id === 'rcA'){ RO.a = clamp(v, 0, L - 1); if(RO.b < RO.a + 1) RO.b = Math.min(L, RO.a + 1); }
+  else { RO.b = clamp(v, 1, L); if(RO.a > RO.b - 1) RO.a = Math.max(0, RO.b - 1); }
+  $('#rcA').value = RO.a; $('#rcB').value = RO.b;
+  const w = reelWindow(); $('#reelLenInfo').textContent = 'De ' + fmt(w.start, true) + ' à ' + fmt(w.start + w.dur, true) + ' · ' + fmt(w.dur, true) + (w.dur > 90 ? ' · la création prend le temps de l\'extrait' : '');
+  saveRO(); refreshReel(false);
+}));
+/* aperçu animé avec le son */
+$('#rsPlay').onclick = () => {
+  if(rsPlaying){ rsPlaying = false; if(S.playing) pause(); $('#rsPlay').textContent = '▶ Aperçu'; return; }
+  if(!reelEng) return;
+  const w = reelWindow(); seek(w.start); unlockSpeaker(); ensureCtx(); play();
+  rsPlaying = true; $('#rsPlay').textContent = '■ Stop';
+  if(reelMode === 'video' && reelVid){ reelVid.currentTime = 0; reelVid.play().catch(() => {}); }
+  const pv = $('#rsCanvas'), pg = pv.getContext('2d'), c = reelBase(), g = c.getContext('2d'), buf = new Float32Array(1024);
+  const step = () => {
+    if(!rsPlaying || !S.playing || $('#vPartager').hidden || now() >= w.start + w.dur){ rsPlaying = false; if(S.playing) pause(); if(reelVid) reelVid.pause(); $('#rsPlay').textContent = '▶ Aperçu'; refreshReel(false); return; }
+    outAn.getFloatTimeDomainData(buf); let pk = 0; for(let i = 0; i < buf.length; i++){ const a = Math.abs(buf[i]); if(a > pk) pk = a; }
+    reelEng.render(g, now(), (now() - w.start) / w.dur, Math.min(1, pk * 1.4));
+    pg.drawImage(c, 0, 0, pv.width, pv.height);
+    requestAnimationFrame(step);
+  };
+  step();
+};
+/* aperçu vivant pour la caméra et la vidéo */
+setInterval(() => {
+  if(rsPlaying || S.reelRec || $('#vPartager').hidden || !reelEng) return;
+  if((reelMode === 'selfie' && camVid) || (reelMode === 'video' && reelVid)) refreshReel(false);
+}, 120);
+document.addEventListener('visibilitychange', () => { if(document.hidden && !S.reelRec) stopCam(); });
+$('#rrStop').onclick = () => { reelStop = true; };
+
+$('#bVideo').onclick = async () => {
+  if(busy) return;
+  if(!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream){ toast('Ce navigateur ne sait pas créer de vidéo.'); return; }
+  if(!trackEnd()){ toast('Rien à mettre en vidéo : importe ou enregistre une piste.'); return; }
+  if(reelMode === 'photo' && !reelImg){ toast('Choisis d\'abord une photo ou une affiche.'); return; }
+  if(reelMode === 'video' && !reelVid){ toast('Choisis d\'abord une vidéo.'); return; }
+  if(reelMode === 'selfie' && !camStream){
+    try{ await startCam(); renderReelUI(); }
+    catch(err){ toast(err.name === 'NotAllowedError' ? 'Accès à la caméra refusé : autorise-le dans les réglages de Safari.' : 'Caméra impossible : ' + err.message); return; }
+  }
+  if(rsPlaying) $('#rsPlay').click();
+  setBusy(true, 'Préparation de ton Reel…');
+  const ov = $('#reelRec');
+  try{
+    ensureCtx(); unlockSpeaker();
+    const out = lastMaster || await runMaster(); if(!out){ setBusy(false); return; }
+    lastMaster = out;
+    const win = reelWindow(), start = Math.min(win.start, Math.max(0, out.duration - 1)), dur = Math.min(win.dur, out.duration - start);
+    const eng = await reelEngine();
+    const cv = document.createElement('canvas'); cv.width = eng.W; cv.height = eng.H; const g = cv.getContext('2d');
     const src = ctx.createBufferSource(); src.buffer = out;
-    const dest = ctx.createMediaStreamDestination();
-    src.connect(dest); src.connect(ctx.destination);
+    const dest = ctx.createMediaStreamDestination(), an = ctx.createAnalyser(); an.fftSize = 1024;
+    src.connect(dest); src.connect(an); src.connect(ctx.destination);
+    const lvlBuf = new Float32Array(an.fftSize);
     const stream = cv.captureStream(30); stream.addTrack(dest.stream.getAudioTracks()[0]);
     const mime = ['video/mp4;codecs=avc1,mp4a', 'video/mp4', 'video/webm;codecs=vp8,opus', 'video/webm'].find(m => MediaRecorder.isTypeSupported(m)) || '';
-    const mr = new MediaRecorder(stream, mime ? { mimeType: mime, videoBitsPerSecond: 4000000 } : undefined);
+    const mr = new MediaRecorder(stream, mime ? { mimeType: mime, videoBitsPerSecond: dur > 90 ? 2500000 : 4000000 } : undefined);
     const chunks = []; mr.ondataavailable = e => { if(e.data.size) chunks.push(e.data); };
     const done = new Promise(r => mr.onstop = r);
     let t0 = null, countTo = 0, stopDraw = false;
     const draw = () => {
-      const pos = t0 == null ? start : start + clamp(ctx.currentTime - t0, 0, dur);
-      if(reelMode === 'app') drawApp(pos);
-      else { cover(reelMode === 'photo' ? reelImg : reelMode === 'video' ? reelVid : camVid, reelMode === 'selfie'); drawOver(pos); }
+      const el = t0 == null ? 0 : clamp(ctx.currentTime - t0, 0, dur), pos = start + el;
+      let lvl = 0; if(t0 != null){ an.getFloatTimeDomainData(lvlBuf); for(let i = 0; i < lvlBuf.length; i++){ const a = Math.abs(lvlBuf[i]); if(a > lvl) lvl = a; } lvl = Math.min(1, lvl * 1.2); }
+      eng.render(g, pos, el / dur, lvl);
       if(t0 == null && countTo){
         const n = Math.ceil((countTo - performance.now()) / 1000);
-        if(n > 0){ g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(0, 0, W, H); g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = `900 260px ${FONT}`; g.fillText(n, W / 2, H / 2); g.textBaseline = 'alphabetic'; }
+        if(n > 0){ g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(0, 0, eng.W, eng.H); g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '900 260px Archivo, system-ui, sans-serif'; g.fillText(n, eng.W / 2, eng.H / 2); g.textBaseline = 'alphabetic'; }
       }
+      if(t0 != null) $('#rrTxt').textContent = '● ' + fmt(el, true) + ' / ' + fmt(dur, true);
       if(!stopDraw) requestAnimationFrame(draw);
     };
-    /* aperçu plein écran pendant la création */
     $('#rrBox').innerHTML = ''; $('#rrBox').appendChild(cv); ov.hidden = false; S.reelRec = true; reelStop = false;
     draw();
     if(reelMode === 'selfie'){
@@ -2774,8 +2975,7 @@ $('#bVideo').onclick = async () => {
     }
     if(reelMode === 'video'){ reelVid.currentTime = 0; try{ await reelVid.play(); }catch(e){} }
     if(!reelStop){
-      $('#rrTxt').textContent = '● Enregistrement de l\'extrait…';
-      t0 = ctx.currentTime + 0.1; mr.start(250); src.start(t0, start, dur);
+      t0 = ctx.currentTime + 0.1; mr.start(500); src.start(t0, start, dur);
       const endAt = performance.now() + (dur + 0.35) * 1000;
       while(performance.now() < endAt && !reelStop) await new Promise(r => setTimeout(r, 100));
       try{ src.stop(); }catch(e){}
@@ -2785,11 +2985,10 @@ $('#bVideo').onclick = async () => {
     if(reelVid) reelVid.pause();
     if(chunks.length){
       const blob = new Blob(chunks, { type: mr.mimeType || 'video/mp4' });
-      lastVideo = new File([blob], baseName() + '-extrait.' + ((mr.mimeType || '').includes('mp4') ? 'mp4' : 'webm'), { type: blob.type });
+      lastVideo = new File([blob], baseName() + '-reel.' + ((mr.mimeType || '').includes('mp4') ? 'mp4' : 'webm'), { type: blob.type });
       $('#bShareVideo').hidden = false;
-      toast('Extrait vidéo prêt : touche « Partager la vidéo ».');
-    } else toast('Extrait annulé.');
-    if(reelMode === 'selfie') renderReelPick();
+      toast('🎉 Ton Reel est prêt : touche « Partager la vidéo ».');
+    } else toast('Reel annulé.');
   }catch(e){ ov.hidden = true; S.reelRec = false; toast('Vidéo impossible : ' + e.message); }
   setBusy(false);
 };
@@ -3237,6 +3436,8 @@ document.querySelector('.nav').addEventListener('click', e => {
   if(b.dataset.view === 'vMaster') renderMaster();
   if(b.dataset.view === 'vTexte' && !$('#viewP').hidden){ curLine = null; renderPrompt(); }
   if(b.dataset.view === 'vProjets') renderProjets();
+  if(b.dataset.view === 'vPartager') renderReelUI();
+  if(b.dataset.view !== 'vPartager' && rsPlaying) $('#rsPlay').click();
 });
 function fmt(s, short){
   s = Math.max(0, s); const m = Math.floor(s / 60), r = s - m * 60;
