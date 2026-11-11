@@ -317,7 +317,7 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
     <span class="grp" id="outInfo"></span>
     <button class="toggle" id="tMon" aria-pressed="false" title="Entendre ta voix avec les effets pendant la prise (casque obligatoire)">Retour voix</button>
     <button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-    <span class="grp" id="ver">Version 23</span>
+    <span class="grp" id="ver">Version 24</span>
     <span class="grp" id="latInfo" title="Le retard du téléphone est mesuré et corrigé tout seul à chaque prise">Calage auto</span>
   </div>
 </div>
@@ -515,7 +515,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 </section>
 
 <div class="help">
-  StudioXel · version 23.
+  StudioXel · version 24.
   Touche la pastille de couleur à gauche du nom d'une piste pour changer sa couleur.
   🔓 sur une piste verrouille une prise réussie : plus de réenregistrement, de coupe ni de déplacement par erreur.
   ⧉ duplique une piste. Appui long sur une prise : la phrase est sélectionnée pour la supprimer, la déplacer ou la copier.
@@ -972,18 +972,26 @@ function renderTracks(){
       </div>
       <div class="lane" style="width:${W}px;--bar:${bar}px"></div>`;
     const lane = row.querySelector('.lane');
-    if(t.buffer){
-      const clip = document.createElement('div');
-      clip.className = 'clip';
-      const w = Math.max(2, Math.round(t.buffer.duration * S.pps));
-      clip.style.cssText = `left:${t.offset * S.pps}px;width:${w}px;background:${t.color}22;border-color:${t.color}88`;
-      const cv = document.createElement('canvas');
-      cv.width = Math.min(w, 32000); cv.height = 78; cv.style.width = w + 'px';
-      clip.appendChild(cv);
-      clip.insertAdjacentHTML('beforeend', `<span style="color:${t.color}">${esc(t.name)}${t.keep ? ' · 🔒 validée' : ''}</span>`);
-      lane.appendChild(clip);
-      drawWave(cv, t.buffer, t.color);
-      dragClip(clip, t);
+    const segs = t.buffer ? segsOf(t.buffer) : [];
+    if(t.buffer && segs.length){
+      /* un bloc par morceau de son : les passages supprimés laissent un vrai trou */
+      const sr = t.buffer.sampleRate;
+      segs.forEach((sg, k) => {
+        const clip = document.createElement('div');
+        clip.className = 'clip';
+        const rel = sg.s0 / sr, w = Math.max(2, Math.round((sg.s1 - sg.s0) / sr * S.pps));
+        clip.dataset.rel = rel;
+        clip.style.cssText = `left:${(t.offset + rel) * S.pps}px;width:${w}px;background:${t.color}22;border-color:${t.color}88`;
+        const cv = document.createElement('canvas');
+        cv.width = Math.min(w, 32000); cv.height = 78; cv.style.width = w + 'px';
+        clip.appendChild(cv);
+        if(k === 0) clip.insertAdjacentHTML('beforeend', `<span style="color:${t.color}">${esc(t.name)}${t.keep ? ' · 🔒 validée' : ''}</span>`);
+        lane.appendChild(clip);
+        drawWave(cv, t.buffer, t.color, sg.s0, sg.s1);
+        dragClip(clip, t);
+      });
+    }else if(t.buffer){
+      lane.insertAdjacentHTML('beforeend', `<div class="empty">Tout a été supprimé sur cette prise</div>`);
     }else{
       lane.insertAdjacentHTML('beforeend', `<div class="empty">${t.arm ? 'Prête à enregistrer' : 'Vide · importe un fichier ou arme la piste'}</div>`);
     }
@@ -993,14 +1001,38 @@ function renderTracks(){
   renderQuick();
   drawSel();
 }
-function drawWave(cv, buf, color){
+const segCache = new WeakMap();
+function segsOf(buf){
+  let sg = segCache.get(buf); if(sg) return sg;
+  const n = buf.length, hop = Math.max(1, Math.round(buf.sampleRate * 0.01)), nf = Math.ceil(n / hop), minGap = 5;
+  const chs = []; for(let c = 0; c < buf.numberOfChannels; c++) chs.push(buf.getChannelData(c));
+  const z = new Uint8Array(nf);
+  for(let f = 0; f < nf; f++){
+    let zero = 1;
+    for(const d of chs){ for(let i = f * hop, e = Math.min(n, i + hop); i < e; i++) if(d[i] !== 0){ zero = 0; break; } if(!zero) break; }
+    z[f] = zero;
+  }
+  sg = []; let start = 0, f = 0;
+  while(f < nf){
+    if(z[f]){
+      let g = f; while(g < nf && z[g]) g++;
+      if(g - f >= minGap || f === 0 || g === nf){ if(f > start) sg.push({ s0: start * hop, s1: f * hop }); start = g; }
+      f = g;
+    } else f++;
+  }
+  if(start < nf) sg.push({ s0: start * hop, s1: n });
+  segCache.set(buf, sg);
+  return sg;
+}
+function drawWave(cv, buf, color, from, to){
   const g = cv.getContext('2d'), w = cv.width, h = cv.height;
   const a = buf.getChannelData(0), b = buf.numberOfChannels > 1 ? buf.getChannelData(1) : a;
-  const step = a.length / w, stride = Math.max(1, Math.floor(step / 48));
+  const s00 = from || 0, s11 = to || a.length;
+  const step = (s11 - s00) / w, stride = Math.max(1, Math.floor(step / 48));
   g.fillStyle = color;
   for(let x = 0; x < w; x++){
     let m = 0;
-    const s0 = Math.floor(x * step), s1 = Math.min(a.length, Math.floor((x + 1) * step));
+    const s0 = s00 + Math.floor(x * step), s1 = Math.min(s11, s00 + Math.floor((x + 1) * step));
     for(let i = s0; i < s1; i += stride){ const v = Math.max(Math.abs(a[i]), Math.abs(b[i])); if(v > m) m = v; }
     const bh = Math.max(1, Math.min(1, m) * h * 0.92);
     g.fillRect(x, (h - bh) / 2, 1, bh);
@@ -1045,7 +1077,7 @@ function dragClip(clip, t){
     if(Math.abs(dx) > 8 && !moved){ moved = true; pushUndo('le déplacement du clip'); }
     if(!moved) return;
     t.offset = Math.max(0, so + dx / S.pps);
-    clip.style.left = (t.offset * S.pps) + 'px';
+    clip.parentElement.querySelectorAll('.clip').forEach(c => { c.style.left = ((t.offset + (+c.dataset.rel || 0)) * S.pps) + 'px'; });
   });
   const up = e => {
     if(sx === undefined) return;
