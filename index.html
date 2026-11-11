@@ -304,10 +304,12 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
     <button class="toggle" id="tCount" aria-pressed="true" title="1 mesure de décompte avant la prise">Décompte</button>
     <button class="toggle" id="tMetro" aria-pressed="false">Métronome</button>
     <label class="grp">Ton blaze <input id="meName" style="width:120px;height:34px;background:var(--raise);border:1px solid var(--line);border-radius:6px;padding:0 8px;text-transform:none;letter-spacing:0" placeholder="ex. Xela"></label>
-    <button class="toggle" id="tCasque" aria-pressed="false" title="Active-le seulement si tu chantes avec un casque ou des écouteurs">Casque</button>
+    <span class="grp">Écoute</span>
+    <div class="seg" id="outSeg" role="group" aria-label="Écoute"><button data-o="auto" aria-pressed="false">Auto</button><button data-o="casque" aria-pressed="false">Casque</button><button data-o="hp" aria-pressed="false">Haut-parleur</button></div>
+    <span class="grp" id="outInfo"></span>
     <button class="toggle" id="tMon" aria-pressed="false" title="Entendre ta voix avec les effets pendant la prise (casque obligatoire)">Retour voix</button>
     <button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-    <span class="grp" id="ver">Version 20</span>
+    <span class="grp" id="ver">Version 22</span>
     <span class="grp" id="latInfo" title="Le retard du téléphone est mesuré et corrigé tout seul à chaque prise">Calage auto</span>
   </div>
 </div>
@@ -497,7 +499,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 </section>
 
 <div class="help">
-  StudioXel · version 20.
+  StudioXel · version 22.
   Touche la pastille de couleur à gauche du nom d'une piste pour changer sa couleur.
   🔓 sur une piste verrouille une prise réussie : plus de réenregistrement, de coupe ni de déplacement par erreur.
   ⧉ duplique une piste. Le bouton de sélection (à côté des loupes) permet de sélectionner une bande pour la supprimer, la déplacer ou la copier sur une autre piste.
@@ -536,7 +538,7 @@ let ctx, bus, mpre, preGain, lim, limOut, chainOut, bypass, outAn, outData;
 let mic = null, micAnalyser = null, micData = null;
 let sources = [], playStartCtx = 0, playStartPos = 0, metroTimer = null, nextBeatT = 0, nextBeatIdx = 0;
 let rec = null, recInfo = null, idSeq = 0;
-let monSrc = null;
+let monSrc = null, fbCount = 0, fbFreq = null;
 let doseOpen = null;
 let colorOpen = null;
 const PALETTE = ['#6fa8ff', '#38bdf8', '#4fd1b5', '#9be15d', '#f2b544', '#ff8a65', '#ff4b4b', '#ff7eb6', '#c58bff', '#e7eaf0'];
@@ -545,7 +547,7 @@ const LAT_DEF = { speaker: 120, wired: 110, bt: 260 };
 const S0 = 1;
 const S = {
   tracks: [], pps: 40, pos: 0, playing: false, recording: false, sel: null,
-  bpm: store.get('bpm', 90), casque: store.get('casque', false), markers: [], loop: { on: false, bars: 4, start: 0 }, latMap: store.get('latMap', {}), mon: store.get('mon', true), metro: false, countIn: store.get('countIn', true), lat: store.get('lat', 120)
+  bpm: store.get('bpm', 90), casque: false, outMode: store.get('outMode', 'auto'), headset: false, markers: [], loop: { on: false, bars: 4, start: 0 }, latMap: store.get('latMap', {}), mon: false, metro: false, countIn: store.get('countIn', true), lat: store.get('lat', 120)
 };
 const M = Object.assign({ preset:'rap', low:2.5, high:2, glue:45, target:-14, bypass:false, gain:0 }, store.get('master', {}));
 M.bypass = false;
@@ -748,6 +750,7 @@ async function getMic(){
   mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation:free, noiseSuppression:false, autoGainControl:free } });
   const lbl = (mic.getAudioTracks()[0]?.label || '');
   S.micLabel = lbl;
+  if(isHeadsetLabel(lbl) && !S.headset){ S.headset = true; applyOutMode(); }
   const src = ctx.createMediaStreamSource(mic);
   micAnalyser = ctx.createAnalyser(); micAnalyser.fftSize = 1024;
   micData = new Float32Array(micAnalyser.fftSize);
@@ -766,12 +769,13 @@ async function record(){
   const t = S.tracks.find(x => x.arm);
   if(!t){ toast('Arme d\'abord une piste avec son bouton R.'); return; }
   ensureCtx();
+  await detectHeadset(true);
   try{ await getMic(); }
   catch(e){ toast(e.name === 'NotAllowedError' ? 'Accès au micro refusé. Il faut ouvrir la page en ligne (https) et autoriser le micro.' : (e.message || 'Micro introuvable.')); return; }
   if(S.playing) pause();
   if(S.loop.on) S.pos = S.loop.start;
   if(!(await wake())){ releaseMic(); toast('L\'iPhone a coupé le son en branchant le micro. Touche ▶ une fois, puis relance REC.'); return; }
-  if(S.mon && S.casque){ try{ monSrc = ctx.createMediaStreamSource(mic); monSrc.connect(t.chain.input); }catch(e){ monSrc = null; } }
+  if(S.mon && S.casque){ try{ monSrc = ctx.createMediaStreamSource(mic); const mg = ctx.createGain(); mg.gain.value = 0.6; monSrc.connect(mg); mg.connect(t.chain.hp); fbCount = 0; }catch(e){ monSrc = null; } }
   const chunks = [];
   rec = new MediaRecorder(mic);
   rec.ondataavailable = e => { if(e.data.size) chunks.push(e.data); };
@@ -2828,6 +2832,41 @@ $('#selMoveTo').onclick = () => { if(bandSel) bandMove(trackById(bandSel.tid), t
 $('#selCopyTo').onclick = () => { if(bandSel) bandMove(trackById(bandSel.tid), trackById($('#selTo').value), bandSel.a, bandSel.b, bandSel.a, true); };
 $('#selClear').onclick = () => { bandSel = null; drawSel(); };
 
+/* ---------- Détection automatique du casque ---------- */
+const BUILTIN_MIC = /iphone|ipad|macbook|imac|\bmac\b|built-?in|intégr|internal|interne|default|par d[ée]faut|communications|fake|front|back|bottom|avant|arri[èe]re/i;
+const HEADSET_MIC = /airpods|bluetooth|beats|buds|headset|headphone|casque|[ée]couteur|earpod|usb|lightning|jabra|bose|sony|jbl|sennheiser|shure|rode|røde/i;
+const isHeadsetLabel = l => !!l && HEADSET_MIC.test(l);
+function applyOutMode(){
+  const was = S.casque;
+  S.casque = S.outMode === 'casque' || (S.outMode === 'auto' && S.headset);
+  document.querySelectorAll('#outSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.o === S.outMode));
+  const info = $('#outInfo');
+  if(info) info.textContent = S.outMode === 'auto' ? (S.headset ? '🎧 casque détecté' : '🔊 haut-parleur détecté') : '';
+  showLat();
+  return was !== S.casque;
+}
+async function detectHeadset(silent){
+  try{
+    const ds = await navigator.mediaDevices.enumerateDevices();
+    const labels = ds.filter(d => d.kind === 'audioinput').map(d => d.label || '');
+    const known = labels.some(l => l);
+    const lab = labels.filter(l => l);
+    /* un nom de casque connu, ou un micro en plus de celui du téléphone */
+    const hs = lab.some(isHeadsetLabel) || (lab.some(l => BUILTIN_MIC.test(l)) && lab.some(l => !BUILTIN_MIC.test(l)));
+    if(known || hs){
+      const before = S.headset; S.headset = hs;
+      applyOutMode();
+      if(!silent && before !== hs && S.outMode === 'auto') toast(hs ? '🎧 Casque détecté : l\'appli passe en mode casque.' : '🔊 Casque débranché : l\'appli passe en mode haut-parleur.');
+    } else applyOutMode();
+  }catch(e){ applyOutMode(); }
+}
+$('#outSeg').addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b) return;
+  S.outMode = b.dataset.o; store.set('outMode', S.outMode); applyOutMode();
+  toast(S.outMode === 'auto' ? 'Écoute auto : l\'appli détecte toute seule si un casque est branché.' : S.outMode === 'casque' ? 'Mode casque forcé.' : 'Mode haut-parleur forcé : le retour voix reste coupé.');
+});
+try{ navigator.mediaDevices?.addEventListener('devicechange', () => detectHeadset(false)); }catch(e){}
+
 /* ---------- Page principale : effets par piste, menu « + » ---------- */
 function showSessTitle(){ const h = $('#sessTitle'); if(h) h.textContent = sess.name || 'Nouvelle session'; }
 list.addEventListener('click', async e => {
@@ -2889,8 +2928,8 @@ $('#bpm').onchange = e => {
   bus.setBpm(S.bpm); renderTracks(); restart();
 };
 const tog = (id, key, persist) => { const b = $(id); b.setAttribute('aria-pressed', S[key]); b.onclick = () => { S[key] = !S[key]; b.setAttribute('aria-pressed', S[key]); if(persist) store.set(key, S[key]); }; };
-tog('#tMetro', 'metro'); tog('#tCount', 'countIn', true); tog('#tCasque', 'casque', true); tog('#tMon', 'mon', true);
-$('#tMon').addEventListener('click', () => { if(S.mon && !S.casque) toast('Retour voix : marche seulement avec « Casque » activé, sinon ça siffle (larsen).'); });
+tog('#tMetro', 'metro'); tog('#tCount', 'countIn', true); tog('#tMon', 'mon');
+$('#tMon').addEventListener('click', () => { if(S.mon && !S.casque) toast('Retour voix : il faut un casque ou des écouteurs, sinon ça siffle (larsen). Il s\'activera dès qu\'un casque sera détecté.'); });
 $('#zIn').onclick = () => { S.pps = Math.min(200, S.pps * 1.5); renderTracks(); };
 $('#zOut').onclick = () => { S.pps = Math.max(8, S.pps / 1.5); renderTracks(); };
 $('#ruler').addEventListener('click', e => seek(e.offsetX / S.pps));
@@ -2919,6 +2958,19 @@ function loop(){
     if(x > sc.scrollLeft + sc.clientWidth - 40 || x < sc.scrollLeft + HDR) sc.scrollLeft = x - HDR - 40;
   }
   if(micAnalyser) $('#meter').style.width = Math.min(100, peakOf(micAnalyser, micData) * 110) + '%';
+  if(monSrc && micAnalyser){
+    if(!fbFreq || fbFreq.length !== micAnalyser.frequencyBinCount) fbFreq = new Float32Array(micAnalyser.frequencyBinCount);
+    micAnalyser.getFloatFrequencyData(fbFreq);
+    let mx = -Infinity, sum = 0, n = 0;
+    for(let i = 4; i < fbFreq.length; i++){ const v = fbFreq[i]; if(v > mx) mx = v; if(isFinite(v)){ sum += v; n++; } }
+    const tonal = n && mx > -30 && mx - sum / n > 45, loud = peakOf(micAnalyser, micData) > 0.85;
+    fbCount = (tonal || loud) ? fbCount + 1 : Math.max(0, fbCount - 2);
+    if(fbCount > 12){
+      try{ monSrc.disconnect(); }catch(e){} monSrc = null; fbCount = 0;
+      S.mon = false; $('#tMon').setAttribute('aria-pressed', 'false');
+      toast('Larsen détecté : retour voix coupé. Le retour voix ne marche qu\'avec un casque ou des écouteurs branchés.');
+    }
+  }
   const op = peakOf(outAn, outData);
   outHold = Math.max(op, outHold * 0.95);
   const pct = Math.min(100, outHold * 100) + '%';
@@ -2941,7 +2993,8 @@ initAudio();
 [['Instru','instru'], ['Lead','lead'], ['Back','back'], ['Ambiance','ambiance']].forEach(([n, p]) => addTrack(n, p));
 renderTracks(); renderMaster(); lstat(); showLat();
 startSessions();
-$('#tCasque').addEventListener('click', showLat);
+detectHeadset(true);
+
 loop();
 
 /* Micro demandé dès l'ouverture, puis au premier toucher si le téléphone exige un geste */
