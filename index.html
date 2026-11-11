@@ -297,6 +297,14 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
 .witem b{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .witem span{font-size:12px;color:var(--muted)}
 .wlink{background:none;border:0;color:var(--accent);font-weight:700;padding:8px;text-decoration:underline}
+.reelpick{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.reelpick .note{flex:1 1 180px;margin:0}
+.rprev{width:96px;aspect-ratio:9/16;max-width:100%;background:#000;border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px;text-align:center;flex:none;border:1px solid var(--line)}
+.rprev img,.rprev video{width:100%;height:100%;object-fit:cover}
+.rprev video.mirror{transform:scaleX(-1)}
+.reelrec{position:fixed;inset:0;z-index:40;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:max(12px,env(safe-area-inset-top,0px)) 12px max(12px,env(safe-area-inset-bottom,0px))}
+#rrBox canvas{display:block;height:min(76vh,calc((100vw - 24px) * 16 / 9));width:auto;max-width:100%;aspect-ratio:9/16;border-radius:12px}
+.rrtxt{color:#e7eaf0;font:700 15px var(--display);text-align:center;max-width:90vw}
 .help{margin-top:12px;color:var(--muted);font-size:12px;line-height:1.6}
 .help kbd{font:11px var(--mono);border:1px solid var(--line);border-radius:4px;padding:1px 5px;background:var(--raise);color:var(--fg)}
 @media (max-width:480px){.sl,.grrow{grid-template-columns:92px minmax(0,1fr) 58px}}
@@ -326,7 +334,7 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
     <span class="grp" id="outInfo"></span>
     <button class="toggle" id="tMon" aria-pressed="false" title="Entendre ta voix avec les effets pendant la prise (casque obligatoire)">Retour voix</button>
     <button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-    <span class="grp" id="ver">Version 28</span>
+    <span class="grp" id="ver">Version 29</span>
     <span class="grp" id="latInfo" title="Le retard du téléphone est mesuré et corrigé tout seul à chaque prise">Calage auto</span>
   </div>
 </div>
@@ -463,11 +471,20 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
       <button class="sbtn" id="bSaveWav">Enregistrer en WAV</button>
     </div>
     <div class="sec">Reel / TikTok / Shorts</div>
+    <div class="seg" id="reelMode" role="group" aria-label="Fond de la vidéo">
+      <button data-m="app" aria-pressed="false">Vue appli</button>
+      <button data-m="photo" aria-pressed="false">Photo / affiche</button>
+      <button data-m="video" aria-pressed="false">Ma vidéo</button>
+      <button data-m="selfie" aria-pressed="false">Selfie en direct</button>
+    </div>
+    <div class="reelpick" id="reelPick"></div>
+    <input type="file" id="reelImgFile" accept="image/*" hidden>
+    <input type="file" id="reelVidFile" accept="video/*" hidden>
     <div class="btns">
-      <button class="sbtn" id="bVideo">Créer un extrait vidéo (30 s)</button>
+      <button class="sbtn" id="bVideo">Créer l'extrait (30 s)</button>
       <button class="sbtn primary" id="bShareVideo" hidden>Partager la vidéo</button>
     </div>
-    <p class="note">Vidéo verticale de ta session qui tourne : tes pistes, les vagues qui défilent, ton titre et tes paroles en sous-titres (si tu les as calées dans le prompteur). Le logo StudioXel reste discret dans un coin. L'extrait part de la position de lecture (ou du début de la boucle).</p>
+    <p class="note">Quel que soit le fond, la vidéo est signée StudioXel : petit logo et lien en haut, et l'appli qui tourne en transparence en bas. Tes paroles s'affichent si tu les as calées dans le prompteur. L'extrait part de la position de lecture (ou du début de la boucle).</p>
     <div class="sec">Pour un ingé son</div>
     <p class="note">Chaque piste en WAV avec ses effets, toutes calées au même départ.</p>
     <div class="btns">
@@ -525,7 +542,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 </section>
 
 <div class="help">
-  StudioXel · version 28.
+  StudioXel · version 29.
   Touche la pastille de couleur à gauche du nom d'une piste pour changer sa couleur.
   🔓 sur une piste verrouille une prise réussie : plus de réenregistrement, de coupe ni de déplacement par erreur.
   Glisse le doigt pour avancer dans la timeline. Touche une prise pour placer la lecture. Appui long : la phrase est sélectionnée pour la supprimer, la déplacer ou la copier. ⧉ duplique une piste.
@@ -533,6 +550,11 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
   Arme une piste avec R, puis REC. Tout se sauvegarde tout seul dans le téléphone. Le « + » regroupe pistes, repères, boucle et sessions.
 </div>
 
+<div class="reelrec" id="reelRec" hidden>
+  <div id="rrBox"></div>
+  <div class="rrtxt" id="rrTxt"></div>
+  <button class="sbtn" id="rrStop">■ Arrêter</button>
+</div>
 <div class="toast" id="toast" role="status"></div>
 
 <script>
@@ -2537,12 +2559,73 @@ function wrapLines(g, text, maxW, maxLines){
   return out;
 }
 const loadImg = src => new Promise(r => { if(!src) return r(null); const im = new Image(); im.onload = () => r(im); im.onerror = () => r(null); im.src = src; });
+/* ---------- Extrait vidéo : fond au choix, StudioXel toujours en filigrane ---------- */
+let reelMode = store.get('reelMode', 'app'), reelImg = null, reelVid = null, camStream = null, camVid = null, reelStop = false;
+function stopCam(){ if(camStream){ camStream.getTracks().forEach(tr => tr.stop()); } camStream = null; camVid = null; }
+async function startCam(){
+  if(camStream) return;
+  if(!navigator.mediaDevices?.getUserMedia) throw new Error('caméra indisponible ici');
+  camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 720 }, height: { ideal: 1280 } }, audio: false });
+  camVid = document.createElement('video'); camVid.playsInline = true; camVid.muted = true; camVid.className = 'mirror';
+  camVid.setAttribute('playsinline', ''); camVid.srcObject = camStream; await camVid.play();
+}
+function renderReelPick(){
+  document.querySelectorAll('#reelMode button').forEach(b => b.setAttribute('aria-pressed', b.dataset.m === reelMode));
+  const box = $('#reelPick');
+  if(reelMode === 'app') box.innerHTML = '<p class="note">La vidéo montre ta session qui tourne : pistes, vagues, titre et paroles.</p>';
+  if(reelMode === 'photo') box.innerHTML = `<div class="rprev">${reelImg ? `<img src="${reelImg.src}" alt="Image choisie">` : 'Aucune image'}</div><button class="sbtn" id="reelImgBtn">${reelImg ? 'Changer' : 'Choisir'} la photo ou l'affiche</button>`;
+  if(reelMode === 'video') box.innerHTML = `<div class="rprev" id="vidBox">${reelVid ? '' : 'Aucune vidéo'}</div><button class="sbtn" id="reelVidBtn">${reelVid ? 'Changer' : 'Choisir'} la vidéo</button><p class="note">Une vidéo de ta galerie : elle tourne sans son, ton morceau par-dessus.</p>`;
+  if(reelMode === 'selfie') box.innerHTML = `<div class="rprev" id="camBox">${camStream ? '' : 'Caméra éteinte'}</div><button class="sbtn" id="camBtn">${camStream ? 'Couper' : 'Allumer'} la caméra</button><p class="note">Tu te filmes pendant que ton son passe : 3, 2, 1… et ça tourne. Mets des écouteurs pour bien t'entendre.</p>`;
+  if(reelMode === 'video' && reelVid){ $('#vidBox').appendChild(reelVid); }
+  if(reelMode === 'selfie' && camVid){ $('#camBox').appendChild(camVid); camVid.play().catch(() => {}); }
+}
+$('#reelMode').addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b) return;
+  reelMode = b.dataset.m; store.set('reelMode', reelMode);
+  if(reelMode !== 'selfie') stopCam();
+  renderReelPick();
+});
+$('#reelPick').addEventListener('click', async e => {
+  if(e.target.id === 'reelImgBtn') $('#reelImgFile').click();
+  if(e.target.id === 'reelVidBtn') $('#reelVidFile').click();
+  if(e.target.id === 'camBtn'){
+    if(camStream){ stopCam(); renderReelPick(); return; }
+    try{ await startCam(); renderReelPick(); }
+    catch(err){ toast(err.name === 'NotAllowedError' ? 'Accès à la caméra refusé : autorise-le dans les réglages de Safari.' : 'Caméra impossible : ' + err.message); }
+  }
+});
+$('#reelImgFile').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = ''; if(!f) return;
+  const im = await loadImg(URL.createObjectURL(f));
+  if(!im){ toast('Image non lue. Essaie un JPG ou un PNG.'); return; }
+  reelImg = im; renderReelPick();
+});
+$('#reelVidFile').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = ''; if(!f) return;
+  const v = document.createElement('video');
+  v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.loop = true; v.preload = 'auto';
+  v.src = URL.createObjectURL(f);
+  const ok = await new Promise(r => { v.onloadeddata = () => r(true); v.onerror = () => r(false); setTimeout(() => r(v.readyState >= 2), 8000); });
+  if(!ok){ toast('Vidéo non lue. Essaie une vidéo filmée avec l\'iPhone.'); return; }
+  reelVid = v; renderReelPick();
+});
+document.addEventListener('visibilitychange', () => { if(document.hidden && !S.reelRec) stopCam(); });
+$('#rrStop').onclick = () => { reelStop = true; };
+renderReelPick();
+
 $('#bVideo').onclick = async () => {
   if(busy) return;
   if(!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream){ toast('Ce navigateur ne sait pas créer de vidéo.'); return; }
+  if(reelMode === 'photo' && !reelImg){ toast('Choisis d\'abord une photo ou une affiche.'); return; }
+  if(reelMode === 'video' && !reelVid){ toast('Choisis d\'abord une vidéo.'); return; }
+  if(reelMode === 'selfie' && !camStream){
+    try{ await startCam(); renderReelPick(); }
+    catch(err){ toast(err.name === 'NotAllowedError' ? 'Accès à la caméra refusé : autorise-le dans les réglages de Safari.' : 'Caméra impossible : ' + err.message); return; }
+  }
   setBusy(true, 'Préparation de l\'extrait…');
+  const ov = $('#reelRec');
   try{
-    ensureCtx();
+    ensureCtx(); unlockSpeaker();
     const out = lastMaster || await runMaster(); if(!out){ setBusy(false); return; }
     lastMaster = out;
     const start = clamp(S.loop.on ? S.loop.start : S.pos, 0, Math.max(0, out.duration - 5)), dur = Math.min(30, out.duration - start);
@@ -2551,41 +2634,53 @@ $('#bVideo').onclick = async () => {
     const g = cv.getContext('2d'), cs = coverSource();
     await new Promise(r => { const im = cs.img; if(!im || im.complete) r(); else { im.onload = r; im.onerror = r; } });
     const logo = await loadImg(document.querySelector('link[rel="apple-touch-icon"]')?.href);
-    /* les pistes telles qu'elles sont dans l'appli */
     const trs = S.tracks.filter(t => t.buffer && audible(t)).slice(0, 6).map(t => {
       const env = envOf(t.buffer); let pk = 0; for(const v of env) if(v > pk) pk = v;
       const sr = t.buffer.sampleRate;
       return { t, env, pk: pk || 1, segs: segsOf(t.buffer).map(sg => [t.offset + sg.s0 / sr, t.offset + sg.s1 / sr]),
         fx: tfxKeys(t).filter(k => tfxOn(t, k)).map(k => TFX_NAMES[k]).join(' · ') };
     });
-    const src = ctx.createBufferSource(); src.buffer = out;
-    const dest = ctx.createMediaStreamDestination(), an = ctx.createAnalyser(); an.fftSize = 256;
-    src.connect(dest); src.connect(an);
-    const stream = cv.captureStream(30); stream.addTrack(dest.stream.getAudioTracks()[0]);
-    const mime = ['video/mp4;codecs=avc1,mp4a', 'video/mp4', 'video/webm;codecs=vp8,opus', 'video/webm'].find(m => MediaRecorder.isTypeSupported(m)) || '';
-    const mr = new MediaRecorder(stream, mime ? { mimeType: mime, videoBitsPerSecond: 3500000 } : undefined);
-    const chunks = []; mr.ondataavailable = e => { if(e.data.size) chunks.push(e.data); };
-    const done = new Promise(r => mr.onstop = r);
     const title = cs.title || sess.name || 'Session', artist = cs.artist || ME.name || '';
     const FONT = 'Archivo, system-ui, sans-serif', MONO = '"IBM Plex Mono", ui-monospace, monospace';
-    const BG = '#11141b', PANEL = '#181c26', LINE = '#2b3344', MUTED = '#8b94a8', ACC = '#f2b544';
-    const HX = 196, LX = 206, LW = W - LX - 16, WIN = 7, PPS = LW / WIN, PH = 0.3;
-    const top = 210, bottom = cues.length ? 1030 : 1210, rowH = Math.min(220, (bottom - top - 34) / Math.max(1, trs.length));
+    const BG = '#11141b', PANEL = '#181c26', MUTED = '#8b94a8', ACC = '#f2b544';
     const round = (x, y, w, h, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); };
-    const t0 = ctx.currentTime + 0.1;
-    let stopDraw = false;
-    const draw = () => {
-      const el = clamp(ctx.currentTime - t0, 0, dur), pos = start + el, ws = pos - WIN * PH;
-      g.fillStyle = BG; g.fillRect(0, 0, W, H);
-      /* filigrane StudioXel, discret */
-      g.globalAlpha = 0.85;
+    const fit = (txt, mw) => { if(g.measureText(txt).width <= mw) return txt; while(txt.length > 1 && g.measureText(txt + '…').width > mw) txt = txt.slice(0, -1); return txt + '…'; };
+    const waves = (tr, x0, y, w, hh, ws, win, alpha) => {
+      const pps = w / win, t = tr.t, mid = y + hh / 2;
+      g.globalAlpha = alpha; g.fillStyle = t.color;
+      for(let x = 0; x < w; x += 3){
+        const fi = Math.floor((ws + x / pps - t.offset) * 100);
+        if(fi < 0 || fi >= tr.env.length) continue;
+        const v = tr.env[fi] / tr.pk; if(v <= 0) continue;
+        const bh = Math.max(2, v * hh); g.fillRect(x0 + x, mid - bh / 2, 2, bh);
+      }
+      g.globalAlpha = 1;
+    };
+    const lyrics = (pos, y0, shadow) => {
+      if(!cues.length) return;
+      let k = -1; for(let i = 0; i < cues.length; i++) if(cues[i].t <= pos + 0.05) k = i;
+      const cur = k >= 0 && (k + 1 < cues.length || pos - cues[k].t < 6) ? cues[k] : null, nxt = cues[k + 1];
+      g.textAlign = 'center'; g.textBaseline = 'alphabetic'; let ly = y0;
+      if(cur){ g.font = `800 40px ${FONT}`; g.lineWidth = 8; g.strokeStyle = shadow; g.fillStyle = '#FFFFFF';
+        for(const ln of wrapLines(g, cur.text, 660, 2)){ g.strokeText(ln, W / 2, ly); g.fillText(ln, W / 2, ly); ly += 50; } }
+      if(nxt && nxt.t - pos < 8){ g.font = `600 28px ${FONT}`; g.lineWidth = 6; g.strokeStyle = shadow; g.fillStyle = '#c9cfdb'; const l2 = wrapLines(g, nxt.text, 660, 1)[0]; g.strokeText(l2, W / 2, ly + 4); g.fillText(l2, W / 2, ly + 4); }
+    };
+    const brandMark = (shadow) => {
+      g.save();
+      if(shadow){ g.shadowColor = 'rgba(0,0,0,.7)'; g.shadowBlur = 10; }
+      g.globalAlpha = 0.9;
       if(logo) g.drawImage(logo, 24, 24, 40, 40);
       g.textBaseline = 'middle'; g.textAlign = 'left'; g.font = `900 22px ${FONT}`;
-      g.fillStyle = '#F4EFE6'; g.fillText('STUDIO', 72, 44); const sw = g.measureText('STUDIO').width;
-      g.fillStyle = '#D7261E'; g.fillText('XEL', 72 + sw, 44);
-      g.textAlign = 'right'; g.font = `500 17px ${FONT}`; g.fillStyle = MUTED; g.fillText(SXL_URL, W - 24, 44);
-      g.globalAlpha = 1;
-      /* en-tête : pochette, titre, chrono */
+      g.fillStyle = '#F4EFE6'; g.fillText('STUDIO', 72, 38); const sw = g.measureText('STUDIO').width;
+      g.fillStyle = '#D7261E'; g.fillText('XEL', 72 + sw, 38);
+      g.font = `600 15px ${FONT}`; g.fillStyle = '#e7eaf0'; g.fillText(SXL_URL, 72, 58);
+      g.restore();
+    };
+    /* fond « vue appli » */
+    const drawApp = pos => {
+      const HX = 196, LX = 206, LW = W - LX - 16, WIN = 7, PPS = LW / WIN, PH = 0.3, ws = pos - WIN * PH;
+      const top = 210, bottom = cues.length ? 1030 : 1210, rowH = Math.min(220, (bottom - top - 34) / Math.max(1, trs.length));
+      g.fillStyle = BG; g.fillRect(0, 0, W, H);
       const im = cs.img;
       if(im && im.naturalWidth){
         const r = im.naturalWidth / im.naturalHeight; let sx = 0, sy = 0, sww = im.naturalWidth, shh = im.naturalHeight;
@@ -2593,23 +2688,20 @@ $('#bVideo').onclick = async () => {
         g.save(); round(24, 88, 92, 92, 12); g.clip(); g.drawImage(im, sx, sy, sww, shh, 24, 88, 92, 92); g.restore();
       }
       g.textAlign = 'left'; g.textBaseline = 'alphabetic';
-      const fit = (txt, mw) => { if(g.measureText(txt).width <= mw) return txt; while(txt.length > 1 && g.measureText(txt + '…').width > mw) txt = txt.slice(0, -1); return txt + '…'; };
       g.fillStyle = '#e7eaf0'; g.font = `800 32px ${FONT}`; g.fillText(fit(title, W - 132 - 230), 132, 126);
       if(artist){ g.fillStyle = '#D7261E'; g.font = `700 24px ${FONT}`; g.fillText(fit(artist, W - 132 - 230), 132, 162); }
       g.textAlign = 'right'; g.fillStyle = '#e7eaf0'; g.font = `500 36px ${MONO}`; g.fillText(fmt(pos), W - 24, 140);
       g.fillStyle = ACC; g.beginPath(); g.moveTo(W - 196, 116); g.lineTo(W - 196, 140); g.lineTo(W - 176, 128); g.closePath(); g.fill();
-      /* règle */
       g.fillStyle = PANEL; g.fillRect(0, top - 10, W, 34);
       g.font = `400 15px ${MONO}`; g.textAlign = 'left'; g.fillStyle = MUTED;
       for(let sec = Math.ceil(ws); sec < ws + WIN; sec++){ const x = LX + (sec - ws) * PPS; g.fillRect(x, top + 12, 1, 10); if(sec % 2 === 0) g.fillText(fmt(sec, true), x + 4, top + 8); }
-      /* pistes */
       trs.forEach((tr, k) => {
         const t = tr.t, y = top + 30 + k * rowH, hh = rowH - 10;
         g.fillStyle = PANEL; g.fillRect(0, y, HX, hh);
         g.fillStyle = BG; g.fillRect(LX - 4, y, W - LX + 4, hh);
         g.fillStyle = t.color; round(12, y + 12, 10, hh - 24, 4); g.fill();
         g.fillStyle = '#e7eaf0'; g.font = `800 24px ${FONT}`; g.textAlign = 'left'; g.fillText(t.name.slice(0, 11), 34, y + 40);
-        if(tr.fx){ g.fillStyle = ACC; g.font = `700 15px ${FONT}`; const fl = wrapLines(g, tr.fx, HX - 40, 2); fl.forEach((ln, i) => g.fillText(ln, 34, y + 68 + i * 20)); }
+        if(tr.fx){ g.fillStyle = ACC; g.font = `700 15px ${FONT}`; wrapLines(g, tr.fx, HX - 40, 2).forEach((ln, i) => g.fillText(ln, 34, y + 68 + i * 20)); }
         if(t.keep){ g.fillStyle = '#4fd1b5'; g.font = `700 15px ${FONT}`; g.fillText('🔒 validée', 34, y + hh - 14); }
         g.save(); g.beginPath(); g.rect(LX, y, LW, hh); g.clip();
         for(const [a, b] of tr.segs){
@@ -2618,42 +2710,87 @@ $('#bVideo').onclick = async () => {
           g.fillStyle = t.color + '22'; g.strokeStyle = t.color + '88'; g.lineWidth = 2;
           round(xa, y + 6, xb - xa, hh - 12, 8); g.fill(); g.stroke();
         }
-        g.fillStyle = t.color; const mid = y + hh / 2;
-        for(let x = 0; x < LW; x += 3){
-          const tt = ws + x / PPS, fi = Math.floor((tt - t.offset) * 100);
-          if(fi < 0 || fi >= tr.env.length) continue;
-          const v = tr.env[fi] / tr.pk; if(v <= 0) continue;
-          const bh = Math.max(2, v * (hh - 24));
-          g.fillRect(LX + x, mid - bh / 2, 2, bh);
-        }
+        waves(tr, LX, y + 12, LW, hh - 24, ws, WIN, 1);
         g.restore();
       });
-      /* curseur de lecture */
       const px = LX + LW * PH;
       g.fillStyle = '#e7eaf0'; g.fillRect(px - 1, top - 10, 3, Math.min(bottom, top + 30 + trs.length * rowH) - top + 10);
       g.beginPath(); g.moveTo(px - 9, top - 10); g.lineTo(px + 10, top - 10); g.lineTo(px + 0.5, top + 2); g.closePath(); g.fill();
-      /* paroles */
-      if(cues.length){
-        let k = -1; for(let i = 0; i < cues.length; i++) if(cues[i].t <= pos + 0.05) k = i;
-        const cur = k >= 0 && (k + 1 < cues.length || pos - cues[k].t < 6) ? cues[k] : null, nxt = cues[k + 1];
-        g.textAlign = 'center'; let ly = 1095;
-        if(cur){ g.font = `800 40px ${FONT}`; g.lineWidth = 8; g.strokeStyle = BG; g.fillStyle = '#FFFFFF';
-          for(const ln of wrapLines(g, cur.text, 660, 2)){ g.strokeText(ln, W / 2, ly); g.fillText(ln, W / 2, ly); ly += 50; } }
-        if(nxt && nxt.t - pos < 8){ g.font = `600 28px ${FONT}`; g.fillStyle = '#6b7488'; g.fillText(wrapLines(g, nxt.text, 660, 1)[0], W / 2, ly + 4); }
+      lyrics(pos, 1095, BG);
+      /* filigrane en haut */
+      g.fillStyle = BG; g.fillRect(0, 0, W, 76);
+      brandMark(false);
+    };
+    /* fond choisi par l'utilisateur (photo, vidéo, selfie) */
+    const cover = (el, mirror) => {
+      const sw0 = el.videoWidth || el.naturalWidth, sh0 = el.videoHeight || el.naturalHeight;
+      g.fillStyle = '#000'; g.fillRect(0, 0, W, H);
+      if(!sw0 || !sh0) return;
+      const k = Math.max(W / sw0, H / sh0), dw = sw0 * k, dh = sh0 * k;
+      g.save(); if(mirror){ g.translate(W, 0); g.scale(-1, 1); }
+      g.drawImage(el, (W - dw) / 2, (H - dh) / 2, dw, dh); g.restore();
+    };
+    const drawOver = pos => {
+      /* bas : dégradé léger + l'appli qui tourne en transparence */
+      const grd = g.createLinearGradient(0, 900, 0, H); grd.addColorStop(0, 'rgba(0,0,0,0)'); grd.addColorStop(1, 'rgba(0,0,0,.6)');
+      g.fillStyle = grd; g.fillRect(0, 900, W, H - 900);
+      const rows = trs.slice(0, 4), x0 = 28, w = W - 56, top = 1110, hh = 140, rh = hh / Math.max(1, rows.length), WIN = 8, ws = pos - WIN * 0.3;
+      g.globalAlpha = 0.18; g.fillStyle = '#000'; round(x0 - 8, top - 10, w + 16, hh + 20, 12); g.fill(); g.globalAlpha = 1;
+      rows.forEach((tr, k) => waves(tr, x0, top + k * rh + 4, w, rh - 8, ws, WIN, 0.55));
+      const px = x0 + w * 0.3;
+      g.globalAlpha = 0.75; g.fillStyle = '#ffffff'; g.fillRect(px - 1, top - 8, 2, hh + 16); g.globalAlpha = 1;
+      g.save(); g.shadowColor = 'rgba(0,0,0,.7)'; g.shadowBlur = 8; g.globalAlpha = 0.85;
+      g.textAlign = 'right'; g.textBaseline = 'alphabetic'; g.font = `500 22px ${MONO}`; g.fillStyle = '#ffffff'; g.fillText(fmt(pos), W - 28, top - 18);
+      g.restore();
+      lyrics(pos, 990, 'rgba(0,0,0,.85)');
+      brandMark(true);
+    };
+    const src = ctx.createBufferSource(); src.buffer = out;
+    const dest = ctx.createMediaStreamDestination();
+    src.connect(dest); src.connect(ctx.destination);
+    const stream = cv.captureStream(30); stream.addTrack(dest.stream.getAudioTracks()[0]);
+    const mime = ['video/mp4;codecs=avc1,mp4a', 'video/mp4', 'video/webm;codecs=vp8,opus', 'video/webm'].find(m => MediaRecorder.isTypeSupported(m)) || '';
+    const mr = new MediaRecorder(stream, mime ? { mimeType: mime, videoBitsPerSecond: 4000000 } : undefined);
+    const chunks = []; mr.ondataavailable = e => { if(e.data.size) chunks.push(e.data); };
+    const done = new Promise(r => mr.onstop = r);
+    let t0 = null, countTo = 0, stopDraw = false;
+    const draw = () => {
+      const pos = t0 == null ? start : start + clamp(ctx.currentTime - t0, 0, dur);
+      if(reelMode === 'app') drawApp(pos);
+      else { cover(reelMode === 'photo' ? reelImg : reelMode === 'video' ? reelVid : camVid, reelMode === 'selfie'); drawOver(pos); }
+      if(t0 == null && countTo){
+        const n = Math.ceil((countTo - performance.now()) / 1000);
+        if(n > 0){ g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(0, 0, W, H); g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = `900 260px ${FONT}`; g.fillText(n, W / 2, H / 2); g.textBaseline = 'alphabetic'; }
       }
       if(!stopDraw) requestAnimationFrame(draw);
     };
-    draw(); mr.start(250);
-    src.start(t0, start, dur);
-    toast('Création de l\'extrait vidéo… (' + Math.round(dur) + ' s)' + (cues.length ? '' : ' · Astuce : cale tes paroles dans le prompteur pour les avoir en sous-titres.'));
-    await new Promise(r => setTimeout(r, (dur + 0.35) * 1000));
-    stopDraw = true; mr.stop(); try{ src.stop(); }catch(e){}
-    await done;
-    const blob = new Blob(chunks, { type: mr.mimeType || 'video/mp4' });
-    lastVideo = new File([blob], baseName() + '-extrait.' + ((mr.mimeType || '').includes('mp4') ? 'mp4' : 'webm'), { type: blob.type });
-    $('#bShareVideo').hidden = false;
-    toast('Extrait vidéo prêt : touche « Partager la vidéo ».');
-  }catch(e){ toast('Vidéo impossible : ' + e.message); }
+    /* aperçu plein écran pendant la création */
+    $('#rrBox').innerHTML = ''; $('#rrBox').appendChild(cv); ov.hidden = false; S.reelRec = true; reelStop = false;
+    draw();
+    if(reelMode === 'selfie'){
+      $('#rrTxt').textContent = 'Prépare-toi…';
+      countTo = performance.now() + 3000;
+      while(performance.now() < countTo && !reelStop) await new Promise(r => setTimeout(r, 100));
+    }
+    if(reelMode === 'video'){ reelVid.currentTime = 0; try{ await reelVid.play(); }catch(e){} }
+    if(!reelStop){
+      $('#rrTxt').textContent = '● Enregistrement de l\'extrait…';
+      t0 = ctx.currentTime + 0.1; mr.start(250); src.start(t0, start, dur);
+      const endAt = performance.now() + (dur + 0.35) * 1000;
+      while(performance.now() < endAt && !reelStop) await new Promise(r => setTimeout(r, 100));
+      try{ src.stop(); }catch(e){}
+      mr.stop(); await done;
+    }
+    stopDraw = true; ov.hidden = true; S.reelRec = false;
+    if(reelVid) reelVid.pause();
+    if(chunks.length){
+      const blob = new Blob(chunks, { type: mr.mimeType || 'video/mp4' });
+      lastVideo = new File([blob], baseName() + '-extrait.' + ((mr.mimeType || '').includes('mp4') ? 'mp4' : 'webm'), { type: blob.type });
+      $('#bShareVideo').hidden = false;
+      toast('Extrait vidéo prêt : touche « Partager la vidéo ».');
+    } else toast('Extrait annulé.');
+    if(reelMode === 'selfie') renderReelPick();
+  }catch(e){ ov.hidden = true; S.reelRec = false; toast('Vidéo impossible : ' + e.message); }
   setBusy(false);
 };
 $('#bShareVideo').onclick = () => { if(lastVideo) shareFiles([lastVideo], 'Enregistré avec StudioXel 🎤 https://' + SXL_URL); };
