@@ -288,6 +288,15 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
 .selbar .note{flex-basis:100%;margin:0}
 .sbtn.keep[aria-pressed=true]{background:var(--ok);border-color:var(--ok);color:#06231c}
 .row.kept .clip{box-shadow:inset 0 0 0 2px var(--ok)}
+.welcome{position:fixed;inset:0;z-index:30;background:rgba(5,6,10,.78);display:flex;align-items:center;justify-content:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.wpanel{width:100%;max-width:440px;max-height:100%;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:10px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.wpanel h2{margin:0 0 6px;font:800 22px/1.2 var(--display)}
+.wbig{height:60px;border-radius:12px;border:0;background:var(--accent);color:#1a1405;font:800 19px var(--display)}
+.wsub{margin-top:8px;font:700 11px var(--display);text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
+.witem{text-align:left;background:var(--raise);border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:3px}
+.witem b{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.witem span{font-size:12px;color:var(--muted)}
+.wlink{background:none;border:0;color:var(--accent);font-weight:700;padding:8px;text-decoration:underline}
 .help{margin-top:12px;color:var(--muted);font-size:12px;line-height:1.6}
 .help kbd{font:11px var(--mono);border:1px solid var(--line);border-radius:4px;padding:1px 5px;background:var(--raise);color:var(--fg)}
 @media (max-width:480px){.sl,.grrow{grid-template-columns:92px minmax(0,1fr) 58px}}
@@ -317,7 +326,7 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
     <span class="grp" id="outInfo"></span>
     <button class="toggle" id="tMon" aria-pressed="false" title="Entendre ta voix avec les effets pendant la prise (casque obligatoire)">Retour voix</button>
     <button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-    <span class="grp" id="ver">Version 27</span>
+    <span class="grp" id="ver">Version 28</span>
     <span class="grp" id="latInfo" title="Le retard du téléphone est mesuré et corrigé tout seul à chaque prise">Calage auto</span>
   </div>
 </div>
@@ -516,7 +525,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 </section>
 
 <div class="help">
-  StudioXel · version 27.
+  StudioXel · version 28.
   Touche la pastille de couleur à gauche du nom d'une piste pour changer sa couleur.
   🔓 sur une piste verrouille une prise réussie : plus de réenregistrement, de coupe ni de déplacement par erreur.
   Glisse le doigt pour avancer dans la timeline. Touche une prise pour placer la lecture. Appui long : la phrase est sélectionnée pour la supprimer, la déplacer ou la copier. ⧉ duplique une piste.
@@ -2257,11 +2266,35 @@ async function startSessions(){
   try{
     const all = await dbDo('sessions', 'readonly', st => st.getAll());
     sessIndex = all.map(r => ({ id: r.id, name: r.name, link: r.link, updated: r.updated, dur: r.dur }));
-    const last = store.get('sessId', null);
-    if(last && sessIndex.some(x => x.id === last)){ await loadSession(last); toast('Session « ' + sess.name + ' » rouverte.'); }
+    store.set('sessId', null);
   }catch(e){ setSessState('Sauvegarde indisponible sur ce navigateur'); }
   sessReady = true;
   renderSessBar();
+  showWelcome();
+}
+/* À l'ouverture : on choisit, rien n'est rouvert d'office */
+function showWelcome(){
+  if(!sessIndex.length) return;
+  const list = sessIndex.slice().sort((a, b) => b.updated - a.updated).slice(0, 4);
+  const w = document.createElement('div');
+  w.className = 'welcome'; w.setAttribute('role', 'dialog'); w.setAttribute('aria-label', 'Que veux-tu faire ?');
+  w.innerHTML = `<div class="wpanel">
+    <h2>${ME.name ? 'Salut ' + esc(ME.name) + ',' : 'Salut,'} on fait quoi ?</h2>
+    <button class="wbig" data-w="new">+ Nouveau son</button>
+    <div class="wsub">Reprendre une session</div>
+    ${list.map(x => `<button class="witem" data-w="${x.id}"><b>${esc(x.name)}</b><span>${esc(linkLabel(x.link) || 'Pas liée à un projet')} · ${fmt(x.dur || 0, true)} · ${new Date(x.updated).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}</span></button>`).join('')}
+    ${sessIndex.length > 4 ? '<button class="wlink" data-w="all">Voir toutes mes sessions</button>' : ''}
+  </div>`;
+  document.body.appendChild(w);
+  w.querySelector('.wbig').focus();
+  w.addEventListener('click', async e => {
+    const b = e.target.closest('[data-w]'); if(!b && e.target !== w) return;
+    const v = b ? b.dataset.w : 'new';
+    w.remove();
+    if(v === 'all'){ $('#plusMenu').hidden = false; $('#plusBtn').setAttribute('aria-expanded', 'true'); renderSessBar(); $('#sessList').hidden = false; renderSessList(); return; }
+    if(v !== 'new') await openSession(v);
+    else toast('Nouveau son : importe ton instru sur la piste Instru.');
+  });
 }
 
 /* ---------- Repères couplet / refrain ---------- */
