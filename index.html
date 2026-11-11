@@ -317,7 +317,7 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
     <span class="grp" id="outInfo"></span>
     <button class="toggle" id="tMon" aria-pressed="false" title="Entendre ta voix avec les effets pendant la prise (casque obligatoire)">Retour voix</button>
     <button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-    <span class="grp" id="ver">Version 26</span>
+    <span class="grp" id="ver">Version 27</span>
     <span class="grp" id="latInfo" title="Le retard du téléphone est mesuré et corrigé tout seul à chaque prise">Calage auto</span>
   </div>
 </div>
@@ -516,7 +516,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 </section>
 
 <div class="help">
-  StudioXel · version 26.
+  StudioXel · version 27.
   Touche la pastille de couleur à gauche du nom d'une piste pour changer sa couleur.
   🔓 sur une piste verrouille une prise réussie : plus de réenregistrement, de coupe ni de déplacement par erreur.
   Glisse le doigt pour avancer dans la timeline. Touche une prise pour placer la lecture. Appui long : la phrase est sélectionnée pour la supprimer, la déplacer ou la copier. ⧉ duplique une piste.
@@ -764,6 +764,7 @@ async function getMic(){
   if(mic) return mic;
   if(!navigator.mediaDevices?.getUserMedia) throw new Error('Micro indisponible ici : la page doit être ouverte en ligne (adresse https), pas en aperçu.');
   const free = !S.casque; /* sans casque : on laisse l'iPhone filtrer l'instru qui sort du haut-parleur et régler le gain */
+  audioSessionRec();
   mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation:free, noiseSuppression:false, autoGainControl:free } });
   const lbl = (mic.getAudioTracks()[0]?.label || '');
   S.micLabel = lbl;
@@ -774,7 +775,26 @@ async function getMic(){
   src.connect(micAnalyser);
   return mic;
 }
+/* iPhone : après le micro, le son peut rester dans l'écouteur du haut ou être coupé par le bouton silencieux */
+function audioSessionPlay(){ try{ if(navigator.audioSession) navigator.audioSession.type = 'playback'; }catch(e){} }
+function audioSessionRec(){ try{ if(navigator.audioSession) navigator.audioSession.type = 'play-and-record'; }catch(e){} }
+let silentEl = null;
+function unlockSpeaker(){
+  try{
+    if(!silentEl){
+      /* son muet en boucle : pousse l'iPhone en mode lecture sur le haut-parleur, même bouton silencieux activé */
+      const sr = 8000, n = sr / 2, ab = new ArrayBuffer(44 + n * 2), v = new DataView(ab);
+      const ws = (o, t) => { for(let i = 0; i < t.length; i++) v.setUint8(o + i, t.charCodeAt(i)); };
+      ws(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); ws(8, 'WAVE'); ws(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+      v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); ws(36, 'data'); v.setUint32(40, n * 2, true);
+      silentEl = new Audio(URL.createObjectURL(new Blob([ab], { type: 'audio/wav' })));
+      silentEl.loop = true; silentEl.setAttribute('playsinline', ''); silentEl.volume = 0.01;
+    }
+    const pr = silentEl.play(); if(pr) pr.catch(() => {});
+  }catch(e){}
+}
 function releaseMic(){
+  audioSessionPlay();
   if(monSrc){ try{ monSrc.disconnect(); }catch(e){} monSrc = null; }
   if(mic){ mic.getTracks().forEach(tr => tr.stop()); }
   mic = null; micAnalyser = null;
@@ -814,17 +834,19 @@ async function record(){
       let pk = 0;
       for(let c = 0; c < buf.numberOfChannels; c++){ const d = buf.getChannelData(c); for(let i = 0; i < d.length; i++){ const a = Math.abs(d[i]); if(a > pk) pk = a; } }
       if(pk > 1e-4){ const g = Math.min(40, CEIL / pk); for(let c = 0; c < buf.numberOfChannels; c++){ const d = buf.getChannelData(c); for(let i = 0; i < d.length; i++) d[i] *= g; } }
-      const tr = recInfo.track;
+      let tr = recInfo.track;
       pushUndo('la prise', false, true);
       let off0 = recInfo.pos, punched = false;
+      if(!recInfo.punch && tr.buffer) tr = trackBelow(tr, true);
       if(recInfo.punch && tr.buffer){ const pm = punchMerge(tr, buf, recInfo.pos, recInfo.end); buf = pm.buffer; off0 = pm.offset; punched = true; }
       claim(tr);
-      tr.takes.push({ buffer: buf, offset: off0, punch: punched }); tr.take = tr.takes.length - 1;
+      if(punched){ tr.takes.push({ buffer: buf, offset: off0, punch: true }); tr.take = tr.takes.length - 1; }
+      else { tr.takes = [{ buffer: buf, offset: off0 }]; tr.take = 0; }
       tr.buffer = buf; tr.offset = off0;
       if(!punched){ await adaptVoice(tr); await autoLevel(tr); }
       renderTracks();
       if(tr.atOn){ toast('Prise gardée, auto-tune en cours…'); await applyAutotune(tr); }
-      else toast(punched ? 'Phrase remplacée dans la boucle (prise ' + tr.takes.length + ').' : 'Prise ' + tr.takes.length + ' gardée sur « ' + tr.name + ' » · niveau calé sur l\'instru.');
+      else toast(punched ? 'Phrase remplacée dans la boucle.' : 'Prise gardée sur « ' + tr.name + ' » · niveau calé sur l\'instru.');
       scheduleSave();
     }catch(e){ toast('Impossible de lire la prise : ' + e.message); }
   };
@@ -918,6 +940,17 @@ $('#bUndo').onclick = undo;
 
 /* ---------- Pistes ---------- */
 let claimNext = false;
+/* Une piste déjà remplie n'est jamais écrasée : la nouvelle prise ou le nouvel import va sur une piste créée juste en dessous */
+function trackBelow(t, moveArm){
+  const base = t.name.replace(/\s\d+$/, '');
+  let k = 2; while(S.tracks.some(x => x.name === base + ' ' + k)) k++;
+  const c = addTrack(base + ' ' + k, FX[t.preset] ? t.preset : 'neutre');
+  S.tracks.pop(); S.tracks.splice(S.tracks.indexOf(t) + 1, 0, c);
+  Object.assign(c, { preset: t.preset, fx: { ...t.fx }, vr: t.vr, vol: t.vol, pan: t.pan, at: { ...t.at }, atOn: t.atOn, lv: t.lv ? { ...t.lv } : undefined });
+  if(moveArm && t.arm){ t.arm = false; c.arm = true; }
+  c.chain.set(c, audible(c), true);
+  return c;
+}
 function addTrack(name, preset){
   const p = preset || 'neutre';
   const t = { id: ++idSeq, name, color: COLORS[(idSeq - 1) % COLORS.length], buffer: null, offset: 0,
@@ -944,7 +977,7 @@ function renderTracks(){
     const row = document.createElement('div');
     const lk = isLocked(t);
     row.className = 'row' + (lk ? ' locked' : '') + (t.keep ? ' kept' : ''); row.dataset.id = t.id;
-    const takes = t.takes.length > 1
+    const takes = false
       ? `<select data-act="take" aria-label="Prise" ${t.keep ? 'disabled' : ''}>${t.takes.map((tk, i) => `<option value="${i}" ${i === t.take ? 'selected' : ''}>Prise ${i + 1}${tk.tuned ? ' · AT' : ''}${tk.xf ? ' · modifiée' : ''}${tk.punch ? ' · retouchée' : ''}</option>`).join('')}</select>` : '';
     row.innerHTML = `
       <div class="hdr">
@@ -1149,12 +1182,11 @@ $('#file').addEventListener('change', async e => {
   ensureCtx();
   try{
     const buf = await ctx.decodeAudioData(await f.arrayBuffer());
-    const t = importFor;
     pushUndo('l\'import');
+    const t = importFor.buffer ? trackBelow(importFor, false) : importFor;
     claim(t);
-    t.takes.push({ buffer: buf, offset: 0 }); t.take = t.takes.length - 1;
+    t.takes = [{ buffer: buf, offset: 0 }]; t.take = 0;
     t.buffer = buf; t.offset = 0;
-    if(/^(Instru|Piste \d+)$/.test(t.name)) t.name = f.name.replace(/\.[^.]+$/, '').slice(0, 28);
     renderTracks();
     await adaptVoice(t);
     await autoLevel(t);
@@ -3045,7 +3077,14 @@ function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add
 function setPlayIcon(){ $('#icoPlay').innerHTML = S.playing ? '<path d="M3 2h4v12H3zM9 2h4v12H9z"/>' : '<path d="M3 2l11 6-11 6z"/>'; }
 function setRecUI(){ renderQuick(); $('#micGrp').hidden = !S.recording; $('#bRec').classList.toggle('on', S.recording); $('#playhead').classList.toggle('rec', S.recording); }
 
-$('#bPlay').onclick = async () => { if(S.recording){ pause(); return; } if(S.playing){ pause(); return; } await wake(); play(); };
+$('#bPlay').onclick = async () => {
+  if(S.recording){ pause(); return; }
+  if(S.playing){ pause(); return; }
+  if(!mic) audioSessionPlay();
+  unlockSpeaker();
+  await wake(); play();
+  setTimeout(() => { if(S.playing && ctx.state !== 'running') toast('Pas de son ? Vérifie le volume et le bouton silencieux sur le côté de l\'iPhone, puis retouche ▶.'); }, 800);
+};
 $('#bStop').onclick = () => { const was = S.playing; pause(); if(!was) S.pos = 0; };
 $('#bHome').onclick = () => seek(0);
 $('#bReload').onclick = () => { location.replace(location.pathname + '?v=' + Date.now()); };
@@ -3136,7 +3175,7 @@ async function askMicEarly(){
   catch(e){ /* refusé ou pas encore autorisé : on réessaie au premier toucher */ }
 }
 /* Le micro n'est plus ouvert au lancement : il s'ouvre au premier REC seulement */
-const firstTouch = () => ensureCtx();
+const firstTouch = () => { audioSessionPlay(); unlockSpeaker(); ensureCtx(); };
 /* Micro coupé dès qu'on n'enregistre plus : appli en arrière-plan ou fermée */
 document.addEventListener('visibilitychange', () => { if(document.hidden){ if(S.recording) pause(); else releaseMic(); } });
 window.addEventListener('pagehide', () => releaseMic());
