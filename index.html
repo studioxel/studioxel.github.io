@@ -352,7 +352,7 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
     <span class="grp" id="outInfo"></span>
     <button class="toggle" id="tMon" aria-pressed="false" title="Entendre ta voix avec les effets pendant la prise (casque obligatoire)">Retour voix</button>
     <button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-    <span class="grp" id="ver">Version 30</span>
+    <span class="grp" id="ver">Version 31</span>
     <span class="grp" id="latInfo" title="Le retard du téléphone est mesuré et corrigé tout seul à chaque prise">Calage auto</span>
   </div>
 </div>
@@ -577,7 +577,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 </section>
 
 <div class="help">
-  StudioXel · version 30.
+  StudioXel · version 31.
   Touche la pastille de couleur à gauche du nom d'une piste pour changer sa couleur.
   🔓 sur une piste verrouille une prise réussie : plus de réenregistrement, de coupe ni de déplacement par erreur.
   Glisse le doigt pour avancer dans la timeline. Touche une prise pour placer la lecture. Appui long : la phrase est sélectionnée pour la supprimer, la déplacer ou la copier. ⧉ duplique une piste.
@@ -858,16 +858,15 @@ function startMetro(){
 async function getMic(){
   if(mic) return mic;
   if(!navigator.mediaDevices?.getUserMedia) throw new Error('Micro indisponible ici : la page doit être ouverte en ligne (adresse https), pas en aperçu.');
-  const free = !S.casque; /* sans casque : on laisse l'iPhone filtrer l'instru qui sort du haut-parleur et régler le gain */
   audioSessionRec();
-  mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation:free, noiseSuppression:false, autoGainControl:free } });
+  /* micro brut : le traitement « appel » de l'iPhone fait grésiller l'instru. Le niveau est recalé après la prise. */
+  const want = { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1, sampleRate: ctx.sampleRate };
+  try{ mic = await navigator.mediaDevices.getUserMedia({ audio: want }); }
+  catch(e){ if(e.name === 'NotAllowedError') throw e; mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } }); }
   const lbl = (mic.getAudioTracks()[0]?.label || '');
   S.micLabel = lbl;
   if(isHeadsetLabel(lbl) && !S.headset){ S.headset = true; applyOutMode(); }
-  const src = ctx.createMediaStreamSource(mic);
-  micAnalyser = ctx.createAnalyser(); micAnalyser.fftSize = 1024;
-  micData = new Float32Array(micAnalyser.fftSize);
-  src.connect(micAnalyser);
+  micAnalyser = null;
   return mic;
 }
 /* iPhone : après le micro, le son peut rester dans l'écouteur du haut ou être coupé par le bouton silencieux */
@@ -907,7 +906,8 @@ async function record(){
   if(S.playing) pause();
   if(S.loop.on) S.pos = S.loop.start;
   if(!(await wake())){ releaseMic(); toast('L\'iPhone a coupé le son en branchant le micro. Touche ▶ une fois, puis relance REC.'); return; }
-  if(S.mon && S.casque){ try{ monSrc = ctx.createMediaStreamSource(mic); const mg = ctx.createGain(); mg.gain.value = 0.6; monSrc.connect(mg); mg.connect(t.chain.hp); fbCount = 0; }catch(e){ monSrc = null; } }
+  if(S.mon && S.casque){ try{ monSrc = ctx.createMediaStreamSource(mic); const mg = ctx.createGain(); mg.gain.value = 0.6; monSrc.connect(mg); mg.connect(t.chain.hp); micAnalyser = ctx.createAnalyser(); micAnalyser.fftSize = 1024; micData = new Float32Array(micAnalyser.fftSize); monSrc.connect(micAnalyser); fbCount = 0; }catch(e){ monSrc = null; } }
+  if(silentEl) try{ silentEl.pause(); }catch(e){}
   const chunks = [];
   rec = new MediaRecorder(mic);
   rec.ondataavailable = e => { if(e.data.size) chunks.push(e.data); };
@@ -3446,7 +3446,7 @@ function fmt(s, short){
 let toastT;
 function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 3600); }
 function setPlayIcon(){ $('#icoPlay').innerHTML = S.playing ? '<path d="M3 2h4v12H3zM9 2h4v12H9z"/>' : '<path d="M3 2l11 6-11 6z"/>'; }
-function setRecUI(){ renderQuick(); $('#micGrp').hidden = !S.recording; $('#bRec').classList.toggle('on', S.recording); $('#playhead').classList.toggle('rec', S.recording); }
+function setRecUI(){ renderQuick(); $('#micGrp').hidden = !(S.recording && micAnalyser); $('#bRec').classList.toggle('on', S.recording); $('#playhead').classList.toggle('rec', S.recording); }
 
 $('#bPlay').onclick = async () => {
   if(S.recording){ pause(); return; }
