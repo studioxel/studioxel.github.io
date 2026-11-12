@@ -345,7 +345,7 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
 .tour{position:fixed;inset:0;z-index:50}
 .tspot{position:fixed;border-radius:12px;border:2px solid var(--accent);box-shadow:0 0 0 9999px rgba(5,6,10,.78);pointer-events:none;transition:left .25s,top .25s,width .25s,height .25s}
 .tspot.none{left:50%!important;top:40%!important;width:0!important;height:0!important;border:0}
-.tbub{position:fixed;left:12px;right:12px;margin:0 auto;max-width:380px;background:var(--panel);border:1px solid var(--accent);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:8px;box-shadow:0 18px 50px rgba(0,0,0,.6);transition:top .25s}
+.tbub{position:fixed;left:12px;right:12px;margin:0 auto;max-width:380px;background:var(--panel);border:1px solid var(--accent);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:8px;box-shadow:0 18px 50px rgba(0,0,0,.6);transition:top .25s;max-height:calc(100dvh - 24px);overflow-y:auto;-webkit-overflow-scrolling:touch}
 .tbub .tw{display:flex;align-items:center;gap:8px;font:800 12px var(--display);color:var(--accent);letter-spacing:.08em;text-transform:uppercase}
 .tbub .tw img{width:28px;height:28px;border-radius:8px}
 .tbub h3{margin:0;font:800 19px/1.2 var(--display)}
@@ -389,7 +389,7 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
     <button class="toggle" id="bTour">📖 Revoir le tuto</button>
     <button class="toggle" id="bAvis">💬 Donner mon avis</button>
     <button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-    <span class="grp" id="ver">Version 49</span>
+    <span class="grp" id="ver">Version 51</span>
     <span class="grp" id="latInfo" title="Le retard du téléphone est mesuré et corrigé tout seul à chaque prise">Calage auto</span>
   </div>
 </div>
@@ -627,7 +627,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 </section>
 
 <div class="help">
-  StudioXel · version 49.
+  StudioXel · version 51.
   Touche la pastille de couleur à gauche du nom d'une piste pour changer sa couleur.
   🔓 sur une piste verrouille une prise réussie : plus de réenregistrement, de coupe ni de déplacement par erreur.
   Glisse le doigt pour avancer dans la timeline. Touche une prise pour placer la lecture. Appui long : la phrase est sélectionnée pour la supprimer, la déplacer ou la copier. ⧉ duplique une piste.
@@ -647,7 +647,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 49;
+const APP_VER = 51;
 const COLORS = ['#6fa8ff','#f2b544','#c58bff','#4fd1b5','#ff8a65','#9be15d','#ff7eb6'];
 const HDR = 216, CEIL = Math.pow(10, -1 / 20);
 const store = {
@@ -3925,7 +3925,7 @@ $('#selListen').onclick = () => {
 
 /* ---------- Tuto : le Xel présente le studio aux kickeurs ---------- */
 const TOUR = [
-  { t: 'Yo les kickeurs 👊', b: 'C\'est le Xel. Avant de kicker, on remet les pieds sur terre : le matos.\nLe micro de ton tel suffit pour maquetter. Pour un son au top :\n• Écouteurs filaires sur les oreilles : tu entends l\'instru et elle ne repart pas dans le micro. Le Bluetooth, évite-le pendant que tu poses ta voix.\n• Un petit micro qui se branche sur le tel, c\'est le vrai saut de qualité.\n• Une pièce calme et pleine de tissu (rideaux, lit, vêtements), pas une salle de bain.\n• Ta bouche à 15–20 cm du micro, et le tel en mode avion pour pas qu\'une notif gâche la prise.' },
+  { t: 'Yo les kickeurs 👊', b: 'C\'est le Xel. Avant de kicker, on remet les pieds sur terre : le matos.\nLe micro de ton tel suffit pour maquetter. Pour un son au top :\n• Écouteurs filaires sur les oreilles : tu entends l\'instru et elle ne repart pas dans le micro. Le Bluetooth, évite-le pendant que tu poses ta voix.\n• Un petit micro qui se branche sur le tel, c\'est le vrai saut de qualité.\n• Une pièce calme et pleine de tissu (rideaux, lit, vêtements), pas une salle de bain.\n• Ta bouche à 15–20 cm du micro, et le tel en mode avion pour pas qu\'une notif gâche la prise.\n\nEt soyons vrais : StudioXel, c\'est ton carnet de brouillon. Tu poses tes idées, tu testes tes flows, tu maquettes. Le son final, lui, se fait chez un ingé son, dans un vrai studio équipé. Arrive chez lui avec ta maquette, tu gagnes du temps, il gagne du temps, et ton son gagne tout court.' },
   { t: 'Comme une vraie appli 📲', b: ((navigator.standalone || matchMedia('(display-mode: standalone)').matches) ? 'Toi c\'est déjà fait ✅ Montre-le à tes potes kickeurs.\n\n' : '') + (/Android/i.test(navigator.userAgent)
     ? 'Mets StudioXel sur ton écran d\'accueil, avec son icône :\n1. Ouvre studioxel.github.io dans Chrome.\n2. Touche les 3 points ⋮ en haut à droite.\n3. Touche « Ajouter à l\'écran d\'accueil » (ou « Installer l\'appli »), puis Ajouter.\nEnsuite lance-la toujours depuis l\'icône.\n\nSur iPhone : dans Safari, Partager puis « Sur l\'écran d\'accueil ».'
     : 'Mets StudioXel sur ton écran d\'accueil, avec son icône :\n1. Ouvre studioxel.github.io dans Safari.\n2. Touche le bouton Partager (le carré avec la flèche).\n3. Descends et touche « Sur l\'écran d\'accueil », puis Ajouter.\nEnsuite lance-la toujours depuis l\'icône : plein écran, comme une vraie appli.\n\nSur Android : dans Chrome, les 3 points ⋮ puis « Ajouter à l\'écran d\'accueil ».') },
