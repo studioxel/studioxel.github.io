@@ -103,10 +103,12 @@ button{cursor:pointer}
 .chip.arm[aria-pressed=true]{background:var(--rec);border-color:var(--rec);color:#fff}
 .chip.mute[aria-pressed=true]{background:#5a6478;border-color:#5a6478}
 .chip.solo[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#1a1405}
-.l2{display:grid;grid-template-columns:auto 1fr;gap:2px 6px;align-items:center;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.l2{display:grid;grid-template-columns:auto 1fr 30px;gap:2px 6px;align-items:center;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 .l2 input{width:100%;accent-color:var(--accent);height:22px}
 .l3{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
 .l3 .sbtn{height:30px;padding:0 9px;font-size:12px}
+.l2 .mv{width:30px;height:26px;border-radius:6px;border:1px solid var(--line);background:var(--raise);color:var(--fg);font-size:15px;font-weight:800;padding:0;line-height:1}
+.l2 .mv:disabled{opacity:.3}
 .l3 select{height:30px;background:var(--raise);border:1px solid var(--line);border-radius:5px;font-size:11px;max-width:74px}
 .del.confirm{background:var(--rec);border-color:var(--rec);color:#fff}
 .clip{position:absolute;top:8px;bottom:8px;border-radius:6px;overflow:hidden;cursor:pointer;touch-action:pan-x pan-y;border:1px solid;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
@@ -389,7 +391,7 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
     <button class="toggle" id="bTour">📖 Revoir le tuto</button>
     <button class="toggle" id="bAvis">💬 Donner mon avis</button>
     <button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-    <span class="grp" id="ver">Version 52</span>
+    <span class="grp" id="ver">Version 53</span>
     <span class="grp" id="latInfo" title="Le retard du téléphone est mesuré et corrigé tout seul à chaque prise">Calage auto</span>
   </div>
 </div>
@@ -627,7 +629,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 </section>
 
 <div class="help">
-  StudioXel · version 52.
+  StudioXel · version 53.
   Touche la pastille de couleur à gauche du nom d'une piste pour changer sa couleur.
   🔓 sur une piste verrouille une prise réussie : plus de réenregistrement, de coupe ni de déplacement par erreur.
   Glisse le doigt pour avancer dans la timeline. Touche une prise pour placer la lecture. Appui long : la phrase est sélectionnée pour la supprimer, la déplacer ou la copier. ⧉ duplique une piste.
@@ -647,7 +649,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 52;
+const APP_VER = 53;
 const COLORS = ['#6fa8ff','#f2b544','#c58bff','#4fd1b5','#ff8a65','#9be15d','#ff7eb6'];
 const HDR = 216, CEIL = Math.pow(10, -1 / 20);
 const store = {
@@ -1377,6 +1379,8 @@ function trackBelow(t, moveArm){
   c.chain.set(c, audible(c), true);
   return c;
 }
+/* la piste Refrain démarre avec un Doubler léger : un refrain sonne plus large que le couplet */
+function defaultRefrain(){ const r = S.tracks.find(x => x.name === 'Refrain'); if(r){ r.fx.dbl = FXL.dbl[0]; r.chain.set(r, audible(r), false); } }
 function addTrack(name, preset){
   const p = preset || 'neutre';
   const t = { id: ++idSeq, name, color: COLORS[(idSeq - 1) % COLORS.length], buffer: null, offset: 0,
@@ -1415,8 +1419,8 @@ function renderTracks(){
         </div>
         ${colorOpen === t.id ? `<div class="pal" role="group" aria-label="Couleurs">${PALETTE.map(c => `<button data-act="setcolor" data-c="${c}" style="background:${c}" aria-pressed="${c.toLowerCase() === String(t.color).toLowerCase()}" aria-label="Couleur ${c}"></button>`).join('')}</div>` : ''}
         <div class="l2">
-          <span>Vol</span><input type="range" min="0" max="2" step="0.01" value="${t.vol}" data-act="vol" aria-label="Volume" ${lk ? 'disabled' : ''}>
-          <span>Pan</span><input type="range" min="-1" max="1" step="0.05" value="${t.pan}" data-act="pan" aria-label="Panoramique" ${lk ? 'disabled' : ''}>
+          <span>Vol</span><input type="range" min="0" max="2" step="0.01" value="${t.vol}" data-act="vol" aria-label="Volume" ${lk ? 'disabled' : ''}><button class="mv" data-act="up" aria-label="Monter la piste" title="Monter" ${S.tracks[0] === t ? 'disabled' : ''}>↑</button>
+          <span>Pan</span><input type="range" min="-1" max="1" step="0.05" value="${t.pan}" data-act="pan" aria-label="Panoramique" ${lk ? 'disabled' : ''}><button class="mv" data-act="down" aria-label="Descendre la piste" title="Descendre" ${S.tracks[S.tracks.length - 1] === t ? 'disabled' : ''}>↓</button>
         </div>
         <div class="fxzone">${fxZoneHTML(t)}</div>
         ${t.ownerName && S.tracks.some(x => x.owner && x.owner !== ME.id) ? `<div class="lockb">${lk ? '🔒 Verrouillée · ' : '✓ '}${esc(t.ownerName)}</div>` : ''}
@@ -1568,6 +1572,15 @@ list.addEventListener('click', e => {
   if(act === 'mute'){ t.mute = !t.mute; el.setAttribute('aria-pressed', t.mute); applyMix(); }
   if(act === 'solo'){ t.solo = !t.solo; el.setAttribute('aria-pressed', t.solo); applyMix(); }
   if(act === 'import'){ importFor = t; $('#file').click(); }
+  if(act === 'up' || act === 'down'){
+    const i = S.tracks.indexOf(t), j = act === 'up' ? i - 1 : i + 1;
+    if(j < 0 || j >= S.tracks.length) return;
+    pushUndo('le déplacement de piste');
+    [S.tracks[i], S.tracks[j]] = [S.tracks[j], S.tracks[i]];
+    renderTracks(); scheduleSave();
+    const r = document.querySelector(`.row[data-id="${t.id}"]`); if(r) r.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    return;
+  }
   if(act === 'dup'){ dupTrack(t); return; }
   if(act === 'del'){
     if(delArm !== t){
@@ -2687,7 +2700,8 @@ async function newSession(){
   if(S.playing) pause();
   S.tracks.forEach(t => t.chain.kill()); S.tracks = []; idSeq = 0;
   undoStack.length = 0; updUndo();
-  [['Instru', 'instru'], ['Lead', 'lead'], ['Back', 'back'], ['Ambiance', 'ambiance']].forEach(([n, p]) => addTrack(n, p));
+  [['Instru', 'instru'], ['Lead', 'lead'], ['Refrain', 'lead'], ['Back', 'back'], ['Ambiance', 'ambiance']].forEach(([n, p]) => addTrack(n, p));
+  defaultRefrain();
   S.markers = []; S.loop.on = false; S.instruKey = null; S.pos = 0; S.sel = null;
   sess = { id: null, name: '', link: '', created: 0 }; store.set('sessId', null);
   sessReady = true;
@@ -3931,7 +3945,7 @@ const TOUR = [
     : 'Mets StudioXel sur ton écran d\'accueil, avec son icône :\n1. Ouvre studioxel.github.io dans Safari.\n2. Touche le bouton Partager (le carré avec la flèche).\n3. Descends et touche « Sur l\'écran d\'accueil », puis Ajouter.\nEnsuite lance-la toujours depuis l\'icône : plein écran, comme une vraie appli.\n\nSur Android : dans Chrome, les 3 points ⋮ puis « Ajouter à l\'écran d\'accueil ».') },
   { t: 'Le tour du studio', b: 'Maintenant je te fais faire le tour du studio en deux minutes, bouton par bouton. Tu peux passer quand tu veux, et revoir le tuto dans Réglages.' },
   { sel: ['#list .row:nth-child(1) [data-act=import]'], t: 'Ton instru', b: 'Touche « Importer » sur la piste Instru et choisis ton beat (MP3 ou WAV). Je trouve tout seul le BPM et la tonalité, et je cale le niveau. C\'est la toute première chose à faire.' },
-  { sel: ['#list .row:nth-child(2) .chip'], t: 'R, M, S', b: 'R arme la piste : c\'est là que ta voix va s\'enregistrer. M coupe la piste, S l\'écoute toute seule. Arme Lead avant ton premier couplet.' },
+  { sel: ['#list .row:nth-child(2) .chip'], t: 'R, M, S', b: 'R arme la piste : c\'est là que ta voix va s\'enregistrer. M coupe la piste, S l\'écoute toute seule. De base t\'as Instru, Lead pour tes couplets, Refrain (déjà un peu doublé pour sonner plus large), Back et Ambiance. Arme Lead avant ton premier couplet.' },
   { sel: ['#bRec'], t: 'REC', b: 'Piste armée ? Touche REC : 4 bips de décompte et tu kickes. La barre MICRO en haut bouge avec ta voix, et ta prise se dessine sur la piste en direct. Retouche REC pour t\'arrêter. Si la piste a déjà une prise, la nouvelle se pose par-dessus à cet endroit (Annuler pour revenir). Pour garder les deux, ajoute une piste avec le + ou duplique avec ⧉ : c\'est toi qui décides.' },
   { sel: ['#bMon'], t: 'Retour 🎧', b: 'Allume-le pour t\'entendre en direct avec les effets de la piste armée, auto-tune compris, même sans enregistrer : parfait pour chauffer ta voix. Avec des écouteurs c\'est l\'idéal. Sur le haut-parleur ou en Bluetooth, garde le volume raisonnable : si ça siffle, je baisse tout seul.' },
   { sel: ['#routeChip'], t: 'Ton écoute', b: 'Ici je t\'affiche ce que j\'ai détecté : 🎧 tes écouteurs (AirPods…), 🚗 un Bluetooth de voiture ou d\'enceinte, ou 📱 le haut-parleur. Si je me trompe, touche-le et choisis toi-même.' },
@@ -3939,7 +3953,7 @@ const TOUR = [
   { sel: ['#bUndo'], t: 'Annuler', b: 'Une bêtise ? Annuler revient en arrière, étape par étape : une prise, un effet, une piste supprimée, tout s\'annule.' },
   { sel: ['#list .row:nth-child(2) .l2'], t: 'Volume et pan', b: 'VOL règle le niveau de la piste, PAN la place à gauche ou à droite. Je cale déjà les niveaux tout seul, tu peaufines si besoin. Astuce : le lead au centre, les backs un peu sur les côtés.' },
   { sel: ['#list .row:nth-child(2) .fxzone'], t: 'Les effets', b: 'Touche un effet pour l\'allumer, retouche-le pour doser. Reverb pour l\'espace, Écho pour les fins de phrase, Doubler pour épaissir un refrain, Auto-tune pour corriger ou styliser (Naturel, Marqué, Robot, ou le mode Planant 🛸 avec tout le vibe), Chaleur pour du grain, Radio pour une voix filtrée façon téléphone ou lo-fi.\nLes doses changent vraiment le son : la Reverb passe d\'une pièce à une grande salle, l\'Écho d\'un slap court à un grand écho de fin de phrase. Ça se règle même en pleine prise.' },
-  { sel: ['#list .row:nth-child(2) [data-act=keep]', '#list .row:nth-child(2) [data-act=dup]', '#list .row:nth-child(2) [data-act=del]'], t: 'Cadenas, copie, poubelle', b: '🔓 verrouille une prise réussie : plus rien ne peut l\'abîmer par erreur. ⧉ duplique la piste. ✕ la supprime.' },
+  { sel: ['#list .row:nth-child(2) [data-act=keep]', '#list .row:nth-child(2) [data-act=up]', '#list .row:nth-child(2) [data-act=down]', '#list .row:nth-child(2) [data-act=dup]', '#list .row:nth-child(2) [data-act=del]'], t: 'Cadenas, ordre, copie, poubelle', b: '🔓 verrouille une prise réussie : plus rien ne peut l\'abîmer par erreur. ↑ et ↓ (à droite du volume) montent ou descendent la piste : range-les dans l\'ordre que tu veux. ⧉ duplique la piste. ✕ la supprime.' },
   { sel: ['#list .row:nth-child(2) .swatch'], t: 'La couleur', b: 'Touche la pastille pour changer la couleur de la piste. Pratique pour t\'y retrouver quand t\'empiles les backs.' },
   { sel: ['#list .row:nth-child(2) .lane'], t: 'La timeline', b: 'Glisse le doigt pour avancer dans le morceau. Une touche place la lecture. Un appui long sur une phrase la sélectionne : tu peux la supprimer, la déplacer ou l\'envoyer sur une autre piste.' },
   { sel: ['#zOut', '#zIn'], t: 'Le zoom', b: 'Les loupes zooment et dézooment la timeline. Zoome pour couper une phrase au poil près.' },
@@ -3952,7 +3966,7 @@ const TOUR = [
   { sel: ['.nav [data-view=vPartager]'], t: 'Partager', b: 'Exporte ton son en MP3, monte un Reel avec ta photo, ta vidéo ou un selfie, et envoie ta session à un collègue pour qu\'il pose son couplet.' },
   { sel: ['.nav [data-view=vPartager]'], t: 'Poste ton Reel', b: 'Ton Reel prêt, choisis ton réseau : Insta, TikTok, Shorts, Snap… Ta légende est copiée toute seule avec les bons hashtags, t\'as plus qu\'à coller. Et dans « Fais tourner l\'appli », envoie le lien à tes potes kickeurs.' },
   { sel: ['#bSet'], t: 'Ton avis', b: 'Un bug, une idée, un kif ? Dans Réglages ou en bas de Partager, touche « Donner mon avis » : ça m\'arrive direct, je lis tout. C\'est comme ça que l\'appli avance.' },
-  { t: 'À toi de kicker 🎤', b: 'C\'est tout bon. Importe ton instru, arme Lead, et envoie. On se retrouve dans tes Reels. — Le Xel' }
+  { t: 'À toi de kicker 🎤', b: 'C\'est tout bon. Importe ton instru, arme Lead pour tes couplets, Refrain pour ton refrain, et envoie. On se retrouve dans tes Reels. — Le Xel' }
 ];
 let tourI = -1, tourEl = null;
 function startTour(force){
@@ -4204,7 +4218,8 @@ function loop(){
 }
 
 initAudio();
-[['Instru','instru'], ['Lead','lead'], ['Back','back'], ['Ambiance','ambiance']].forEach(([n, p]) => addTrack(n, p));
+[['Instru', 'instru'], ['Lead', 'lead'], ['Refrain', 'lead'], ['Back', 'back'], ['Ambiance', 'ambiance']].forEach(([n, p]) => addTrack(n, p));
+defaultRefrain();
 renderTracks(); renderMaster(); lstat(); showLat();
 startSessions();
 detectHeadset(true);
