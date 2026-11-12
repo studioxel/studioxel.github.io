@@ -389,7 +389,7 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
     <button class="toggle" id="bTour">📖 Revoir le tuto</button>
     <button class="toggle" id="bAvis">💬 Donner mon avis</button>
     <button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-    <span class="grp" id="ver">Version 48</span>
+    <span class="grp" id="ver">Version 49</span>
     <span class="grp" id="latInfo" title="Le retard du téléphone est mesuré et corrigé tout seul à chaque prise">Calage auto</span>
   </div>
 </div>
@@ -627,7 +627,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 </section>
 
 <div class="help">
-  StudioXel · version 48.
+  StudioXel · version 49.
   Touche la pastille de couleur à gauche du nom d'une piste pour changer sa couleur.
   🔓 sur une piste verrouille une prise réussie : plus de réenregistrement, de coupe ni de déplacement par erreur.
   Glisse le doigt pour avancer dans la timeline. Touche une prise pour placer la lecture. Appui long : la phrase est sélectionnée pour la supprimer, la déplacer ou la copier. ⧉ duplique une piste.
@@ -647,7 +647,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 48;
+const APP_VER = 49;
 const COLORS = ['#6fa8ff','#f2b544','#c58bff','#4fd1b5','#ff8a65','#9be15d','#ff7eb6'];
 const HDR = 216, CEIL = Math.pow(10, -1 / 20);
 const store = {
@@ -1080,16 +1080,116 @@ function openMicGraph(){
 }
 /* retour voix : ta voix passe par les effets de la piste armée (ou de la première piste de voix) */
 function monTrack(){ return S.tracks.find(x => x.arm) || S.tracks.find(x => x.preset !== 'instru') || null; }
+/* Auto-tune en direct dans le retour voix (AudioWorklet) : détection de hauteur + décalage à deux têtes de lecture */
+const TUNE_WK = `class SxTune extends AudioWorkletProcessor {
+  constructor(){
+    super();
+    this.N = 8192; this.buf = new Float32Array(this.N); this.w = 0; this.cnt = 0;
+    this.D = Math.max(1, Math.round(sampleRate / 12000)); this.dsr = sampleRate / this.D;
+    this.W = Math.round(sampleRate * 0.026); this.d1 = 0;
+    this.allowed = [1,0,1,1,0,1,0,1,1,0,1,0]; this.mode = 0; this.on = 1;
+    this.shift = 0; this.shiftT = 0; this.wet = 0; this.wetT = 0; this.prevT = null; this.avg = null; this.hist = [];
+    this.x = new Float32Array(400); this.dd = new Float32Array(200); this.cm = new Float32Array(200);
+    this.port.onmessage = e => Object.assign(this, e.data);
+  }
+  analyse(){
+    const D = this.D, M = 380, x = this.x, N = this.N;
+    let e = 0;
+    for(let i = 0; i < M; i++){
+      let s = 0; for(let k = 0; k < D; k++) s += this.buf[(this.w - (M - i) * D + k + N * 4) & (N - 1)];
+      x[i] = s / D; e += x[i] * x[i];
+    }
+    const rms = Math.sqrt(e / M);
+    const tmin = Math.floor(this.dsr / 1000), tmax = Math.min(190, Math.ceil(this.dsr / 70)), Wn = M - tmax - 2;
+    let f = 0;
+    if(rms > 0.008){
+      let run = 0, best = -1;
+      for(let tau = 1; tau <= tmax + 1; tau++){
+        let s = 0; for(let j = 0; j < Wn; j++){ const df = x[j] - x[j + tau]; s += df * df; }
+        this.dd[tau] = s; run += s; this.cm[tau] = run > 0 ? s * tau / run : 1;
+      }
+      for(let tau = tmin; tau <= tmax; tau++){
+        if(this.cm[tau] < 0.15){ while(tau + 1 <= tmax && this.cm[tau + 1] < this.cm[tau]) tau++; best = tau; break; }
+      }
+      if(best > 0){
+        let tau = best; const a = this.cm[best - 1], b = this.cm[best], c = this.cm[best + 1], den = a - 2 * b + c;
+        if(den) tau = best + (a - c) / (2 * den);
+        f = this.dsr / tau;
+      }
+    }
+    if(!f || !this.on){ this.shiftT = 0; this.wetT = 0; this.prevT = null; this.avg = null; this.hist.length = 0; return; }
+    const midi = 69 + 12 * Math.log2(f / 440);
+    this.hist.push(midi); if(this.hist.length > 3) this.hist.shift();
+    const h = this.hist.slice().sort((p, q) => p - q), mm = h[h.length >> 1];
+    this.avg = this.avg == null ? mm : this.avg + (mm - this.avg) * 0.12;
+    const ref = this.mode === 3 ? mm : (this.mode === 0 ? this.avg : mm);
+    const hy = this.mode === 3 ? 0.45 : 0.7;
+    let tgt;
+    if(this.prevT != null && Math.abs(ref - this.prevT) < hy) tgt = this.prevT;
+    else { let bd = 99; for(let k = Math.floor(ref) - 2; k <= Math.ceil(ref) + 2; k++) if(this.allowed[((k % 12) + 12) % 12] && Math.abs(k - ref) < bd){ bd = Math.abs(k - ref); tgt = k; } }
+    this.prevT = tgt;
+    const amt = this.mode === 0 ? 0.85 : 1;
+    this.shiftT = Math.max(-3, Math.min(3, (tgt - (this.mode === 0 ? this.avg : midi)) * amt));
+    this.wetT = 1;
+  }
+  process(inputs, outputs){
+    const inp = inputs[0] && inputs[0][0], out = outputs[0];
+    if(!inp){ for(const ch of out) ch.fill(0); return true; }
+    const N = this.N, W = this.W, sp = [0.07, 0.015, 0.0012, 0.003][this.mode] || 0.05;
+    const a = 1 - Math.exp(-1 / (sp * sampleRate)), aw = 1 - Math.exp(-1 / (0.02 * sampleRate)), o = out[0];
+    for(let i = 0; i < inp.length; i++){
+      this.buf[this.w] = inp[i]; this.w = (this.w + 1) & (N - 1);
+      if(++this.cnt >= 256){ this.cnt = 0; this.analyse(); }
+      this.shift += (this.shiftT - this.shift) * a;
+      this.wet += (this.wetT - this.wet) * aw;
+      const r = Math.pow(2, this.shift / 12);
+      this.d1 += 1 - r; if(this.d1 < 0) this.d1 += W; else if(this.d1 >= W) this.d1 -= W;
+      let d2 = this.d1 + W / 2; if(d2 >= W) d2 -= W;
+      const rd = d => { const p = this.w - 2 - d, i0 = Math.floor(p), fr = p - i0, A = this.buf[(i0 + N * 4) & (N - 1)], B = this.buf[(i0 + 1 + N * 4) & (N - 1)]; return A + (B - A) * fr; };
+      const g1 = Math.sin(Math.PI * this.d1 / W), g2 = Math.sin(Math.PI * d2 / W);
+      const y = rd(this.d1) * g1 * g1 + rd(d2) * g2 * g2;
+      o[i] = this.wet * y + (1 - this.wet) * inp[i];
+    }
+    for(let c = 1; c < out.length; c++) out[c].set(o);
+    return true;
+  }
+}
+registerProcessor('sx-tune', SxTune);
+`;
+let tunePromise = null, tuneCtx = null, monTune = null;
+function loadTune(){
+  if(tuneCtx !== ctx){ tuneCtx = ctx; tunePromise = null; }
+  if(!tunePromise) tunePromise = ctx.audioWorklet
+    ? ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([TUNE_WK], { type: 'application/javascript' }))).then(() => true, () => false)
+    : Promise.resolve(false);
+  return tunePromise;
+}
+function tuneParams(tr){
+  let key = tr.at.key, scale = tr.at.scale;
+  if(tr.at.auto !== false && S.instruKey){ key = S.instruKey.key; scale = S.instruKey.scale; }
+  const st = (SCALES[scale] || SCALES.min).st, allowed = [];
+  for(let pc = 0; pc < 12; pc++) allowed.push(st.includes(((pc - key) % 12 + 12) % 12) ? 1 : 0);
+  return { allowed, mode: nearest(AT_SP, tr.at.speed), on: 1 };
+}
+const liveTuned = tr => !!tr && tr.preset !== 'instru' && (tr.atOn || isTuned(tr));
 function attachMon(t){
   if(monSrc || !micSrc) return;
   try{
     const mg = ctx.createGain(); mg.gain.value = 0.7; micSrc.connect(mg);
-    const tr = t || monTrack();
-    mg.connect(tr ? tr.chain.hp : bus.masterIn);
+    const tr = t || monTrack(), dest = tr ? tr.chain.hp : bus.masterIn;
     monSrc = mg; fbCount = 0; fbBin = -1;
+    if(liveTuned(tr)){
+      loadTune().then(ok => {
+        if(monSrc !== mg) return;
+        if(!ok){ mg.connect(dest); toast('Auto-tune en direct pas dispo sur ce navigateur : tu t\'entends sans.'); return; }
+        const tn = new AudioWorkletNode(ctx, 'sx-tune', { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [1] });
+        tn.port.postMessage(tuneParams(tr)); mg.connect(tn); tn.connect(dest); monTune = tn;
+      });
+    } else mg.connect(dest);
   }catch(e){ monSrc = null; }
 }
-function detachMon(){ if(monSrc){ try{ monSrc.disconnect(); }catch(e){} monSrc = null; } }
+function remon(){ if(monSrc){ detachMon(); attachMon(); } }
+function detachMon(){ if(monSrc){ try{ monSrc.disconnect(); }catch(e){} monSrc = null; } if(monTune){ try{ monTune.disconnect(); }catch(e){} monTune = null; } }
 function setMonUI(){
   $('#bMon').setAttribute('aria-pressed', String(!!S.mon)); $('#tMon').setAttribute('aria-pressed', String(!!S.mon));
   setRecUI();
@@ -1101,9 +1201,10 @@ async function monOn(){
   await detectHeadset(true);
   if(!(await wake())){ toast('Touche ▶ une fois puis rallume le retour.'); }
   S.mon = true; openMicGraph(); attachMon(); setMonUI();
-  toast(S.casque ? '🎧 Retour voix allumé : tu t\'entends en direct, avec les effets de ta piste.'
-    : S.route === 'bt' ? '🚗 Retour voix allumé sur ton Bluetooth. Ta voix revient avec un petit décalage, c\'est le Bluetooth. Garde le volume raisonnable.'
-    : '🔊 Retour voix allumé sans casque : garde le volume bas, je baisse ou je coupe tout seul si ça siffle.');
+  const lt = liveTuned(monTrack()) ? ' Auto-tune en direct compris.' : '';
+  toast((S.casque ? '🎧 Retour voix allumé : tu t\'entends en direct, avec les effets de ta piste.' + lt
+    : S.route === 'bt' ? '🚗 Retour voix allumé sur ton Bluetooth.' + lt + ' Ta voix revient avec un petit décalage, c\'est le Bluetooth. Garde le volume raisonnable.'
+    : '🔊 Retour voix allumé sans casque.' + lt + ' Garde le volume bas, je baisse ou je coupe tout seul si ça siffle.'));
 }
 function monOff(){
   S.mon = false; detachMon(); setMonUI();
@@ -1677,7 +1778,7 @@ async function fxDo(t, k, i){
   if(isLocked(t)){ lockToast(t); return; }
   if(k === 'at' && t.keep){ keepToast(); return; }
   if(k === 'at'){
-    if(i === undefined){ await toggleAT(t); refreshFx(); return; }
+    if(i === undefined){ await toggleAT(t); remon(); refreshFx(); return; }
     if(isTuned(t)) pushUndo('l\'auto-tune');
     const wasPl = nearest(AT_SP, t.at.speed) === 3;
     t.at.speed = AT_SP[i];
@@ -1688,6 +1789,7 @@ async function fxDo(t, k, i){
       if(!t.fx.dly) t.fx.dly = FXL.dly[1];
       t.chain.set(t, audible(t), true);
     }
+    remon();
     if(isTuned(t) && !(S.recording && t.arm)) await applyAutotune(t);
     if(i === 3 && !wasPl) setTimeout(() => toast('🛸 Mode Planant : auto-tune collé + Doubler, Reverb et Écho pour le vibe. Retire-les si tu veux.'), 50);
     refreshFx(); scheduleSave(); return;
@@ -1738,8 +1840,8 @@ $('#strip').addEventListener('change', e => {
   if(isLocked(t0)) return;
   if(t0.keep && (e.target.id === 'atKey' || e.target.id === 'atScale')){ keepToast(); renderMix(); return; }
   if(e.target.id === 'atKey' || e.target.id === 'atScale') pushUndo('la tonalité');
-  if(e.target.id === 'atKey'){ t0.at.key = +e.target.value; t0.at.auto = false; if(isTuned(t0)) applyAutotune(t0); return; }
-  if(e.target.id === 'atScale'){ t0.at.scale = e.target.value; t0.at.auto = false; if(isTuned(t0)) applyAutotune(t0); return; }
+  if(e.target.id === 'atKey'){ t0.at.key = +e.target.value; t0.at.auto = false; remon(); if(isTuned(t0)) applyAutotune(t0); return; }
+  if(e.target.id === 'atScale'){ t0.at.scale = e.target.value; t0.at.auto = false; remon(); if(isTuned(t0)) applyAutotune(t0); return; }
   if(e.target.id !== 'fxPreset') return;
   const t = selTrack(), p = e.target.value;
   if(!FX[p]) return;
@@ -1995,7 +2097,7 @@ async function toggleAT(t){
     refreshFx(); return;
   }
   t.atOn = true;
-  if(!t.buffer || (S.recording && t.arm)){ refreshFx(); toast('Auto-tune activé : il s\'appliquera dès la fin de la prise.'); return; }
+  if(!t.buffer || (S.recording && t.arm)){ refreshFx(); toast(S.mon ? 'Auto-tune activé : tu l\'entends déjà dans le retour, et il s\'appliquera à la prise.' : 'Auto-tune activé : il s\'appliquera dès la fin de la prise. Allume 🎧 Retour pour l\'entendre en direct.'); return; }
   await applyAutotune(t);
 }
 async function applyAutotune(t){
@@ -3831,7 +3933,7 @@ const TOUR = [
   { sel: ['#list .row:nth-child(1) [data-act=import]'], t: 'Ton instru', b: 'Touche « Importer » sur la piste Instru et choisis ton beat (MP3 ou WAV). Je trouve tout seul le BPM et la tonalité, et je cale le niveau. C\'est la toute première chose à faire.' },
   { sel: ['#list .row:nth-child(2) .chip'], t: 'R, M, S', b: 'R arme la piste : c\'est là que ta voix va s\'enregistrer. M coupe la piste, S l\'écoute toute seule. Arme Lead avant ton premier couplet.' },
   { sel: ['#bRec'], t: 'REC', b: 'Piste armée ? Touche REC : 4 bips de décompte et tu kickes. Retouche REC pour t\'arrêter. Si la piste a déjà une prise, la nouvelle se pose par-dessus à cet endroit (Annuler pour revenir). Pour garder les deux, ajoute une piste avec le + ou duplique avec ⧉ : c\'est toi qui décides.' },
-  { sel: ['#bMon'], t: 'Retour 🎧', b: 'Allume-le pour t\'entendre en direct avec les effets de ta piste, même sans enregistrer : parfait pour chauffer ta voix. Avec des écouteurs c\'est l\'idéal. Sur le haut-parleur ou en Bluetooth, garde le volume raisonnable : si ça siffle, je baisse tout seul.' },
+  { sel: ['#bMon'], t: 'Retour 🎧', b: 'Allume-le pour t\'entendre en direct avec les effets de la piste armée, auto-tune compris, même sans enregistrer : parfait pour chauffer ta voix. Avec des écouteurs c\'est l\'idéal. Sur le haut-parleur ou en Bluetooth, garde le volume raisonnable : si ça siffle, je baisse tout seul.' },
   { sel: ['#routeChip'], t: 'Ton écoute', b: 'Ici je t\'affiche ce que j\'ai détecté : 🎧 tes écouteurs (AirPods…), 🚗 un Bluetooth de voiture ou d\'enceinte, ou 📱 le haut-parleur. Si je me trompe, touche-le et choisis toi-même.' },
   { sel: ['#bHome', '#bPlay', '#bStop'], t: 'Lecture', b: '▶ lance ou met en pause, ⏹ arrête, ⏮ revient au début. Réécoute ta prise juste après l\'avoir posée, c\'est là que tu sais si elle est bonne.' },
   { sel: ['#bUndo'], t: 'Annuler', b: 'Une bêtise ? Annuler revient en arrière, étape par étape : une prise, un effet, une piste supprimée, tout s\'annule.' },
