@@ -301,7 +301,7 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
 .nets{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
 .net{height:56px;border-radius:12px;border:1px solid var(--line);background:var(--raise);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-weight:700;font-size:12px;color:var(--fg)}
 .net span{font-size:20px;line-height:1}
-#netCap,#avTxt{width:100%;background:var(--raise);border:1px solid var(--line);border-radius:10px;padding:10px;font:16px/1.4 inherit;color:var(--fg);resize:vertical}
+#netCap,#avTxt,#avName{width:100%;background:var(--raise);border:1px solid var(--line);border-radius:10px;padding:10px;font:16px/1.4 inherit;color:var(--fg);resize:vertical}
 .avrow{display:flex;gap:6px;flex-wrap:wrap}
 .avrow button{flex:1 1 0;min-width:44px;height:48px;border-radius:10px;border:1px solid var(--line);background:var(--raise);font-size:22px}
 .avrow.kind button{font-size:14px;font-weight:700}
@@ -349,6 +349,7 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
 .help{margin-top:12px;color:var(--muted);font-size:12px;line-height:1.6}
 .help kbd{font:11px var(--mono);border:1px solid var(--line);border-radius:4px;padding:1px 5px;background:var(--raise);color:var(--fg)}
 @media (max-width:480px){.sl,.grrow{grid-template-columns:92px minmax(0,1fr) 58px}}
+#tBody{white-space:pre-line}
 </style>
 </head>
 <body>
@@ -377,7 +378,7 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
     <button class="toggle" id="bTour">📖 Revoir le tuto</button>
     <button class="toggle" id="bAvis">💬 Donner mon avis</button>
     <button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-    <span class="grp" id="ver">Version 36</span>
+    <span class="grp" id="ver">Version 39</span>
     <span class="grp" id="latInfo" title="Le retard du téléphone est mesuré et corrigé tout seul à chaque prise">Calage auto</span>
   </div>
 </div>
@@ -615,7 +616,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 </section>
 
 <div class="help">
-  StudioXel · version 36.
+  StudioXel · version 39.
   Touche la pastille de couleur à gauche du nom d'une piste pour changer sa couleur.
   🔓 sur une piste verrouille une prise réussie : plus de réenregistrement, de coupe ni de déplacement par erreur.
   Glisse le doigt pour avancer dans la timeline. Touche une prise pour placer la lecture. Appui long : la phrase est sélectionnée pour la supprimer, la déplacer ou la copier. ⧉ duplique une piste.
@@ -635,7 +636,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 36;
+const APP_VER = 39;
 const COLORS = ['#6fa8ff','#f2b544','#c58bff','#4fd1b5','#ff8a65','#9be15d','#ff7eb6'];
 const HDR = 216, CEIL = Math.pow(10, -1 / 20);
 const store = {
@@ -3094,6 +3095,8 @@ function openAvis(){
     <div class="avrow" id="avNote">${[1,2,3,4,5].map(i => `<button data-n="${i}" aria-label="${i} sur 5" aria-pressed="false">${['😖','😕','😐','🙂','🔥'][i-1]}</button>`).join('')}</div>
     <div class="wsub">C'est quoi ?</div>
     <div class="avrow kind" id="avKind">${['🐞 Un bug','💡 Une idée','❤️ Un kif'].map(k => `<button data-k="${k}" aria-pressed="false">${k}</button>`).join('')}</div>
+    <div class="wsub">Ton blaze</div>
+    <input id="avName" maxlength="40" autocomplete="nickname" placeholder="Comment on t'appelle ?" value="${esc(ME.name || '')}">
     <div class="wsub">Raconte</div>
     <textarea id="avTxt" rows="5" placeholder="Ce qui marche, ce qui bloque, ce qui manque…"></textarea>
     <button class="wbig" id="avSend">Envoyer au Xel</button>
@@ -3107,14 +3110,15 @@ function openAvis(){
     const n = e.target.closest('[data-n]'); if(n){ st.note = +n.dataset.n; w.querySelectorAll('[data-n]').forEach(x => x.setAttribute('aria-pressed', String(+x.dataset.n === st.note))); }
     const k = e.target.closest('[data-k]'); if(k){ st.kind = k.dataset.k; w.querySelectorAll('[data-k]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.k === st.kind))); }
     if(e.target.id === 'avSend'){
-      const txt = $('#avTxt').value.trim();
+      const txt = $('#avTxt').value.trim(), who = $('#avName').value.trim();
+      if(who && !ME.name){ ME.name = who; store.set('me', ME); const mi = $('#meName'); if(mi) mi.value = who; }
       if(!txt && !st.note){ toast('Mets au moins une note ou un mot 😉'); return; }
       const ua = navigator.userAgent, dev = /iPhone/.test(ua) ? 'iPhone' : /iPad/.test(ua) ? 'iPad' : /Android/.test(ua) ? 'Android' : 'Ordi';
       const ios = (ua.match(/OS (\d+[_\d]*)/) || [])[1];
       const body = [
         'Note : ' + (st.note ? st.note + '/5' : '—'),
         'Type : ' + (st.kind ? st.kind.slice(st.kind.indexOf(' ') + 1) : '—'),
-        'Blaze : ' + (ME.name || '—'),
+        'Blaze : ' + (who || '—'),
         '', txt || '(pas de message)', '',
         '— StudioXel v' + APP_VER + ' · ' + dev + (ios ? ' iOS ' + ios.replace(/_/g, '.') : '')
       ].join('\n');
@@ -3123,7 +3127,7 @@ function openAvis(){
       if(!AVIS_KEY || !navigator.onLine) return viaMail();
       const btn = $('#avSend'); btn.disabled = true; btn.textContent = 'Envoi…';
       fetch('https://api.web3forms.com/submit', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ access_key: AVIS_KEY, subject: subj, from_name: 'StudioXel · ' + (ME.name || 'kickeur'), message: body }) })
+        body: JSON.stringify({ access_key: AVIS_KEY, subject: subj, from_name: 'StudioXel · ' + (who || 'kickeur'), message: body }) })
         .then(r => r.json()).then(j => { if(!j.success) throw 0; close(); toast('Bien reçu, merci kickeur 🙏'); })
         .catch(() => { btn.disabled = false; btn.textContent = 'Envoyer au Xel'; viaMail(); });
     }
@@ -3538,8 +3542,12 @@ $('#selListen').onclick = () => {
 
 /* ---------- Tuto : le Xel présente le studio aux kickeurs ---------- */
 const TOUR = [
-  { t: 'Yo les kickeurs 👊', b: 'C\'est le Xel. Je te fais faire le tour du studio en deux minutes, bouton par bouton. Tu peux passer quand tu veux, et revoir le tuto dans Réglages.' },
-  { sel: ['#list .row:nth-child(1) [data-act=import]'], t: 'Ton instru', b: 'Touche « Importer » sur la piste Instru et choisis ton beat (MP3 ou WAV). Je trouve tout seul le BPM et la tonalité, et je cale le niveau. C\'est la toute première chose à faire.' },
+  { t: 'Yo les kickeurs 👊', b: 'C\'est le Xel. Avant de kicker, on remet les pieds sur terre : le matos.\nLe micro de ton tel suffit pour maquetter. Pour un son au top :\n• Écouteurs filaires sur les oreilles : tu entends l\'instru et elle ne repart pas dans le micro. Le Bluetooth, évite-le pendant que tu poses ta voix.\n• Un petit micro qui se branche sur le tel, c\'est le vrai saut de qualité.\n• Une pièce calme et pleine de tissu (rideaux, lit, vêtements), pas une salle de bain.\n• Ta bouche à 15–20 cm du micro, et le tel en mode avion pour pas qu\'une notif gâche la prise.' },
+  ...((navigator.standalone || matchMedia('(display-mode: standalone)').matches) ? [] : [{ t: 'Comme une vraie appli 📲', b: /Android/i.test(navigator.userAgent)
+    ? 'Mets StudioXel sur ton écran d\'accueil, avec son icône :\n1. Ouvre studioxel.github.io dans Chrome.\n2. Touche les 3 points ⋮ en haut à droite.\n3. Touche « Ajouter à l\'écran d\'accueil » (ou « Installer l\'appli »), puis Ajouter.\nEnsuite lance-la toujours depuis l\'icône.'
+    : 'Mets StudioXel sur ton écran d\'accueil, avec son icône :\n1. Ouvre studioxel.github.io dans Safari.\n2. Touche le bouton Partager (le carré avec la flèche).\n3. Descends et touche « Sur l\'écran d\'accueil », puis Ajouter.\nEnsuite lance-la toujours depuis l\'icône : plein écran, comme une vraie appli.' }]),
+  { t: 'Le tour du studio', b: 'Maintenant je te fais faire le tour du studio en deux minutes, bouton par bouton. Tu peux passer quand tu veux, et revoir le tuto dans Réglages.' },
+  { sel: ['#list .row:nth-child(1) [data-act=import]'], t: 'Ton instru', b: 'Touche « Importer » sur la piste Instru et choisis ton beat (MP3 ou WAV). Je trouve tout seul le BPM et la tonalité, et je cale le niveau. C\'est la toute première chose à faire.' },
   { sel: ['#list .row:nth-child(2) .chip'], t: 'R, M, S', b: 'R arme la piste : c\'est là que ta voix va s\'enregistrer. M coupe la piste, S l\'écoute toute seule. Arme Lead avant ton premier couplet.' },
   { sel: ['#bRec'], t: 'REC', b: 'Piste armée ? Touche REC : 4 bips de décompte et tu kickes. Retouche REC pour t\'arrêter. Si la piste a déjà une prise, je t\'en crée une nouvelle juste en dessous : rien n\'est écrasé.' },
   { sel: ['#bHome', '#bPlay', '#bStop'], t: 'Lecture', b: '▶ lance ou met en pause, ⏹ arrête, ⏮ revient au début. Réécoute ta prise juste après l\'avoir posée, c\'est là que tu sais si elle est bonne.' },
@@ -3552,11 +3560,13 @@ const TOUR = [
   { sel: ['#zOut', '#zIn'], t: 'Le zoom', b: 'Les loupes zooment et dézooment la timeline. Zoome pour couper une phrase au poil près.' },
   { sel: ['#plusBtn'], t: 'Le bouton +', b: 'Ajoute une piste, pose un repère (couplet, refrain), lance une boucle pour refaire juste une phrase, et retrouve toutes tes sessions. Tout se sauvegarde tout seul.' },
   { sel: ['#bSet'], t: 'Réglages', b: 'Mets ton blaze : il signe tes pistes. Tu y trouves aussi le décompte, le métronome et le retour voix pour quand t\'as un casque. Le casque, je le détecte tout seul.' },
-  { sel: ['.nav [data-view=vMix]'], t: 'Mix', b: 'Les effets de chaque piste en grand, plus l\'égaliseur et la compression pour ceux qui veulent aller loin. « Rééquilibrer » remet les niveaux d\'aplomb.' },
+  { sel: ['.nav [data-view=vMix]'], t: 'Mix', b: 'Les effets de chaque piste en grand, plus l\'égaliseur et la compression pour ceux qui veulent aller loin. « Rééquilibrer » remet les niveaux d\'aplomb.' },
   { sel: ['.nav [data-view=vMaster]'], t: 'Master', b: 'La touche finale : un style et un volume (Streaming ou Fort). Ton son sonne pro sans jamais saturer.' },
   { sel: ['.nav [data-view=vTexte]'], t: 'Texte', b: 'Écris tes lyrics ici. Le prompteur les fait défiler pendant que tu kickes. Cale tes lignes une fois, elles sortiront aussi en sous-titres dans tes Reels.' },
   { sel: ['.nav [data-view=vProjets]'], t: 'Projets', b: 'Prépare ton single, ton EP ou ton album : pochette, tracklist, et où en est chaque titre.' },
   { sel: ['.nav [data-view=vPartager]'], t: 'Partager', b: 'Exporte ton son en MP3, monte un Reel avec ta photo, ta vidéo ou un selfie, et envoie ta session à un collègue pour qu\'il pose son couplet.' },
+  { sel: ['.nav [data-view=vPartager]'], t: 'Poste ton Reel', b: 'Ton Reel prêt, choisis ton réseau : Insta, TikTok, Shorts, Snap… Ta légende est copiée toute seule avec les bons hashtags, t\'as plus qu\'à coller. Et dans « Fais tourner l\'appli », envoie le lien à tes potes kickeurs.' },
+  { sel: ['#bSet'], t: 'Ton avis', b: 'Un bug, une idée, un kif ? Dans Réglages ou en bas de Partager, touche « Donner mon avis » : ça m\'arrive direct, je lis tout. C\'est comme ça que l\'appli avance.' },
   { t: 'À toi de kicker 🎤', b: 'C\'est tout bon. Importe ton instru, arme Lead, et envoie. On se retrouve dans tes Reels. — Le Xel' }
 ];
 let tourI = -1, tourEl = null;
