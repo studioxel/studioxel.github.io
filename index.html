@@ -297,6 +297,16 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
 .witem b{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .witem span{font-size:12px;color:var(--muted)}
 .wlink{background:none;border:0;color:var(--accent);font-weight:700;padding:8px;text-decoration:underline}
+.netbox{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.nets{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
+.net{height:56px;border-radius:12px;border:1px solid var(--line);background:var(--raise);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-weight:700;font-size:12px;color:var(--fg)}
+.net span{font-size:20px;line-height:1}
+#netCap,#avTxt{width:100%;background:var(--raise);border:1px solid var(--line);border-radius:10px;padding:10px;font:16px/1.4 inherit;color:var(--fg);resize:vertical}
+.avrow{display:flex;gap:6px;flex-wrap:wrap}
+.avrow button{flex:1 1 0;min-width:44px;height:48px;border-radius:10px;border:1px solid var(--line);background:var(--raise);font-size:22px}
+.avrow.kind button{font-size:14px;font-weight:700}
+.avrow button[aria-pressed=true]{border:2px solid var(--accent);background:color-mix(in srgb,var(--accent) 16%,var(--raise))}
+.avmail{font-size:12px;color:var(--muted);word-break:break-all;user-select:all}
 .reelpick{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
 .reelpick .note{flex:1 1 180px;margin:0}
 .rprev{width:96px;aspect-ratio:9/16;max-width:100%;background:#000;border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px;text-align:center;flex:none;border:1px solid var(--line)}
@@ -365,8 +375,9 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
     <span class="grp" id="outInfo"></span>
     <button class="toggle" id="tMon" aria-pressed="false" title="Entendre ta voix avec les effets pendant la prise (casque obligatoire)">Retour voix</button>
     <button class="toggle" id="bTour">📖 Revoir le tuto</button>
+    <button class="toggle" id="bAvis">💬 Donner mon avis</button>
     <button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-    <span class="grp" id="ver">Version 32</span>
+    <span class="grp" id="ver">Version 35</span>
     <span class="grp" id="latInfo" title="Le retard du téléphone est mesuré et corrigé tout seul à chaque prise">Calage auto</span>
   </div>
 </div>
@@ -533,7 +544,20 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
       <button class="sbtn primary rsgo" id="bVideo">🎬 Créer mon Reel</button>
       <button class="sbtn primary" id="bShareVideo" hidden>Partager la vidéo</button>
     </div>
+    <div class="netbox" id="netBox" hidden>
+      <div class="rslab">Où tu le postes ?</div>
+      <div class="nets" id="netList" role="group" aria-label="Réseaux"></div>
+      <label class="rslab" for="netCap">Ta légende (copiée toute seule, tu n'as qu'à coller)</label>
+      <textarea id="netCap" rows="3"></textarea>
+      <p class="note" id="netHelp">Touche un réseau : la légende est copiée, la liste de partage s'ouvre, choisis l'appli puis colle la légende.</p>
+    </div>
     <p class="note">Ta vidéo est toujours signée StudioXel, en discret : petit logo et lien en haut, l'appli qui tourne en transparence en bas.</p>
+    <div class="sec">Fais tourner l'appli</div>
+    <p class="note">Envoie le lien de StudioXel à tes potes kickeurs.</p>
+    <div class="nets" id="linkList" role="group" aria-label="Partager le lien"></div>
+    <div class="sec">Ton avis</div>
+    <p class="note">Un bug, une idée, un kif ? Dis-le au Xel, il lit tout.</p>
+    <div class="btns"><button class="sbtn primary" id="bAvis2">💬 Donner mon avis</button></div>
     <div class="sec">Pour un ingé son</div>
     <p class="note">Chaque piste en WAV avec ses effets, toutes calées au même départ.</p>
     <div class="btns">
@@ -591,7 +615,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 </section>
 
 <div class="help">
-  StudioXel · version 32.
+  StudioXel · version 35.
   Touche la pastille de couleur à gauche du nom d'une piste pour changer sa couleur.
   🔓 sur une piste verrouille une prise réussie : plus de réenregistrement, de coupe ni de déplacement par erreur.
   Glisse le doigt pour avancer dans la timeline. Touche une prise pour placer la lecture. Appui long : la phrase est sélectionnée pour la supprimer, la déplacer ou la copier. ⧉ duplique une piste.
@@ -611,6 +635,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
+const APP_VER = 35;
 const COLORS = ['#6fa8ff','#f2b544','#c58bff','#4fd1b5','#ff8a65','#9be15d','#ff7eb6'];
 const HDR = 216, CEIL = Math.pow(10, -1 / 20);
 const store = {
@@ -3001,13 +3026,106 @@ $('#bVideo').onclick = async () => {
     if(chunks.length){
       const blob = new Blob(chunks, { type: mr.mimeType || 'video/mp4' });
       lastVideo = new File([blob], baseName() + '-reel.' + ((mr.mimeType || '').includes('mp4') ? 'mp4' : 'webm'), { type: blob.type });
-      $('#bShareVideo').hidden = false;
+      $('#bShareVideo').hidden = false; $('#netBox').hidden = false; renderNets();
       toast('🎉 Ton Reel est prêt : touche « Partager la vidéo ».');
     } else toast('Reel annulé.');
   }catch(e){ ov.hidden = true; S.reelRec = false; toast('Vidéo impossible : ' + e.message); }
   setBusy(false);
 };
-$('#bShareVideo').onclick = () => { if(lastVideo) shareFiles([lastVideo], 'Enregistré avec StudioXel 🎤 https://' + SXL_URL); };
+$('#bShareVideo').onclick = () => { if(!lastVideo) return; const c = $('#netCap').value.trim() || ('Enregistré avec StudioXel 🎤 https://' + SXL_URL); copyText(c); shareFiles([lastVideo], c); };
+
+
+/* ---------- Partage par réseau + avis ---------- */
+const NETS = [
+  { k: 'insta', n: 'Instagram', i: '📸', tags: '#rap #rapfr #reels #studioxel' },
+  { k: 'tiktok', n: 'TikTok', i: '🎵', tags: '#rap #rapfr #pourtoi #studioxel' },
+  { k: 'yt', n: 'YT Shorts', i: '▶️', tags: '#shorts #rap #rapfr #studioxel' },
+  { k: 'snap', n: 'Snapchat', i: '👻', tags: '#rap #studioxel' },
+  { k: 'wa', n: 'WhatsApp', i: '💬', tags: '' },
+  { k: 'fb', n: 'Facebook', i: '📘', tags: '#rap #rapfr #studioxel' },
+  { k: 'x', n: 'X', i: '✖️', tags: '#rap #rapfr #studioxel' }
+];
+const APP_LINK = 'https://' + SXL_URL;
+function baseCaption(){
+  const t = (sess.name && !/^session/i.test(sess.name)) ? sess.name + ' 🎤' : 'Nouveau son 🎤';
+  return t + '\nEnregistré sur mon tel avec StudioXel → ' + SXL_URL;
+}
+function capFor(n){ let c = $('#netCap').value.trim() || baseCaption(); if(n.tags && !c.includes('#')) c += '\n' + n.tags; return c; }
+function copyText(t){ try{ if(navigator.clipboard) return navigator.clipboard.writeText(t).then(() => true, () => false); }catch(e){} return Promise.resolve(false); }
+function renderNets(){
+  if(!$('#netCap').value) $('#netCap').value = baseCaption();
+}
+$('#netList').innerHTML = NETS.map(n => `<button class="net" data-net="${n.k}"><span>${n.i}</span>${n.n}</button>`).join('');
+$('#netList').addEventListener('click', e => {
+  const b = e.target.closest('[data-net]'); if(!b || !lastVideo) return;
+  const n = NETS.find(x => x.k === b.dataset.net), cap = capFor(n);
+  copyText(cap);
+  shareFiles([lastVideo], cap);
+  toast('Légende copiée 📋 Choisis ' + n.n + ' dans la liste, puis colle-la.');
+});
+const LINK_MSG = 'Je fais mes sons direct sur mon tel avec StudioXel 🎤 Gratuit, sans rien installer : ' + APP_LINK;
+const LINKS = [
+  { n: 'WhatsApp', i: '💬', u: () => 'https://wa.me/?text=' + encodeURIComponent(LINK_MSG) },
+  { n: 'SMS', i: '✉️', u: () => 'sms:&body=' + encodeURIComponent(LINK_MSG) },
+  { n: 'X', i: '✖️', u: () => 'https://x.com/intent/post?text=' + encodeURIComponent(LINK_MSG) },
+  { n: 'Facebook', i: '📘', u: () => 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(APP_LINK) },
+  { n: 'Snapchat', i: '👻', u: () => 'https://www.snapchat.com/scan?attachmentUrl=' + encodeURIComponent(APP_LINK) },
+  { n: 'Autre…', i: '📤', u: null },
+  { n: 'Copier', i: '🔗', u: 'copy' }
+];
+$('#linkList').innerHTML = LINKS.map((l, i) => `<button class="net" data-lk="${i}"><span>${l.i}</span>${l.n}</button>`).join('');
+$('#linkList').addEventListener('click', async e => {
+  const b = e.target.closest('[data-lk]'); if(!b) return;
+  const l = LINKS[+b.dataset.lk];
+  if(l.u === 'copy'){ toast((await copyText(APP_LINK)) ? 'Lien copié 🔗' : APP_LINK); return; }
+  if(!l.u){ try{ if(navigator.share){ await navigator.share({ title: 'StudioXel', text: LINK_MSG.replace(' ' + APP_LINK, ''), url: APP_LINK }); return; } }catch(err){ if(err.name === 'AbortError') return; } toast((await copyText(LINK_MSG)) ? 'Message copié, colle-le où tu veux.' : APP_LINK); return; }
+  window.open(l.u(), '_blank');
+});
+
+const AVIS_MAIL = 'neuvaine-16-liasse@icloud.com';
+function openAvis(){
+  const st = { note: 0, kind: '' };
+  const w = document.createElement('div');
+  w.className = 'welcome'; w.setAttribute('role', 'dialog'); w.setAttribute('aria-label', 'Donner mon avis');
+  w.innerHTML = `<div class="wpanel">
+    <h2>Ton avis, kickeur 🎤</h2>
+    <div class="wsub">Ta note</div>
+    <div class="avrow" id="avNote">${[1,2,3,4,5].map(i => `<button data-n="${i}" aria-label="${i} sur 5" aria-pressed="false">${['😖','😕','😐','🙂','🔥'][i-1]}</button>`).join('')}</div>
+    <div class="wsub">C'est quoi ?</div>
+    <div class="avrow kind" id="avKind">${['🐞 Un bug','💡 Une idée','❤️ Un kif'].map(k => `<button data-k="${k}" aria-pressed="false">${k}</button>`).join('')}</div>
+    <div class="wsub">Raconte</div>
+    <textarea id="avTxt" rows="5" placeholder="Ce qui marche, ce qui bloque, ce qui manque…"></textarea>
+    <button class="wbig" id="avSend">Envoyer au Xel</button>
+    <p class="avmail">Ça ouvre ton appli mail. Si rien ne s'ouvre, écris à : ${AVIS_MAIL}</p>
+    <button class="wlink" id="avClose">Plus tard</button>
+  </div>`;
+  document.body.appendChild(w);
+  const close = () => w.remove();
+  w.addEventListener('click', e => {
+    if(e.target === w || e.target.id === 'avClose') return close();
+    const n = e.target.closest('[data-n]'); if(n){ st.note = +n.dataset.n; w.querySelectorAll('[data-n]').forEach(x => x.setAttribute('aria-pressed', String(+x.dataset.n === st.note))); }
+    const k = e.target.closest('[data-k]'); if(k){ st.kind = k.dataset.k; w.querySelectorAll('[data-k]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.k === st.kind))); }
+    if(e.target.id === 'avSend'){
+      const txt = $('#avTxt').value.trim();
+      if(!txt && !st.note){ toast('Mets au moins une note ou un mot 😉'); return; }
+      const ua = navigator.userAgent, dev = /iPhone/.test(ua) ? 'iPhone' : /iPad/.test(ua) ? 'iPad' : /Android/.test(ua) ? 'Android' : 'Ordi';
+      const ios = (ua.match(/OS (\d+[_\d]*)/) || [])[1];
+      const body = [
+        'Note : ' + (st.note ? st.note + '/5' : '—'),
+        'Type : ' + (st.kind ? st.kind.slice(st.kind.indexOf(' ') + 1) : '—'),
+        'Blaze : ' + (ME.name || '—'),
+        '', txt || '(pas de message)', '',
+        '— StudioXel v' + APP_VER + ' · ' + dev + (ios ? ' iOS ' + ios.replace(/_/g, '.') : '')
+      ].join('\n');
+      const subj = 'Avis StudioXel' + (st.kind ? ' · ' + st.kind.slice(st.kind.indexOf(' ') + 1) : '') + (st.note ? ' · ' + st.note + '/5' : '');
+      location.href = 'mailto:' + AVIS_MAIL + '?subject=' + encodeURIComponent(subj) + '&body=' + encodeURIComponent(body);
+      close(); toast('Merci kickeur 🙏 Appuie sur Envoyer dans ton mail.');
+    }
+  });
+  $('#avTxt').focus();
+}
+$('#bAvis').onclick = () => { $('#settings').hidden = true; $('#bSet').setAttribute('aria-expanded', 'false'); openAvis(); };
+$('#bAvis2').onclick = openAvis;
 
 $('#bStems').onclick = async () => {
   if(busy) return;
@@ -3412,9 +3530,9 @@ $('#selListen').onclick = () => {
   S.pos = bandSel.a; S.listenEnd = bandSel.b; play();
 };
 
-/* ---------- Tuto : Le Xel présente le studio aux kickeurs ---------- */
+/* ---------- Tuto : le Xel présente le studio aux kickeurs ---------- */
 const TOUR = [
-  { t: 'Yo les kickeurs 👊', b: 'C\'est Le Xel. Je te fais faire le tour du studio en deux minutes, bouton par bouton. Tu peux passer quand tu veux, et revoir le tuto dans Réglages.' },
+  { t: 'Yo les kickeurs 👊', b: 'C\'est le Xel. Je te fais faire le tour du studio en deux minutes, bouton par bouton. Tu peux passer quand tu veux, et revoir le tuto dans Réglages.' },
   { sel: ['#list .row:nth-child(1) [data-act=import]'], t: 'Ton instru', b: 'Touche « Importer » sur la piste Instru et choisis ton beat (MP3 ou WAV). Je trouve tout seul le BPM et la tonalité, et je cale le niveau. C\'est la toute première chose à faire.' },
   { sel: ['#list .row:nth-child(2) .chip'], t: 'R, M, S', b: 'R arme la piste : c\'est là que ta voix va s\'enregistrer. M coupe la piste, S l\'écoute toute seule. Arme Lead avant ton premier couplet.' },
   { sel: ['#bRec'], t: 'REC', b: 'Piste armée ? Touche REC : 4 bips de décompte et tu kickes. Retouche REC pour t\'arrêter. Si la piste a déjà une prise, je t\'en crée une nouvelle juste en dessous : rien n\'est écrasé.' },
