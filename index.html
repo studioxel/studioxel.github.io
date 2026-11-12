@@ -361,6 +361,11 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
 .help kbd{font:11px var(--mono);border:1px solid var(--line);border-radius:4px;padding:1px 5px;background:var(--raise);color:var(--fg)}
 @media (max-width:480px){.sl,.grrow{grid-template-columns:92px minmax(0,1fr) 58px}}
 #tBody{white-space:pre-line}
+/* filigrane permanent : présent sur toute capture d'écran, sans gêner le travail */
+.wmark{position:fixed;inset:0;pointer-events:none;z-index:14;display:flex;align-items:center;justify-content:center}
+.wmark img{width:min(62vw,340px);aspect-ratio:1;object-fit:contain;opacity:.16;mix-blend-mode:screen;-webkit-mask-image:radial-gradient(circle,#000 50%,transparent 70%);mask-image:radial-gradient(circle,#000 50%,transparent 70%)}
+.wmark img:not([src]){display:none}
+.wmurl{position:fixed;right:max(10px,env(safe-area-inset-right,0px));bottom:max(8px,env(safe-area-inset-bottom,0px));font:700 11px var(--display, system-ui);letter-spacing:.04em;color:var(--fg);opacity:.32}
 </style>
 </head>
 <body>
@@ -391,7 +396,7 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
     <button class="toggle" id="bTour">📖 Revoir le tuto</button>
     <button class="toggle" id="bAvis">💬 Donner mon avis</button>
     <button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-    <span class="grp" id="ver">Version 53</span>
+    <span class="grp" id="ver">Version 54</span>
     <span class="grp" id="latInfo" title="Le retard du téléphone est mesuré et corrigé tout seul à chaque prise">Calage auto</span>
   </div>
 </div>
@@ -629,7 +634,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 </section>
 
 <div class="help">
-  StudioXel · version 53.
+  StudioXel · version 54.
   Touche la pastille de couleur à gauche du nom d'une piste pour changer sa couleur.
   🔓 sur une piste verrouille une prise réussie : plus de réenregistrement, de coupe ni de déplacement par erreur.
   Glisse le doigt pour avancer dans la timeline. Touche une prise pour placer la lecture. Appui long : la phrase est sélectionnée pour la supprimer, la déplacer ou la copier. ⧉ duplique une piste.
@@ -642,6 +647,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
   <div class="rrtxt" id="rrTxt"></div>
   <button class="sbtn" id="rrStop">■ Arrêter</button>
 </div>
+<div class="wmark" aria-hidden="true"><img id="wmLogo" alt=""><span class="wmurl">StudioXel · studioxel.github.io</span></div>
 <div class="toast" id="toast" role="status"></div>
 
 <script>
@@ -649,7 +655,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 53;
+const APP_VER = 54;
+try{ const li = document.querySelector('link[rel="apple-touch-icon"]'); if(li) document.getElementById('wmLogo').src = li.href; }catch(e){}
 const COLORS = ['#6fa8ff','#f2b544','#c58bff','#4fd1b5','#ff8a65','#9be15d','#ff7eb6'];
 const HDR = 216, CEIL = Math.pow(10, -1 / 20);
 const store = {
@@ -3438,7 +3445,9 @@ $('#netList').addEventListener('click', e => {
   const n = NETS.find(x => x.k === b.dataset.net), cap = capFor(n);
   copyText(cap);
   shareFiles([lastVideo], cap);
-  toast('Légende copiée 📋 Choisis ' + n.n + ' dans la liste, puis colle-la.');
+  /* une vidéo n'est jamais cliquable sur les réseaux : on donne l'astuce pour que le lien le soit */
+  const tip = { insta: ' En story, ajoute le sticker « Lien » avec studioxel.github.io : il sera cliquable.', snap: ' Touche le trombone 📎 et colle studioxel.github.io : le lien sera cliquable.', tiktok: ' Sur TikTok le lien n\'est cliquable que dans la bio.', yt: ' Le lien dans la description sera cliquable.', fb: ' Le lien dans le texte sera cliquable.', x: ' Le lien dans le texte sera cliquable.', wa: ' Le lien dans le message sera cliquable.' }[n.k] || '';
+  toast('Légende copiée 📋 Choisis ' + n.n + ' dans la liste, puis colle-la.' + tip);
 });
 const LINK_MSG = 'Je fais mes sons direct sur mon tel avec StudioXel 🎤 Gratuit, sans rien installer : ' + APP_LINK;
 const LINKS = [
@@ -4077,7 +4086,7 @@ function fmt(s, short){
   return short ? `${m}:${String(Math.floor(r)).padStart(2, '0')}` : `${m}:${r.toFixed(1).padStart(4, '0')}`;
 }
 let toastT;
-function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 3600); }
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), Math.max(3600, msg.length * 55)); }
 function setPlayIcon(){ $('#icoPlay').innerHTML = S.playing ? '<path d="M3 2h4v12H3zM9 2h4v12H9z"/>' : '<path d="M3 2l11 6-11 6z"/>'; }
 function setRecUI(){ renderQuick(); $('#micGrp').hidden = !((S.recording || S.mon) && micAnalyser); $('#bRec').classList.toggle('on', S.recording); $('#playhead').classList.toggle('rec', S.recording); }
 
