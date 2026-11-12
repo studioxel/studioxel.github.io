@@ -57,6 +57,13 @@ button{cursor:pointer}
 .toggle{height:34px;padding:0 10px;border-radius:6px;border:1px solid var(--line);background:transparent;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
 .toggle[aria-pressed=true]{background:var(--accent);color:#1a1405;border-color:var(--accent);font-weight:700}
 .meter{width:70px;height:8px;border-radius:4px;background:var(--raise);overflow:hidden;border:1px solid var(--line)}
+#micGrp.clip .meter{border-color:var(--rec)}
+#micGrp .meter{width:90px;height:10px}
+.clip.live{border-color:var(--rec)!important;background:color-mix(in srgb,var(--rec) 12%,transparent);pointer-events:none;z-index:2}
+.lane:has(.clip.live) .empty{display:none}
+.clip.live span{color:var(--rec)!important;font-weight:800}
+.row.ghost .hdr{display:flex;flex-direction:column;gap:6px;justify-content:center}
+.recdot{color:var(--rec)}
 .meter i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--ok) 60%,var(--accent) 85%,var(--rec))}
 .meter.wide{width:100%;height:10px}
 .meter.gr i{background:var(--accent);margin-left:auto}
@@ -374,11 +381,11 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
     <span class="grp">Écoute</span>
     <div class="seg" id="outSeg" role="group" aria-label="Écoute"><button data-o="auto" aria-pressed="false">Auto</button><button data-o="casque" aria-pressed="false">Casque</button><button data-o="hp" aria-pressed="false">Haut-parleur</button></div>
     <span class="grp" id="outInfo"></span>
-    <button class="toggle" id="tMon" aria-pressed="false" title="Entendre ta voix avec les effets pendant la prise (casque obligatoire)">Retour voix</button>
+    <button class="toggle" id="tMon" aria-pressed="false" title="Entendre ta voix avec les effets pendant la prise">Retour voix</button>
     <button class="toggle" id="bTour">📖 Revoir le tuto</button>
     <button class="toggle" id="bAvis">💬 Donner mon avis</button>
     <button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-    <span class="grp" id="ver">Version 43</span>
+    <span class="grp" id="ver">Version 46</span>
     <span class="grp" id="latInfo" title="Le retard du téléphone est mesuré et corrigé tout seul à chaque prise">Calage auto</span>
   </div>
 </div>
@@ -616,7 +623,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 </section>
 
 <div class="help">
-  StudioXel · version 43.
+  StudioXel · version 46.
   Touche la pastille de couleur à gauche du nom d'une piste pour changer sa couleur.
   🔓 sur une piste verrouille une prise réussie : plus de réenregistrement, de coupe ni de déplacement par erreur.
   Glisse le doigt pour avancer dans la timeline. Touche une prise pour placer la lecture. Appui long : la phrase est sélectionnée pour la supprimer, la déplacer ou la copier. ⧉ duplique une piste.
@@ -636,7 +643,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 43;
+const APP_VER = 46;
 const COLORS = ['#6fa8ff','#f2b544','#c58bff','#4fd1b5','#ff8a65','#9be15d','#ff7eb6'];
 const HDR = 216, CEIL = Math.pow(10, -1 / 20);
 const store = {
@@ -662,7 +669,7 @@ let ctx, bus, mpre, preGain, lim, limOut, chainOut, bypass, outAn, outData;
 let mic = null, micAnalyser = null, micData = null;
 let sources = [], playStartCtx = 0, playStartPos = 0, metroTimer = null, nextBeatT = 0, nextBeatIdx = 0;
 let rec = null, recInfo = null, idSeq = 0;
-let monSrc = null, fbCount = 0, fbFreq = null;
+let monSrc = null, micSrc = null, micSink = null, fbCount = 0, fbFreq = null, recLive = [], recQuietWarn = false;
 let doseOpen = null;
 let colorOpen = null;
 const PALETTE = ['#6fa8ff', '#38bdf8', '#4fd1b5', '#9be15d', '#f2b544', '#ff8a65', '#ff4b4b', '#ff7eb6', '#c58bff', '#e7eaf0'];
@@ -1060,6 +1067,8 @@ function unlockSpeaker(){
 function releaseMic(){
   audioSessionPlay();
   if(monSrc){ try{ monSrc.disconnect(); }catch(e){} monSrc = null; }
+  if(micSrc){ try{ micSrc.disconnect(); }catch(e){} micSrc = null; }
+  if(micSink){ try{ micSink.disconnect(); }catch(e){} micSink = null; }
   if(mic){ mic.getTracks().forEach(tr => tr.stop()); }
   mic = null; micAnalyser = null;
   setTimeout(() => ensureCtx(), 300);
@@ -1076,7 +1085,16 @@ async function record(){
   if(S.playing) pause();
   if(S.loop.on) S.pos = S.loop.start;
   if(!(await wake())){ releaseMic(); toast('L\'iPhone a coupé le son en branchant le micro. Touche ▶ une fois, puis relance REC.'); return; }
-  if(S.mon && S.casque){ try{ monSrc = ctx.createMediaStreamSource(mic); const mg = ctx.createGain(); mg.gain.value = 0.6; monSrc.connect(mg); mg.connect(t.chain.hp); micAnalyser = ctx.createAnalyser(); micAnalyser.fftSize = 1024; micData = new Float32Array(micAnalyser.fftSize); monSrc.connect(micAnalyser); fbCount = 0; }catch(e){ monSrc = null; } }
+  /* le micro alimente l'indicateur de niveau et la bande qui se dessine en direct (rien n'est envoyé aux enceintes) */
+  try{
+    micSrc = ctx.createMediaStreamSource(mic);
+    micAnalyser = ctx.createAnalyser(); micAnalyser.fftSize = 1024; micData = new Float32Array(micAnalyser.fftSize);
+    micSink = ctx.createGain(); micSink.gain.value = 0;
+    micSrc.connect(micAnalyser); micAnalyser.connect(micSink); micSink.connect(ctx.destination);
+  }catch(e){ micSrc = null; micAnalyser = null; }
+  /* retour voix : actif dès que tu l'allumes ; le détecteur de larsen veille */
+  if(S.mon && micSrc){ try{ const mg = ctx.createGain(); mg.gain.value = 0.6; micSrc.connect(mg); mg.connect(t.chain.hp); monSrc = mg; fbCount = 0; }catch(e){ monSrc = null; } }
+  recLive = []; recQuietWarn = false;
   if(silentEl) try{ silentEl.pause(); }catch(e){}
   const chunks = [];
   rec = new MediaRecorder(mic);
@@ -1084,6 +1102,7 @@ async function record(){
   const started = new Promise(r => rec.onstart = () => r(ctx.currentTime));
   rec.onstop = async () => {
     releaseMic();
+    setTimeout(cleanupLive, 1500);
     try{
       const blob = new Blob(chunks, { type: rec.mimeType });
       const raw = await ctx.decodeAudioData(await blob.arrayBuffer());
@@ -1538,7 +1557,7 @@ function sliderHTML(d, v, prefix){
 function selTrack(){ return trackById(S.sel) || S.tracks[0]; }
 const LV = { vr:[60, 85, 100], rev:FXL.rev, dly:FXL.dly, dbl:FXL.dbl, sat:[1, 2, 3], rad:[1, 2, 3] };
 const LVN = { dbl:['Léger', 'Moyen', 'Fort'], vr:['Un peu', 'Moyen', 'Max'], rev:['Pièce', 'Studio', 'Salle'], dly:['Slap', 'Ping-pong', 'Grand'], sat:['Tiède', 'Chaud', 'Brûlant'], rad:['Vieux poste', 'Téléphone', 'Lo-fi'] };
-const AT_SP = [60, 25, 0], AT_N = ['Naturel', 'Marqué', 'Robot'];
+const AT_SP = [60, 25, 0, -10], AT_N = ['Naturel', 'Marqué', 'Robot', 'Planant 🛸'];
 const fxGet = (t, k) => k === 'vr' ? (t.vr || 0) : (t.fx[k] || 0);
 const fxSet = (t, k, v) => { if(k === 'vr') t.vr = v; else t.fx[k] = v; };
 const nearest = (arr, v) => arr.reduce((b, x, i) => Math.abs(x - v) < Math.abs(arr[b] - v) ? i : b, 0);
@@ -1619,8 +1638,17 @@ async function fxDo(t, k, i){
   if(k === 'at'){
     if(i === undefined){ await toggleAT(t); refreshFx(); return; }
     if(isTuned(t)) pushUndo('l\'auto-tune');
+    const wasPl = nearest(AT_SP, t.at.speed) === 3;
     t.at.speed = AT_SP[i];
+    if(i === 3 && !wasPl){
+      /* le vibe complet : voix doublée, reverb studio, écho ping-pong (on ne touche pas à ce qui est déjà réglé) */
+      if(!t.fx.dbl) t.fx.dbl = FXL.dbl[0];
+      if(!t.fx.rev) t.fx.rev = FXL.rev[1];
+      if(!t.fx.dly) t.fx.dly = FXL.dly[1];
+      t.chain.set(t, audible(t), true);
+    }
     if(isTuned(t) && !(S.recording && t.arm)) await applyAutotune(t);
+    if(i === 3 && !wasPl) setTimeout(() => toast('🛸 Mode Planant : auto-tune collé + Doubler, Reverb et Écho pour le vibe. Retire-les si tu veux.'), 50);
     refreshFx(); scheduleSave(); return;
   }
   pushUndo('l\'effet');
@@ -1793,9 +1821,10 @@ function shiftCurve(f0, at, frameDur){
   let prevT = null;
   for(let i = 0; i < F; i++){
     if(isNaN(midi[i])){ prevT = null; continue; }
-    let s = 0, c = 0; for(let k = i - 4; k <= i + 4; k++) if(k >= 0 && k < F && !isNaN(midi[k])){ s += midi[k]; c++; }
+    const sw = at.mode === 3 ? 1 : 4, hy = at.mode === 3 ? 0.45 : 0.7;
+    let s = 0, c = 0; for(let k = i - sw; k <= i + sw; k++) if(k >= 0 && k < F && !isNaN(midi[k])){ s += midi[k]; c++; }
     const m = s / c;
-    tgt[i] = (prevT != null && Math.abs(m - prevT) < 0.7) ? prevT : nearestAllowed(m);
+    tgt[i] = (prevT != null && Math.abs(m - prevT) < hy) ? prevT : nearestAllowed(m);
     prevT = tgt[i];
   }
   const amt = (at.amount ?? 100) / 100;
@@ -1822,7 +1851,8 @@ function shiftCurve(f0, at, frameDur){
     }
     return out;
   }
-  const speed = at.mode === 1 ? 0.02 : 0, keepVib = at.mode === 1 ? 0.3 : 0;
+  /* Planant : collé net comme Robot, mais la note bascule plus vite d'une à l'autre : c'est ce petit « yodel » qui fait le style */
+  const speed = at.mode === 1 ? 0.02 : at.mode === 3 ? 0.004 : 0, keepVib = at.mode === 1 ? 0.3 : 0;
   const a = speed <= 0 ? 1 : 1 - Math.exp(-frameDur / speed);
   let sm = 0, was = false;
   for(let i = 0; i < F; i++){
@@ -3742,13 +3772,13 @@ const TOUR = [
   { sel: ['#bHome', '#bPlay', '#bStop'], t: 'Lecture', b: '▶ lance ou met en pause, ⏹ arrête, ⏮ revient au début. Réécoute ta prise juste après l\'avoir posée, c\'est là que tu sais si elle est bonne.' },
   { sel: ['#bUndo'], t: 'Annuler', b: 'Une bêtise ? Annuler revient en arrière, étape par étape : une prise, un effet, une piste supprimée, tout s\'annule.' },
   { sel: ['#list .row:nth-child(2) .l2'], t: 'Volume et pan', b: 'VOL règle le niveau de la piste, PAN la place à gauche ou à droite. Je cale déjà les niveaux tout seul, tu peaufines si besoin. Astuce : le lead au centre, les backs un peu sur les côtés.' },
-  { sel: ['#list .row:nth-child(2) .fxzone'], t: 'Les effets', b: 'Touche un effet pour l\'allumer, retouche-le pour doser. Reverb pour l\'espace, Écho pour les fins de phrase, Doubler pour épaissir un refrain, Auto-tune pour corriger ou styliser, Chaleur pour du grain, Radio pour une voix filtrée façon téléphone ou lo-fi.\nLes doses changent vraiment le son : la Reverb passe d\'une pièce à une grande salle, l\'Écho d\'un slap court à un grand écho de fin de phrase. Ça se règle même en pleine prise.' },
+  { sel: ['#list .row:nth-child(2) .fxzone'], t: 'Les effets', b: 'Touche un effet pour l\'allumer, retouche-le pour doser. Reverb pour l\'espace, Écho pour les fins de phrase, Doubler pour épaissir un refrain, Auto-tune pour corriger ou styliser (Naturel, Marqué, Robot, ou le mode Planant 🛸 avec tout le vibe), Chaleur pour du grain, Radio pour une voix filtrée façon téléphone ou lo-fi.\nLes doses changent vraiment le son : la Reverb passe d\'une pièce à une grande salle, l\'Écho d\'un slap court à un grand écho de fin de phrase. Ça se règle même en pleine prise.' },
   { sel: ['#list .row:nth-child(2) [data-act=keep]', '#list .row:nth-child(2) [data-act=dup]', '#list .row:nth-child(2) [data-act=del]'], t: 'Cadenas, copie, poubelle', b: '🔓 verrouille une prise réussie : plus rien ne peut l\'abîmer par erreur. ⧉ duplique la piste. ✕ la supprime.' },
   { sel: ['#list .row:nth-child(2) .swatch'], t: 'La couleur', b: 'Touche la pastille pour changer la couleur de la piste. Pratique pour t\'y retrouver quand t\'empiles les backs.' },
   { sel: ['#list .row:nth-child(2) .lane'], t: 'La timeline', b: 'Glisse le doigt pour avancer dans le morceau. Une touche place la lecture. Un appui long sur une phrase la sélectionne : tu peux la supprimer, la déplacer ou l\'envoyer sur une autre piste.' },
   { sel: ['#zOut', '#zIn'], t: 'Le zoom', b: 'Les loupes zooment et dézooment la timeline. Zoome pour couper une phrase au poil près.' },
   { sel: ['#plusBtn'], t: 'Le bouton +', b: 'Ajoute une piste, pose un repère (couplet, refrain), lance une boucle pour refaire juste une phrase, et retrouve toutes tes sessions. Tout se sauvegarde tout seul.' },
-  { sel: ['#bSet'], t: 'Réglages', b: 'Mets ton blaze : il signe tes pistes. Tu y trouves aussi le décompte, le métronome et le retour voix pour quand t\'as un casque. Le casque, je le détecte tout seul.' },
+  { sel: ['#bSet'], t: 'Réglages', b: 'Mets ton blaze : il signe tes pistes. Tu y trouves aussi le décompte, le métronome et le retour voix pour t\'entendre en direct pendant la prise. Le casque, je le détecte tout seul.' },
   { sel: ['.nav [data-view=vMix]'], t: 'Mix', b: 'Les effets de chaque piste en grand, plus l\'égaliseur et la compression pour ceux qui veulent aller loin. « Rééquilibrer » remet les niveaux d\'aplomb.' },
   { sel: ['.nav [data-view=vMaster]'], t: 'Master', b: 'La touche finale : un style et un volume (Streaming ou Fort). Ton son sonne pro sans jamais saturer.' },
   { sel: ['.nav [data-view=vTexte]'], t: 'Texte', b: 'Écris tes lyrics ici. Le prompteur les fait défiler pendant que tu kickes. Cale tes lignes une fois, elles sortiront aussi en sous-titres dans tes Reels.' },
@@ -3891,7 +3921,7 @@ $('#bpm').onchange = e => {
 };
 const tog = (id, key, persist) => { const b = $(id); b.setAttribute('aria-pressed', S[key]); b.onclick = () => { S[key] = !S[key]; b.setAttribute('aria-pressed', S[key]); if(persist) store.set(key, S[key]); }; };
 tog('#tMetro', 'metro'); tog('#tCount', 'countIn', true); tog('#tMon', 'mon');
-$('#tMon').addEventListener('click', () => { if(S.mon && !S.casque) toast('Retour voix : il faut un casque ou des écouteurs, sinon ça siffle (larsen). Il s\'activera dès qu\'un casque sera détecté.'); });
+$('#tMon').addEventListener('click', () => { if(S.mon) toast(S.casque ? 'Retour voix activé : tu t\'entendras pendant la prise.' : 'Retour voix activé. Sans casque, garde le volume raisonnable : s\'il y a du larsen, je le coupe tout seul. En Bluetooth, ta voix revient avec un petit décalage, c\'est normal.'); });
 $('#zIn').onclick = () => { S.pps = Math.min(200, S.pps * 1.5); renderTracks(); };
 $('#zOut').onclick = () => { S.pps = Math.max(8, S.pps / 1.5); renderTracks(); };
 $('#ruler').addEventListener('click', e => seek(e.offsetX / S.pps));
@@ -3908,7 +3938,42 @@ const peakOf = (an, buf) => { an.getFloatTimeDomainData(buf); let p = 0; for(let
 const sc = $('#scroller'), ph = $('#playhead'), clock = $('#clock');
 let userScrollAt = 0;
 ['touchstart', 'touchmove', 'wheel', 'pointerdown'].forEach(ev => sc.addEventListener(ev, () => { userScrollAt = Date.now(); }, { passive: true }));
-let outHold = 0;
+let outHold = 0, micHold = 0;
+/* La prise se dessine sur la piste pendant que tu kickes */
+function liveLane(){
+  const t = recInfo.track; if(!t) return null;
+  const row = document.querySelector(`.row[data-id="${t.id}"]`); if(!row) return null;
+  if(t.buffer && !recInfo.punch){
+    let g = row.nextElementSibling;
+    if(!g || !g.classList.contains('ghost')){
+      g = document.createElement('div'); g.className = 'row ghost';
+      g.innerHTML = `<div class="hdr"><div class="l1"><b class="recdot">● Nouvelle prise</b></div><p class="note">Elle arrive sur une nouvelle piste, juste ici.</p></div><div class="lane" style="${row.querySelector('.lane').getAttribute('style')}"></div>`;
+      row.after(g);
+    }
+    return g.querySelector('.lane');
+  }
+  return row.querySelector('.lane');
+}
+function drawLive(){
+  const lane = liveLane(); if(!lane) return;
+  let clip = lane.querySelector('.clip.live');
+  if(!clip){
+    clip = document.createElement('div'); clip.className = 'clip live';
+    clip.innerHTML = '<canvas height="78"></canvas><span>● REC</span>';
+    lane.appendChild(clip);
+  }
+  const pos = recInfo.pos, last = recLive[recLive.length - 2] ?? pos;
+  const w = Math.max(2, Math.ceil((last - pos) * S.pps) + 2);
+  clip.style.left = (pos * S.pps) + 'px'; clip.style.width = w + 'px';
+  const cv = clip.firstChild; if(cv.width !== w){ cv.width = w; cv.style.width = w + 'px'; }
+  const g = cv.getContext('2d'), h = cv.height, col = recInfo.track.color || '#ff4b4b';
+  g.clearRect(0, 0, w, h); g.fillStyle = col;
+  for(let i = 0; i < recLive.length; i += 2){
+    const x = (recLive[i] - pos) * S.pps, a = Math.max(1, Math.min(1, recLive[i + 1] * 1.3) * (h / 2 - 3));
+    g.fillRect(x, h / 2 - a, Math.max(1.5, S.pps / 60 + 0.5), a * 2);
+  }
+}
+function cleanupLive(){ if(S.recording) return; document.querySelectorAll('.row.ghost, .clip.live').forEach(e => e.remove()); }
 function loop(){
   if(S.listenEnd != null){ if(!S.playing || S.recording) S.listenEnd = null; else if(now() >= S.listenEnd){ const a = bandSel ? bandSel.a : S.listenEnd; S.listenEnd = null; pause(); S.pos = a; } }
   if(S.loop.on && S.playing){
@@ -3922,7 +3987,18 @@ function loop(){
   if(S.playing && !$('#vPistes').hidden && Date.now() - userScrollAt > 2500){
     if(x > sc.scrollLeft + sc.clientWidth - 40 || x < sc.scrollLeft + HDR) sc.scrollLeft = x - HDR - 40;
   }
-  if(micAnalyser) $('#meter').style.width = Math.min(100, peakOf(micAnalyser, micData) * 110) + '%';
+  if(micAnalyser){
+    const pk = peakOf(micAnalyser, micData);
+    micHold = Math.max(pk, micHold * 0.9);
+    $('#meter').style.width = Math.min(100, micHold * 110) + '%';
+    $('#micGrp').classList.toggle('clip', micHold > 0.97);
+    if(S.recording && recInfo && p >= recInfo.pos){ recLive.push(p, pk); drawLive(); }
+    if(S.recording && recInfo && !recQuietWarn && p - recInfo.pos > 3){
+      let mx = 0; for(let i = 1; i < recLive.length; i += 2) if(recLive[i] > mx) mx = recLive[i];
+      if(mx < 0.01){ recQuietWarn = true; toast('🎙️ Je ne capte presque rien : vérifie que le micro n\'est pas bouché ou que l\'appli a bien accès au micro.'); }
+      else recQuietWarn = true;
+    }
+  }
   if(monSrc && micAnalyser){
     if(!fbFreq || fbFreq.length !== micAnalyser.frequencyBinCount) fbFreq = new Float32Array(micAnalyser.frequencyBinCount);
     micAnalyser.getFloatFrequencyData(fbFreq);
@@ -3933,7 +4009,7 @@ function loop(){
     if(fbCount > 12){
       try{ monSrc.disconnect(); }catch(e){} monSrc = null; fbCount = 0;
       S.mon = false; $('#tMon').setAttribute('aria-pressed', 'false');
-      toast('Larsen détecté : retour voix coupé. Le retour voix ne marche qu\'avec un casque ou des écouteurs branchés.');
+      toast('Larsen détecté : retour voix coupé. Baisse le volume ou mets des écouteurs, puis rallume-le dans Réglages.');
     }
   }
   const op = peakOf(outAn, outData);
