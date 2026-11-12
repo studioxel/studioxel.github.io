@@ -378,7 +378,7 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
     <button class="toggle" id="bTour">📖 Revoir le tuto</button>
     <button class="toggle" id="bAvis">💬 Donner mon avis</button>
     <button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-    <span class="grp" id="ver">Version 39</span>
+    <span class="grp" id="ver">Version 43</span>
     <span class="grp" id="latInfo" title="Le retard du téléphone est mesuré et corrigé tout seul à chaque prise">Calage auto</span>
   </div>
 </div>
@@ -616,7 +616,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 </section>
 
 <div class="help">
-  StudioXel · version 39.
+  StudioXel · version 43.
   Touche la pastille de couleur à gauche du nom d'une piste pour changer sa couleur.
   🔓 sur une piste verrouille une prise réussie : plus de réenregistrement, de coupe ni de déplacement par erreur.
   Glisse le doigt pour avancer dans la timeline. Touche une prise pour placer la lecture. Appui long : la phrase est sélectionnée pour la supprimer, la déplacer ou la copier. ⧉ duplique une piste.
@@ -636,7 +636,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 39;
+const APP_VER = 43;
 const COLORS = ['#6fa8ff','#f2b544','#c58bff','#4fd1b5','#ff8a65','#9be15d','#ff7eb6'];
 const HDR = 216, CEIL = Math.pow(10, -1 / 20);
 const store = {
@@ -649,11 +649,12 @@ const todb = g => g > 0 ? 20 * Math.log10(g) : -Infinity;
 /* ---------- Préréglages ---------- */
 const FX = {
   neutre:   { hp:20,  low:0,  mid:0,    midF:1000, high:0, thr:0,   ratio:1, makeup:0,  rev:0,  dly:0 },
-  lead:     { hp:100, low:-2, mid:2.5,  midF:3000, high:3, thr:-22, ratio:4, makeup:-4, rev:12, dly:8 },
-  back:     { hp:150, low:-4, mid:1,    midF:2500, high:2, thr:-24, ratio:5, makeup:-5, rev:25, dly:15 },
-  ambiance: { hp:220, low:-6, mid:-2,   midF:500,  high:3, thr:-20, ratio:3, makeup:-3, rev:40, dly:30 },
+  lead:     { hp:100, low:-2, mid:2.5,  midF:3000, high:3, thr:-22, ratio:4, makeup:-4, rev:15, dly:10 },
+  back:     { hp:150, low:-4, mid:1,    midF:2500, high:2, thr:-24, ratio:5, makeup:-5, rev:30, dly:20 },
+  ambiance: { hp:220, low:-6, mid:-2,   midF:500,  high:3, thr:-20, ratio:3, makeup:-3, rev:50, dly:34 },
   instru:   { hp:20,  low:0,  mid:-1.5, midF:2500, high:0, thr:0,   ratio:1, makeup:0,  rev:0,  dly:0 }
 };
+const FXL = { rev:[15, 30, 50], dly:[10, 20, 34], dbl:[35, 65, 100] };
 const FXNAMES = { lead:'Voix lead', back:'Back', ambiance:'Ambiance / ad-libs', instru:'Instru', neutre:'Neutre', perso:'Perso' };
 const MPRE = { naturel:{ low:0, high:1, glue:25 }, rap:{ low:2.5, high:2, glue:45 }, chaud:{ low:1.5, high:-1, glue:35 } };
 
@@ -678,32 +679,102 @@ M.bypass = false;
 /* ---------- Graphe audio ---------- */
 function biq(ac, type, f, q){ const b = ac.createBiquadFilter(); b.type = type; b.frequency.value = f; if(q) b.Q.value = q; return b; }
 const irCache = {};
-function irBuffer(ac){
-  const sr = ac.sampleRate;
-  if(!irCache[sr]){
-    const n = Math.floor(sr * 2.2), L = new Float32Array(n), R = new Float32Array(n), fade = sr * 0.003;
-    for(let i = 0; i < n; i++){
-      const e = Math.pow(1 - i / n, 3) * (i < fade ? i / fade : 1);
-      L[i] = (Math.random() * 2 - 1) * e; R[i] = (Math.random() * 2 - 1) * e;
+/* Trois espaces de réverb bien différents : pièce (léger), plaque de studio (moyen), grande salle (fort) */
+const REV_KIND = [
+  { RT: 0.65, len: 1.1, pre: 0.004, er: 0.028, ers: 10, fc0: 9000, fc1: 2600, fct: 0.18, hp: 260, lp: 8000, mud: -2, out: 1.25 },
+  { RT: 1.7,  len: 2.4, pre: 0.012, er: 0.075, ers: 14, fc0: 12000, fc1: 2200, fct: 0.35, hp: 220, lp: 9000, mud: -3, out: 0.8 },
+  { RT: 3.4,  len: 4.2, pre: 0.045, er: 0.13,  ers: 18, fc0: 11000, fc1: 1600, fct: 0.6,  hp: 200, lp: 7500, mud: -4, out: 0.62 }
+];
+function irBuffer(ac, kind){
+  const sr = ac.sampleRate, K = REV_KIND[kind ?? 1], key = sr + ':' + (kind ?? 1);
+  if(!irCache[key]){
+    const n = Math.floor(sr * K.len), pre = Math.floor(sr * K.pre);
+    let seed = 1234567 + (kind ?? 1) * 7919;
+    const rnd = () => { seed = (seed * 1103515245 + 12345) >>> 0; return seed / 2147483648 - 1; };
+    const out = [];
+    for(let ch = 0; ch < 2; ch++){
+      const d = new Float32Array(n);
+      for(let k = 0; k < K.ers; k++){
+        const t = pre + Math.floor(sr * (0.003 + K.er * Math.pow((k + 1 + rnd() * 0.5) / K.ers, 1.4)));
+        if(t < n) d[t] += (rnd() > 0 ? 1 : -1) * 0.55 * Math.pow(0.86, k);
+      }
+      let lp = 0, hpPrev = 0, hpOut = 0;
+      const hpA = Math.exp(-2 * Math.PI * 120 / sr);
+      for(let i = pre; i < n; i++){
+        const t = (i - pre) / sr;
+        const env = Math.pow(10, -3 * t / K.RT) * Math.min(1, t / (K.er * 0.5));
+        const fc = K.fc1 + (K.fc0 - K.fc1) * Math.exp(-t / K.fct);
+        const a = 1 - Math.exp(-2 * Math.PI * fc / sr);
+        lp += a * (rnd() - lp);
+        hpOut = hpA * (hpOut + lp - hpPrev); hpPrev = lp;
+        d[i] += hpOut * env * 1.6;
+      }
+      const fo = Math.floor(sr * Math.min(0.3, K.len * 0.1));
+      for(let i = n - fo; i < n; i++) d[i] *= (n - i) / fo;
+      out.push(d);
     }
-    irCache[sr] = [L, R];
+    irCache[key] = out;
   }
-  const b = ac.createBuffer(2, irCache[sr][0].length, sr);
-  b.copyToChannel(irCache[sr][0], 0); b.copyToChannel(irCache[sr][1], 1);
+  const b = ac.createBuffer(2, irCache[key][0].length, sr);
+  b.copyToChannel(irCache[key][0], 0); b.copyToChannel(irCache[key][1], 1);
   return b;
 }
+function shaper(ac, k, steps){
+  const w = ac.createWaveShaper(), N = 2048, c = new Float32Array(N), th = Math.tanh(k);
+  for(let i = 0; i < N; i++){
+    let x = i / (N - 1) * 2 - 1, y = Math.tanh(k * x) / th;
+    if(steps) y = Math.round(y * steps) / steps;
+    c[i] = y;
+  }
+  w.curve = c; w.oversample = steps ? 'none' : '2x';
+  return w;
+}
+const softClip = (ac, k) => shaper(ac, k || 1.5);
+/* Trois échos : slap court (léger), ping-pong à la croche (moyen), grand écho de fin de phrase à la noire (fort) */
+const DLY_KIND = [
+  { div: 15, fb: 0.14, cross: 0.0, pan: 0.15, hp: 250, lp: 5000, flp: 4000, sat: 1.2 },
+  { div: 30, fb: 0.30, cross: 0.8, pan: 0.7,  hp: 280, lp: 4500, flp: 3200, sat: 1.4 },
+  { div: 60, fb: 0.4, cross: 0.85, pan: 0.9, hp: 320, lp: 3600, flp: 2400, sat: 1.8 }
+];
 function makeBus(ac){
-  const b = { masterIn: ac.createGain(), revIn: ac.createGain(), dlyIn: ac.createGain() };
-  const pre = ac.createDelay(0.1); pre.delayTime.value = 0.025;
-  const conv = ac.createConvolver(); conv.normalize = true; conv.buffer = irBuffer(ac);
-  const rhp = biq(ac, 'highpass', 250), rlp = biq(ac, 'lowpass', 7000);
-  b.revIn.connect(pre); pre.connect(conv); conv.connect(rhp); rhp.connect(rlp); rlp.connect(b.masterIn);
-  b.dl = ac.createDelay(2);
-  const fb = ac.createGain(); fb.gain.value = 0.32;
-  const dhp = biq(ac, 'highpass', 300), dlp = biq(ac, 'lowpass', 3500);
-  b.dlyIn.connect(b.dl); b.dl.connect(dhp); dhp.connect(dlp); dlp.connect(b.masterIn); dlp.connect(fb); fb.connect(b.dl);
-  b.setBpm = bpm => { b.dl.delayTime.value = Math.min(1.9, 30 / bpm); };
-  b.setBpm(S.bpm);
+  const b = { masterIn: ac.createGain(), revs: [], dlys: [] };
+  b.revBus = lv => {
+    if(b.revs[lv]) return b.revs[lv];
+    const K = REV_KIND[lv], inp = ac.createGain();
+    const pre = ac.createDelay(0.2); pre.delayTime.value = lv === 2 ? 0.03 : 0.015;
+    const conv = ac.createConvolver(); conv.normalize = true; conv.buffer = irBuffer(ac, lv);
+    const rhp = biq(ac, 'highpass', K.hp, 0.6), rmud = biq(ac, 'peaking', 450, 0.9), rlp = biq(ac, 'lowpass', K.lp, 0.6);
+    rmud.gain.value = K.mud;
+    const ret = ac.createGain(); ret.gain.value = K.out;
+    inp.connect(pre); pre.connect(conv); conv.connect(rhp); rhp.connect(rmud); rmud.connect(rlp); rlp.connect(ret); ret.connect(b.masterIn);
+    return (b.revs[lv] = inp);
+  };
+  b.dlyBus = lv => {
+    if(b.dlys[lv]) return b.dlys[lv].inp;
+    const K = DLY_KIND[lv], inp = ac.createGain();
+    const dL = ac.createDelay(2), dR = ac.createDelay(2);
+    const inHp = biq(ac, 'highpass', K.hp, 0.7), inLp = biq(ac, 'lowpass', K.lp, 0.7);
+    const fbHp = biq(ac, 'highpass', K.hp + 70, 0.7), fbLp = biq(ac, 'lowpass', K.flp, 0.7), sat = shaper(ac, K.sat);
+    const fbLR = ac.createGain(), fbRL = ac.createGain();
+    const pL = ac.createStereoPanner(), pR = ac.createStereoPanner(); pL.pan.value = -K.pan; pR.pan.value = K.pan;
+    inp.connect(inHp); inHp.connect(inLp); inLp.connect(dL);
+    dL.connect(pL); pL.connect(b.masterIn);
+    if(K.cross > 0){
+      fbLR.gain.value = K.cross; fbRL.gain.value = K.fb;
+      dL.connect(fbLR); fbLR.connect(dR); dR.connect(pR); pR.connect(b.masterIn);
+      dR.connect(fbHp); fbHp.connect(fbLp); fbLp.connect(sat); sat.connect(fbRL); fbRL.connect(dL);
+    } else {
+      fbRL.gain.value = K.fb; dL.connect(fbHp); fbHp.connect(fbLp); fbLp.connect(sat); sat.connect(fbRL); fbRL.connect(dL);
+    }
+    b.dlys[lv] = { inp, dL, dR, div: K.div };
+    b.setBpm(b.bpm || S.bpm);
+    return inp;
+  };
+  b.setBpm = bpm => {
+    b.bpm = bpm;
+    b.dlys.forEach(d => { if(!d) return; const t = Math.min(1.9, d.div / bpm); d.dL.delayTime.value = t; d.dR.delayTime.value = t; });
+  };
+  b.revIn = b.revBus(1);
   return b;
 }
 function makeMasterPre(ac){
@@ -729,9 +800,9 @@ function makeChain(ac, b){
   c.input.channelCount = 2; c.input.channelCountMode = 'explicit'; c.input.channelInterpretation = 'speakers';
   c.hp.connect(c.low); c.low.connect(c.mid); c.mid.connect(c.high);
   c.makeup.connect(c.fader); c.fader.connect(c.panner); c.panner.connect(b.masterIn);
-  let vrOn = null, compOn = null, revOn = false, dlyOn = false, dblN = null;
+  let vrOn = null, compOn = null, revLv = -1, dlyLv = -1, dblN = null, insKey = '', ins = [];
   const safe = f => { try{ f(); }catch(e){} };
-  /* Retrait de voix (mid/side), branché seulement quand il sert */
+  const lvOf = (arr, v) => arr.reduce((bi, x, i) => Math.abs(x - v) < Math.abs(arr[bi] - v) ? i : bi, 0);
   let vr = null;
   const setVr = on => {
     if(on === vrOn) return; vrOn = on;
@@ -755,30 +826,86 @@ function makeChain(ac, b){
       c.input.connect(c.hp);
     }
   };
-  /* Compresseur, contourné quand il ne compresse pas */
   const setComp = on => {
     if(on === compOn) return; compOn = on;
     safe(() => c.high.disconnect()); safe(() => c.comp.disconnect());
     if(on){ c.high.connect(c.comp); c.comp.connect(c.makeup); } else c.high.connect(c.makeup);
   };
-  const setRev = on => { if(on === revOn) return; revOn = on; if(on){ c.panner.connect(c.rev); c.rev.connect(b.revIn); } else { safe(() => c.panner.disconnect(c.rev)); safe(() => c.rev.disconnect()); } };
-  const setDly = on => { if(on === dlyOn) return; dlyOn = on; if(on){ c.panner.connect(c.dly); c.dly.connect(b.dlyIn); } else { safe(() => c.panner.disconnect(c.dly)); safe(() => c.dly.disconnect()); } };
-  /* Doublage : créé à l'allumage, détruit à l'extinction */
-  const setDbl = amt => {
-    if(amt > 0 && !dblN){
-      const g0 = ac.createGain(), dL = ac.createDelay(0.1), dR = ac.createDelay(0.1); dL.delayTime.value = 0.019; dR.delayTime.value = 0.027;
-      const oL = ac.createOscillator(), oR = ac.createOscillator(), gL = ac.createGain(), gR = ac.createGain();
-      oL.frequency.value = 0.31; oR.frequency.value = 0.23; gL.gain.value = 0.0018; gR.gain.value = 0.0022;
-      oL.connect(gL); gL.connect(dL.delayTime); oR.connect(gR); gR.connect(dR.delayTime); oL.start(); oR.start();
-      const pL = ac.createStereoPanner(), pR = ac.createStereoPanner(); pL.pan.value = -0.85; pR.pan.value = 0.85;
-      const hpD = biq(ac, 'highpass', 200);
-      c.fader.connect(g0); g0.connect(hpD); hpD.connect(dL); hpD.connect(dR); dL.connect(pL); dR.connect(pR);
-      pL.connect(b.masterIn); pR.connect(b.masterIn);
-      if(revOn){ pL.connect(c.rev); pR.connect(c.rev); }
-      dblN = { g0, nodes: [g0, dL, dR, oL, oR, gL, gR, pL, pR, hpD], osc: [oL, oR] };
+  /* Inserts entre le volume de sortie de la compression et le fader : dé-esseur (voix), Chaleur, Radio */
+  const setIns = (de, sat, rad) => {
+    const key = de + ':' + sat + ':' + rad;
+    if(key === insKey) return; insKey = key;
+    safe(() => c.makeup.disconnect()); ins.forEach(n => safe(() => n.disconnect())); ins = [];
+    let last = c.makeup;
+    const add = (...nodes) => { nodes.forEach(n => { last.connect(n); last = n; ins.push(n); }); };
+    if(de){
+      /* dé-esseur : la bande au-dessus de 6,5 kHz est compressée seule (filtres Linkwitz-Riley, son neutre quand rien ne siffle) */
+      const l1 = biq(ac, 'lowpass', 6500, 0.707), l2 = biq(ac, 'lowpass', 6500, 0.707);
+      const h1 = biq(ac, 'highpass', 6500, 0.707), h2 = biq(ac, 'highpass', 6500, 0.707);
+      const dc = ac.createDynamicsCompressor(); dc.threshold.value = -32; dc.ratio.value = 6; dc.attack.value = 0.001; dc.release.value = 0.06; dc.knee.value = 3;
+      const sum = ac.createGain();
+      last.connect(l1); l1.connect(l2); l2.connect(sum);
+      last.connect(h1); h1.connect(h2); h2.connect(dc); dc.connect(sum);
+      ins.push(l1, l2, h1, h2, dc, sum); last = sum;
     }
-    if(amt <= 0 && dblN){ safe(() => c.fader.disconnect(dblN.g0)); dblN.osc.forEach(o => safe(() => o.stop())); dblN.nodes.forEach(n => safe(() => n.disconnect())); dblN = null; }
-    if(dblN) dblN.g0.gain.value = amt;
+    if(sat){
+      const k = [1.8, 3.5, 7][sat - 1], pre = ac.createGain(), post = ac.createGain(), tone = biq(ac, 'lowpass', [14000, 11000, 8500][sat - 1], 0.6), body = biq(ac, 'peaking', 200, 0.8);
+      pre.gain.value = 1; body.gain.value = [1, 2, 3][sat - 1];
+      post.gain.value = Math.tanh(k) / k * [1.15, 1.35, 1.6][sat - 1];
+      add(pre, shaper(ac, k), body, tone, post);
+    }
+    if(rad){
+      const P = [
+        { hp: 280, lp: 5000, pk: 1800, g: 3, k: 2, st: 0, out: 1.8 },
+        { hp: 450, lp: 3200, pk: 1500, g: 6, k: 4, st: 0, out: 2.3 },
+        { hp: 650, lp: 2400, pk: 1200, g: 7, k: 8, st: 12, out: 2.6 }
+      ][rad - 1];
+      const h1 = biq(ac, 'highpass', P.hp, 0.9), h2 = biq(ac, 'highpass', P.hp, 0.9), l1 = biq(ac, 'lowpass', P.lp, 0.9), l2 = biq(ac, 'lowpass', P.lp, 0.9);
+      const pk = biq(ac, 'peaking', P.pk, 1.2); pk.gain.value = P.g;
+      const post = ac.createGain(); post.gain.value = Math.tanh(P.k) / P.k * P.out;
+      add(h1, h2, pk, shaper(ac, P.k, P.st), l1, l2, post);
+    }
+    last.connect(c.fader);
+  };
+  const setRev = lv => {
+    if(lv === revLv) return;
+    safe(() => c.rev.disconnect());
+    if(revLv < 0 && lv >= 0) c.panner.connect(c.rev);
+    if(lv < 0) safe(() => c.panner.disconnect(c.rev));
+    revLv = lv; if(lv >= 0) c.rev.connect(b.revBus(lv));
+  };
+  const setDly = lv => {
+    if(lv === dlyLv) return;
+    safe(() => c.dly.disconnect());
+    if(dlyLv < 0 && lv >= 0) c.panner.connect(c.dly);
+    if(lv < 0) safe(() => c.panner.disconnect(c.dly));
+    dlyLv = lv; if(lv >= 0) c.dly.connect(b.dlyBus(lv));
+  };
+  /* Doublage : léger = épaissit au centre, moyen = s'ouvre, fort = mur de voix bien large */
+  const DBL = [
+    { d: [0.009, 0.013], dep: [0.0014, 0.0017], f: [0.9, 0.7], pan: 0.45, lp: 8000, voices: 2 },
+    { d: [0.013, 0.021], dep: [0.0026, 0.0031], f: [0.83, 0.61], pan: 0.8, lp: 9500, voices: 2 },
+    { d: [0.017, 0.029, 0.023, 0.035], dep: [0.0034, 0.004, 0.003, 0.0045], f: [0.71, 0.53, 1.1, 0.4], pan: 1, lp: 10000, voices: 4 }
+  ];
+  const setDbl = (amt, lv) => {
+    if(dblN && (amt <= 0 || dblN.lv !== lv)){ safe(() => c.fader.disconnect(dblN.g0)); dblN.osc.forEach(o => safe(() => o.stop())); dblN.nodes.forEach(n => safe(() => n.disconnect())); dblN = null; }
+    if(amt > 0 && !dblN){
+      const P = DBL[lv], g0 = ac.createGain(), hpD = biq(ac, 'highpass', 220), lpD = biq(ac, 'lowpass', P.lp);
+      const nodes = [g0, hpD, lpD], osc = [];
+      c.fader.connect(g0); g0.connect(hpD); hpD.connect(lpD);
+      for(let v = 0; v < P.voices; v++){
+        const dv = ac.createDelay(0.1); dv.delayTime.value = P.d[v];
+        const o = ac.createOscillator(), og = ac.createGain(); o.frequency.value = P.f[v]; og.gain.value = P.dep[v];
+        o.connect(og); og.connect(dv.delayTime); o.start();
+        const pn = ac.createStereoPanner(); pn.pan.value = (v % 2 ? 1 : -1) * P.pan * (v < 2 ? 1 : 0.6);
+        const vg = ac.createGain(); vg.gain.value = P.voices > 2 ? 0.75 : 1;
+        lpD.connect(dv); dv.connect(vg); vg.connect(pn); pn.connect(b.masterIn);
+        if(revLv >= 0) pn.connect(c.rev);
+        nodes.push(dv, o, og, pn, vg); osc.push(o);
+      }
+      dblN = { g0, nodes, osc, lv };
+    }
+    if(dblN) dblN.g0.gain.value = amt * [1, 0.75, 0.5][dblN.lv];
   };
   c.set = (t, on, live) => {
     const f = t.fx;
@@ -786,24 +913,27 @@ function makeChain(ac, b){
     if(f.ratio > 1){ c.comp.threshold.value = f.thr; c.comp.ratio.value = f.ratio; }
     setComp(f.ratio > 1);
     c.makeup.gain.value = dbl(f.makeup);
+    setIns(t.preset !== 'instru' && f.ratio > 1 ? 1 : 0, f.sat || 0, f.rad || 0);
     const fv = on ? t.vol : 0;
     if(live) c.fader.gain.setTargetAtTime(fv, ac.currentTime, 0.015); else c.fader.gain.value = fv;
     c.panner.pan.value = t.pan;
     c.rev.gain.value = f.rev / 100; c.dly.gain.value = f.dly / 100;
-    setRev(f.rev > 0); setDly(f.dly > 0);
+    setRev(f.rev > 0 ? lvOf(FXL.rev, f.rev) : -1); setDly(f.dly > 0 ? lvOf(FXL.dly, f.dly) : -1);
     const v = (t.vr || 0) / 100;
     setVr(v > 0); if(vr){ vr.dry.gain.value = 1 - v; vr.wet.gain.value = v; }
     c.input.gain.value = t.trim ?? 1;
-    setDbl((f.dbl || 0) / 100);
+    setDbl((f.dbl || 0) / 100, (f.dbl || 0) > 0 ? lvOf(FXL.dbl, f.dbl) : 0);
   };
   c.kill = () => {
-    setDbl(0);
+    setDbl(0, 0);
     [c.input, c.hp, c.low, c.mid, c.high, c.comp, c.makeup, c.fader, c.panner, c.rev, c.dly].forEach(n => safe(() => n.disconnect()));
+    ins.forEach(n => safe(() => n.disconnect()));
     if(vr) vr.nodes.forEach(n => safe(() => n.disconnect()));
   };
   setVr(false); setComp(false);
   return c;
 }
+
 function initAudio(){
   try{ ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'playback' }); }
   catch(e){ ctx = new (window.AudioContext || window.webkitAudioContext)(); }
@@ -1406,8 +1536,8 @@ function sliderHTML(d, v, prefix){
     <output>${d.f(v)}</output></div>`;
 }
 function selTrack(){ return trackById(S.sel) || S.tracks[0]; }
-const LV = { vr:[60, 85, 100], rev:[12, 25, 40], dly:[8, 15, 30], dbl:[30, 50, 75] };
-const LVN = { dbl:['Léger', 'Moyen', 'Fort'], vr:['Un peu', 'Moyen', 'Max'], rev:['Légère', 'Moyenne', 'Forte'], dly:['Léger', 'Moyen', 'Fort'] };
+const LV = { vr:[60, 85, 100], rev:FXL.rev, dly:FXL.dly, dbl:FXL.dbl, sat:[1, 2, 3], rad:[1, 2, 3] };
+const LVN = { dbl:['Léger', 'Moyen', 'Fort'], vr:['Un peu', 'Moyen', 'Max'], rev:['Pièce', 'Studio', 'Salle'], dly:['Slap', 'Ping-pong', 'Grand'], sat:['Tiède', 'Chaud', 'Brûlant'], rad:['Vieux poste', 'Téléphone', 'Lo-fi'] };
 const AT_SP = [60, 25, 0], AT_N = ['Naturel', 'Marqué', 'Robot'];
 const fxGet = (t, k) => k === 'vr' ? (t.vr || 0) : (t.fx[k] || 0);
 const fxSet = (t, k, v) => { if(k === 'vr') t.vr = v; else t.fx[k] = v; };
@@ -1442,6 +1572,8 @@ function renderMix(){
         <div class="atkey"><select id="atKey" aria-label="Tonalité">${NOTES.map((n, i) => `<option value="${i}" ${i === cur.at.key ? 'selected' : ''}>${n}</option>`).join('')}</select>
           <select id="atScale" aria-label="Gamme">${Object.keys(SCALES).map(k => `<option value="${k}" ${k === cur.at.scale ? 'selected' : ''}>${SCALES[k].name}</option>`).join('')}</select></div>` : ''}
       </div>
+      ${fxRowHTML(cur, 'sat', 'Chaleur', 'Saturation à lampe : donne du grain et de la présence. Brûlant = voix qui arrache.')}
+      ${fxRowHTML(cur, 'rad', 'Radio', 'Voix filtrée façon vieux poste, téléphone ou lo-fi. Parfait pour une intro ou des ad-libs.')}
       ${fxRowHTML(cur, 'vr', 'Retirer la voix', 'Pour un son du commerce en stéréo : enlève la voix au centre, garde basse et kick.')}
       ${cur.buffer && (cur.preset === 'instru' || cur.bpmOrig) ? `
       <div class="fxrow"><span class="fxlab">Tonalité de l'instru</span>
@@ -1508,8 +1640,8 @@ async function fxAction(e, t){
 function refreshFx(){ if(!$('#vMix').hidden) renderMix(); else renderQuick(); }
 const quickTrack = () => S.tracks.find(x => x.arm) || selTrack();
 /* Effets propres à chaque piste, directement dans la piste */
-const TFX_NAMES = { rev: 'Reverb', dly: 'Écho', dbl: 'Doubler', at: 'Auto-tune', vr: 'Sans voix' };
-const tfxKeys = t => t.preset === 'instru' ? ['vr'] : ['rev', 'dly', 'dbl', 'at'];
+const TFX_NAMES = { rev: 'Reverb', dly: 'Écho', dbl: 'Doubler', at: 'Auto-tune', sat: 'Chaleur', rad: 'Radio', vr: 'Sans voix' };
+const tfxKeys = t => t.preset === 'instru' ? ['vr'] : ['rev', 'dly', 'dbl', 'at', 'sat', 'rad'];
 const tfxOn = (t, k) => k === 'at' ? (isTuned(t) || !!t.atOn) : fxGet(t, k) > 0;
 function fxZoneHTML(t){
   const lk = isLocked(t);
@@ -1543,7 +1675,7 @@ $('#strip').addEventListener('change', e => {
   const t = selTrack(), p = e.target.value;
   if(!FX[p]) return;
   pushUndo('le style de piste');
-  t.preset = p; t.fx = { ...FX[p] };
+  t.preset = p; t.fx = { ...FX[p], sat: t.fx?.sat || 0, rad: t.fx?.rad || 0 };
   t.chain.set(t, audible(t), true);
   if(t.vp) adaptFx(t);
   t.chain.set(t, audible(t), true);
@@ -1609,7 +1741,7 @@ async function analysePitch(buf){
       d[tau] = s; run += s; cm[tau] = run > 0 ? s * tau / run : 1;
     }
     for(let tau = tmin; tau <= tmax; tau++){
-      if(cm[tau] < 0.15){ while(tau + 1 <= tmax && cm[tau + 1] < cm[tau]) tau++; best = tau; break; }
+      if(cm[tau] < 0.12){ while(tau + 1 <= tmax && cm[tau + 1] < cm[tau]) tau++; best = tau; break; }
     }
     if(best < 0) continue;
     let tau = best;
@@ -1617,6 +1749,7 @@ async function analysePitch(buf){
     f0[fr] = dsr / tau;
     if(fr % 400 === 0){ toast('Analyse de la voix… ' + Math.round(fr / frames * 100) + ' %'); await tick(); }
   }
+  fixOctaves(f0);
   /* médiane sur 5 trames et suppression des trames isolées */
   const med = new Float32Array(frames), win = [];
   for(let i = 0; i < frames; i++){
@@ -1648,67 +1781,123 @@ function detectKey(f0){
   return best;
 }
 function shiftCurve(f0, at, frameDur){
+  /* Courbe de correction (en demi-tons, une valeur par trame).
+     Naturel : on recentre chaque note sur la bonne hauteur en gardant le vibrato et les glissés (façon Melodyne).
+     Marqué : la voix est tirée vers la note en ~20 ms, une partie du vibrato reste.
+     Robot : la note est collée net, l'effet T-Pain. */
   const allowed = new Set(SCALES[at.scale].st.map(s => (s + at.key) % 12));
-  const out = new Float32Array(f0.length);
-  const a = at.speed <= 0 ? 1 : 1 - Math.exp(-frameDur / (at.speed / 1000));
-  let sm = 0, prevT = null, wasVoiced = false;
-  for(let i = 0; i < f0.length; i++){
-    if(!f0[i]){ wasVoiced = false; prevT = null; continue; }
-    const midi = 69 + 12 * Math.log2(f0[i] / 440);
-    let tgt;
-    if(prevT != null && Math.abs(midi - prevT) < 0.62) tgt = prevT;
-    else {
-      let bd = 99;
-      for(let k = Math.floor(midi) - 2; k <= Math.ceil(midi) + 2; k++){
-        if(allowed.has(((k % 12) + 12) % 12) && Math.abs(k - midi) < bd){ bd = Math.abs(k - midi); tgt = k; }
+  const F = f0.length, midi = new Float32Array(F), tgt = new Int16Array(F), out = new Float32Array(F);
+  for(let i = 0; i < F; i++) midi[i] = f0[i] > 0 ? 69 + 12 * Math.log2(f0[i] / 440) : NaN;
+  const nearestAllowed = (m) => { let bd = 99, b = Math.round(m); for(let k = Math.floor(m) - 2; k <= Math.ceil(m) + 2; k++) if(allowed.has(((k % 12) + 12) % 12) && Math.abs(k - m) < bd){ bd = Math.abs(k - m); b = k; } return b; };
+  /* cible avec hystérésis, calculée sur la hauteur lissée (le vibrato ne fait pas sauter de note) */
+  let prevT = null;
+  for(let i = 0; i < F; i++){
+    if(isNaN(midi[i])){ prevT = null; continue; }
+    let s = 0, c = 0; for(let k = i - 4; k <= i + 4; k++) if(k >= 0 && k < F && !isNaN(midi[k])){ s += midi[k]; c++; }
+    const m = s / c;
+    tgt[i] = (prevT != null && Math.abs(m - prevT) < 0.7) ? prevT : nearestAllowed(m);
+    prevT = tgt[i];
+  }
+  const amt = (at.amount ?? 100) / 100;
+  if(at.mode === 0){
+    /* une note = trames voisées consécutives sur la même cible */
+    for(let i = 0; i < F; ){
+      if(isNaN(midi[i])){ i++; continue; }
+      let j = i; while(j < F && !isNaN(midi[j]) && tgt[j] === tgt[i]) j++;
+      const len = j - i, a = i + Math.floor(len * 0.2), b = Math.max(a + 1, j - Math.floor(len * 0.2));
+      let s = 0, c = 0; for(let k = a; k < b; k++){ s += midi[k]; c++; }
+      const dev = (tgt[i] - s / c) * amt * (len < 6 ? len / 6 : 1);
+      for(let k = i; k < j; k++) out[k] = dev;
+      i = j;
+    }
+    /* transitions douces entre notes (aller-retour, ~35 ms) */
+    const a = 1 - Math.exp(-frameDur / 0.035);
+    for(const dir of [1, -1]){
+      let sm = null;
+      for(let n = 0; n < F; n++){
+        const i = dir > 0 ? n : F - 1 - n;
+        if(isNaN(midi[i])){ sm = null; continue; }
+        sm = sm == null ? out[i] : sm + (out[i] - sm) * a; out[i] = sm;
       }
     }
-    prevT = tgt;
-    const raw = (tgt - midi) * at.amount / 100;
-    sm = wasVoiced ? sm + (raw - sm) * a : raw;
-    wasVoiced = true;
+    return out;
+  }
+  const speed = at.mode === 1 ? 0.02 : 0, keepVib = at.mode === 1 ? 0.3 : 0;
+  const a = speed <= 0 ? 1 : 1 - Math.exp(-frameDur / speed);
+  let sm = 0, was = false;
+  for(let i = 0; i < F; i++){
+    if(isNaN(midi[i])){ was = false; continue; }
+    /* vibrato = écart entre la hauteur brute et sa moyenne locale */
+    let s = 0, c = 0; for(let k = i - 12; k <= i + 12; k++) if(k >= 0 && k < F && !isNaN(midi[k])){ s += midi[k]; c++; }
+    const vib = midi[i] - s / c;
+    const raw = (tgt[i] - midi[i] + vib * keepVib) * amt;
+    sm = was ? sm + (raw - sm) * a : raw; was = true;
     out[i] = sm;
   }
   return out;
+}
+function fixOctaves(f0){
+  /* corrige les erreurs d'octave de la détection (une trame qui saute au double ou à la moitié) */
+  const F = f0.length, w = [];
+  for(let i = 0; i < F; i++){
+    if(!f0[i]) continue;
+    w.length = 0; for(let k = i - 6; k <= i + 6; k++) if(k >= 0 && k < F && f0[k]) w.push(f0[k]);
+    if(w.length < 5) continue;
+    w.sort((a, b) => a - b); const med = w[w.length >> 1], r = Math.log2(f0[i] / med);
+    if(Math.abs(r - 1) < 0.2) f0[i] /= 2; else if(Math.abs(r + 1) < 0.2) f0[i] *= 2;
+  }
+  return f0;
 }
 async function psola(buf, an, shift){
   const sr = buf.sampleRate, n = buf.length, nc = buf.numberOfChannels;
   const chs = []; for(let c = 0; c < nc; c++) chs.push(buf.getChannelData(c));
   const xm = new Float32Array(n);
   for(let i = 0; i < n; i++){ let s = 0; for(let c = 0; c < nc; c++) s += chs[c][i]; xm[i] = s / nc; }
-  const F = an.f0.length, fi = t => Math.min(F - 1, Math.max(0, Math.floor((t - an.offS) / an.hopS)));
-  const per = t => { const f = an.f0[fi(t)]; return f > 0 ? sr / f : sr * 0.005; };
-  const rat = t => { const k = fi(t); return an.f0[k] > 0 ? Math.pow(2, shift[k] / 12) : 1; };
-  const marks = [0];
-  let t = 0;
+  /* signal adouci pour poser des repères de période stables */
+  const xl = new Float32Array(n); { const a = 1 - Math.exp(-2 * Math.PI * 900 / sr); let y = 0, z = 0; for(let i = 0; i < n; i++){ y += a * (xm[i] - y); z += a * (y - z); xl[i] = z; } }
+  const F = an.f0.length, hop = an.hopS;
+  const fpos = t => Math.min(F - 1.001, Math.max(0, (t - an.offS) / hop));
+  const f0At = t => { const p = fpos(t), k = Math.floor(p), u = p - k, a = an.f0[k], b = an.f0[k + 1]; return a > 0 && b > 0 ? a + (b - a) * u : (a > 0 ? a : b); };
+  const shAt = t => { const p = fpos(t), k = Math.floor(p), u = p - k; return shift[k] + (shift[k + 1] - shift[k]) * u; };
+  const per = t => { const f = f0At(t); return f > 0 ? sr / f : sr * 0.006; };
+  /* masque : on ne traite que là où la voix chante et où il y a vraiment quelque chose à corriger */
+  const mask = new Float32Array(n);
+  for(let i = 0; i < n; i++){ const f = f0At(i); mask[i] = f > 0 && Math.abs(shAt(i)) > 0.015 ? 1 : 0; }
+  { const a = 1 - Math.exp(-1 / (sr * 0.006)); let y = 0; for(let i = 0; i < n; i++){ y += a * (mask[i] - y); mask[i] = y; } y = 0; for(let i = n - 1; i >= 0; i--){ y += a * (mask[i] - y); mask[i] = Math.min(1, y * 1.0); } }
+  /* repères d'analyse calés sur les crêtes de chaque période */
+  const marks = [0]; let t = 0;
   while(t < n){
     const P = per(t); let nt = t + P;
-    if(an.f0[fi(nt)] > 0){
-      const r = Math.floor(P * 0.25), c0 = Math.round(nt); let bi = c0, bv = -Infinity;
-      for(let k = c0 - r; k <= c0 + r; k++) if(k >= 0 && k < n && xm[k] > bv){ bv = xm[k]; bi = k; }
-      nt = Math.max(t + P * 0.6, bi);
+    if(f0At(nt) > 0){
+      const r = Math.floor(P * 0.3), c0 = Math.round(nt); let bi = c0, bv = -Infinity;
+      for(let k = c0 - r; k <= c0 + r; k++) if(k >= 0 && k < n && xl[k] > bv){ bv = xl[k]; bi = k; }
+      nt = Math.max(t + P * 0.7, bi);
     }
-    t = Math.round(nt);
-    if(t < n) marks.push(t);
+    t = Math.round(nt); if(t < n) marks.push(t);
   }
   const out = []; for(let c = 0; c < nc; c++) out.push(new Float32Array(n));
   const ws = new Float32Array(n);
   let ts = 0, mi = 0, iter = 0;
   while(ts < n){
     while(mi + 1 < marks.length && Math.abs(marks[mi + 1] - ts) <= Math.abs(marks[mi] - ts)) mi++;
-    const am = marks[mi], P = Math.max(16, Math.round(per(am))), r = rat(am), d0 = Math.round(ts);
-    for(let k = -P; k < P; k++){
-      const src = am + k, dst = d0 + k;
-      if(src < 0 || src >= n || dst < 0 || dst >= n) continue;
-      const w = 0.5 - 0.5 * Math.cos(Math.PI * (k + P) / P);
-      for(let c = 0; c < nc; c++) out[c][dst] += chs[c][src] * w;
-      ws[dst] += w;
+    const am = marks[mi], P = Math.max(16, Math.round(per(am))), r = Math.pow(2, shAt(ts) / 12), d0 = Math.round(ts);
+    if(mask[Math.min(n - 1, d0)] > 0.001 || mask[Math.min(n - 1, d0 + P)] > 0.001 || mask[Math.max(0, d0 - P)] > 0.001){
+      for(let k = -P; k < P; k++){
+        const src = am + k, dst = d0 + k;
+        if(src < 0 || src >= n || dst < 0 || dst >= n) continue;
+        const w = 0.5 - 0.5 * Math.cos(Math.PI * (k + P) / P);
+        for(let c = 0; c < nc; c++) out[c][dst] += chs[c][src] * w;
+        ws[dst] += w;
+      }
     }
     ts += P / r;
     if(++iter % 4000 === 0){ toast('Correction… ' + Math.round(ts / n * 100) + ' %'); await tick(); }
   }
-  const res = ctx.createBuffer(nc, n, sr);
-  for(let c = 0; c < nc; c++){ const o = out[c], dst = res.getChannelData(c); for(let i = 0; i < n; i++) dst[i] = o[i] / Math.max(ws[i], 0.3); }
+  const res = (typeof ctx !== 'undefined' && ctx ? ctx : new OfflineAudioContext(1, 1, sr)).createBuffer(nc, n, sr);
+  for(let c = 0; c < nc; c++){
+    const o = out[c], src = chs[c], dst = res.getChannelData(c);
+    for(let i = 0; i < n; i++){ const m = mask[i]; dst[i] = m > 0.001 ? (o[i] / Math.max(ws[i], 0.5)) * m + src[i] * (1 - m) : src[i]; }
+  }
   return res;
 }
 async function detectKeyUI(){
@@ -1752,7 +1941,7 @@ async function applyAutotune(t){
     if(t.at.auto !== false){ const k = detectKey(an.f0); if(k){ t.at.key = k.key; t.at.scale = k.scale; } t.at.auto = false; }
     /* l'auto-tune s'adapte : voix rappée (peu de notes tenues) = correction plus douce, voix chantée = plus franche */
     const mode = nearest(AT_SP, t.at.speed), rapLike = an.voicedRatio < 0.5;
-    const eff = { ...t.at, speed: mode === 0 ? (rapLike ? 90 : 55) : mode === 1 ? 22 : 0, amount: mode === 0 ? (rapLike ? 60 : 90) : 100 };
+    const eff = { ...t.at, mode, amount: mode === 0 ? (rapLike ? 70 : 100) : 100 };
     const sh = shiftCurve(an.f0, eff, an.hopS / an.sr);
     const out = await psola(src.buffer, an, sh);
     const take = { buffer: out, offset: src.offset ?? t.offset, tuned: true, src: srcIdx };
@@ -3543,9 +3732,9 @@ $('#selListen').onclick = () => {
 /* ---------- Tuto : le Xel présente le studio aux kickeurs ---------- */
 const TOUR = [
   { t: 'Yo les kickeurs 👊', b: 'C\'est le Xel. Avant de kicker, on remet les pieds sur terre : le matos.\nLe micro de ton tel suffit pour maquetter. Pour un son au top :\n• Écouteurs filaires sur les oreilles : tu entends l\'instru et elle ne repart pas dans le micro. Le Bluetooth, évite-le pendant que tu poses ta voix.\n• Un petit micro qui se branche sur le tel, c\'est le vrai saut de qualité.\n• Une pièce calme et pleine de tissu (rideaux, lit, vêtements), pas une salle de bain.\n• Ta bouche à 15–20 cm du micro, et le tel en mode avion pour pas qu\'une notif gâche la prise.' },
-  ...((navigator.standalone || matchMedia('(display-mode: standalone)').matches) ? [] : [{ t: 'Comme une vraie appli 📲', b: /Android/i.test(navigator.userAgent)
-    ? 'Mets StudioXel sur ton écran d\'accueil, avec son icône :\n1. Ouvre studioxel.github.io dans Chrome.\n2. Touche les 3 points ⋮ en haut à droite.\n3. Touche « Ajouter à l\'écran d\'accueil » (ou « Installer l\'appli »), puis Ajouter.\nEnsuite lance-la toujours depuis l\'icône.'
-    : 'Mets StudioXel sur ton écran d\'accueil, avec son icône :\n1. Ouvre studioxel.github.io dans Safari.\n2. Touche le bouton Partager (le carré avec la flèche).\n3. Descends et touche « Sur l\'écran d\'accueil », puis Ajouter.\nEnsuite lance-la toujours depuis l\'icône : plein écran, comme une vraie appli.' }]),
+  { t: 'Comme une vraie appli 📲', b: ((navigator.standalone || matchMedia('(display-mode: standalone)').matches) ? 'Toi c\'est déjà fait ✅ Montre-le à tes potes kickeurs.\n\n' : '') + (/Android/i.test(navigator.userAgent)
+    ? 'Mets StudioXel sur ton écran d\'accueil, avec son icône :\n1. Ouvre studioxel.github.io dans Chrome.\n2. Touche les 3 points ⋮ en haut à droite.\n3. Touche « Ajouter à l\'écran d\'accueil » (ou « Installer l\'appli »), puis Ajouter.\nEnsuite lance-la toujours depuis l\'icône.\n\nSur iPhone : dans Safari, Partager puis « Sur l\'écran d\'accueil ».'
+    : 'Mets StudioXel sur ton écran d\'accueil, avec son icône :\n1. Ouvre studioxel.github.io dans Safari.\n2. Touche le bouton Partager (le carré avec la flèche).\n3. Descends et touche « Sur l\'écran d\'accueil », puis Ajouter.\nEnsuite lance-la toujours depuis l\'icône : plein écran, comme une vraie appli.\n\nSur Android : dans Chrome, les 3 points ⋮ puis « Ajouter à l\'écran d\'accueil ».') },
   { t: 'Le tour du studio', b: 'Maintenant je te fais faire le tour du studio en deux minutes, bouton par bouton. Tu peux passer quand tu veux, et revoir le tuto dans Réglages.' },
   { sel: ['#list .row:nth-child(1) [data-act=import]'], t: 'Ton instru', b: 'Touche « Importer » sur la piste Instru et choisis ton beat (MP3 ou WAV). Je trouve tout seul le BPM et la tonalité, et je cale le niveau. C\'est la toute première chose à faire.' },
   { sel: ['#list .row:nth-child(2) .chip'], t: 'R, M, S', b: 'R arme la piste : c\'est là que ta voix va s\'enregistrer. M coupe la piste, S l\'écoute toute seule. Arme Lead avant ton premier couplet.' },
@@ -3553,7 +3742,7 @@ const TOUR = [
   { sel: ['#bHome', '#bPlay', '#bStop'], t: 'Lecture', b: '▶ lance ou met en pause, ⏹ arrête, ⏮ revient au début. Réécoute ta prise juste après l\'avoir posée, c\'est là que tu sais si elle est bonne.' },
   { sel: ['#bUndo'], t: 'Annuler', b: 'Une bêtise ? Annuler revient en arrière, étape par étape : une prise, un effet, une piste supprimée, tout s\'annule.' },
   { sel: ['#list .row:nth-child(2) .l2'], t: 'Volume et pan', b: 'VOL règle le niveau de la piste, PAN la place à gauche ou à droite. Je cale déjà les niveaux tout seul, tu peaufines si besoin. Astuce : le lead au centre, les backs un peu sur les côtés.' },
-  { sel: ['#list .row:nth-child(2) .fxzone'], t: 'Les effets', b: 'Touche un effet pour l\'allumer, retouche-le pour doser. Reverb pour l\'espace, Écho pour les fins de phrase, Doubler pour épaissir un refrain, Auto-tune pour corriger ou styliser. Ça se règle sur ta voix, même en pleine prise.' },
+  { sel: ['#list .row:nth-child(2) .fxzone'], t: 'Les effets', b: 'Touche un effet pour l\'allumer, retouche-le pour doser. Reverb pour l\'espace, Écho pour les fins de phrase, Doubler pour épaissir un refrain, Auto-tune pour corriger ou styliser, Chaleur pour du grain, Radio pour une voix filtrée façon téléphone ou lo-fi.\nLes doses changent vraiment le son : la Reverb passe d\'une pièce à une grande salle, l\'Écho d\'un slap court à un grand écho de fin de phrase. Ça se règle même en pleine prise.' },
   { sel: ['#list .row:nth-child(2) [data-act=keep]', '#list .row:nth-child(2) [data-act=dup]', '#list .row:nth-child(2) [data-act=del]'], t: 'Cadenas, copie, poubelle', b: '🔓 verrouille une prise réussie : plus rien ne peut l\'abîmer par erreur. ⧉ duplique la piste. ✕ la supprime.' },
   { sel: ['#list .row:nth-child(2) .swatch'], t: 'La couleur', b: 'Touche la pastille pour changer la couleur de la piste. Pratique pour t\'y retrouver quand t\'empiles les backs.' },
   { sel: ['#list .row:nth-child(2) .lane'], t: 'La timeline', b: 'Glisse le doigt pour avancer dans le morceau. Une touche place la lecture. Un appui long sur une phrase la sélectionne : tu peux la supprimer, la déplacer ou l\'envoyer sur une autre piste.' },
