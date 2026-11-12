@@ -389,7 +389,7 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
     <button class="toggle" id="bTour">📖 Revoir le tuto</button>
     <button class="toggle" id="bAvis">💬 Donner mon avis</button>
     <button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-    <span class="grp" id="ver">Version 51</span>
+    <span class="grp" id="ver">Version 52</span>
     <span class="grp" id="latInfo" title="Le retard du téléphone est mesuré et corrigé tout seul à chaque prise">Calage auto</span>
   </div>
 </div>
@@ -627,7 +627,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 </section>
 
 <div class="help">
-  StudioXel · version 51.
+  StudioXel · version 52.
   Touche la pastille de couleur à gauche du nom d'une piste pour changer sa couleur.
   🔓 sur une piste verrouille une prise réussie : plus de réenregistrement, de coupe ni de déplacement par erreur.
   Glisse le doigt pour avancer dans la timeline. Touche une prise pour placer la lecture. Appui long : la phrase est sélectionnée pour la supprimer, la déplacer ou la copier. ⧉ duplique une piste.
@@ -647,7 +647,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 51;
+const APP_VER = 52;
 const COLORS = ['#6fa8ff','#f2b544','#c58bff','#4fd1b5','#ff8a65','#9be15d','#ff7eb6'];
 const HDR = 216, CEIL = Math.pow(10, -1 / 20);
 const store = {
@@ -3932,7 +3932,7 @@ const TOUR = [
   { t: 'Le tour du studio', b: 'Maintenant je te fais faire le tour du studio en deux minutes, bouton par bouton. Tu peux passer quand tu veux, et revoir le tuto dans Réglages.' },
   { sel: ['#list .row:nth-child(1) [data-act=import]'], t: 'Ton instru', b: 'Touche « Importer » sur la piste Instru et choisis ton beat (MP3 ou WAV). Je trouve tout seul le BPM et la tonalité, et je cale le niveau. C\'est la toute première chose à faire.' },
   { sel: ['#list .row:nth-child(2) .chip'], t: 'R, M, S', b: 'R arme la piste : c\'est là que ta voix va s\'enregistrer. M coupe la piste, S l\'écoute toute seule. Arme Lead avant ton premier couplet.' },
-  { sel: ['#bRec'], t: 'REC', b: 'Piste armée ? Touche REC : 4 bips de décompte et tu kickes. Retouche REC pour t\'arrêter. Si la piste a déjà une prise, la nouvelle se pose par-dessus à cet endroit (Annuler pour revenir). Pour garder les deux, ajoute une piste avec le + ou duplique avec ⧉ : c\'est toi qui décides.' },
+  { sel: ['#bRec'], t: 'REC', b: 'Piste armée ? Touche REC : 4 bips de décompte et tu kickes. La barre MICRO en haut bouge avec ta voix, et ta prise se dessine sur la piste en direct. Retouche REC pour t\'arrêter. Si la piste a déjà une prise, la nouvelle se pose par-dessus à cet endroit (Annuler pour revenir). Pour garder les deux, ajoute une piste avec le + ou duplique avec ⧉ : c\'est toi qui décides.' },
   { sel: ['#bMon'], t: 'Retour 🎧', b: 'Allume-le pour t\'entendre en direct avec les effets de la piste armée, auto-tune compris, même sans enregistrer : parfait pour chauffer ta voix. Avec des écouteurs c\'est l\'idéal. Sur le haut-parleur ou en Bluetooth, garde le volume raisonnable : si ça siffle, je baisse tout seul.' },
   { sel: ['#routeChip'], t: 'Ton écoute', b: 'Ici je t\'affiche ce que j\'ai détecté : 🎧 tes écouteurs (AirPods…), 🚗 un Bluetooth de voiture ou d\'enceinte, ou 📱 le haut-parleur. Si je me trompe, touche-le et choisis toi-même.' },
   { sel: ['#bHome', '#bPlay', '#bStop'], t: 'Lecture', b: '▶ lance ou met en pause, ⏹ arrête, ⏮ revient au début. Réécoute ta prise juste après l\'avoir posée, c\'est là que tu sais si elle est bonne.' },
@@ -3944,9 +3944,9 @@ const TOUR = [
   { sel: ['#list .row:nth-child(2) .lane'], t: 'La timeline', b: 'Glisse le doigt pour avancer dans le morceau. Une touche place la lecture. Un appui long sur une phrase la sélectionne : tu peux la supprimer, la déplacer ou l\'envoyer sur une autre piste.' },
   { sel: ['#zOut', '#zIn'], t: 'Le zoom', b: 'Les loupes zooment et dézooment la timeline. Zoome pour couper une phrase au poil près.' },
   { sel: ['#plusBtn'], t: 'Le bouton +', b: 'Ajoute une piste, pose un repère (couplet, refrain), lance une boucle pour refaire juste une phrase, et retrouve toutes tes sessions. Tout se sauvegarde tout seul.' },
-  { sel: ['#bSet'], t: 'Réglages', b: 'Mets ton blaze : il signe tes pistes. Tu y trouves aussi le décompte, le métronome et le retour voix pour t\'entendre en direct pendant la prise. Le casque, je le détecte tout seul.' },
+  { sel: ['#bSet'], t: 'Réglages', b: 'Mets ton blaze : il signe tes pistes. Tu y trouves aussi le décompte, le métronome et le réglage de l\'écoute (Auto, Casque ou Haut-parleur) si la pastille d\'écoute se trompe.' },
   { sel: ['.nav [data-view=vMix]'], t: 'Mix', b: 'Les effets de chaque piste en grand, plus l\'égaliseur et la compression pour ceux qui veulent aller loin. « Rééquilibrer » remet les niveaux d\'aplomb.' },
-  { sel: ['.nav [data-view=vMaster]'], t: 'Master', b: 'La touche finale : un style et un volume (Streaming ou Fort). Ton son sonne pro sans jamais saturer.' },
+  { sel: ['.nav [data-view=vMaster]'], t: 'Master', b: 'La touche finale de ta maquette : un style et un volume (Streaming ou Fort). Ton son sort propre et fort, sans jamais saturer.' },
   { sel: ['.nav [data-view=vTexte]'], t: 'Texte', b: 'Écris tes lyrics ici. Le prompteur les fait défiler pendant que tu kickes. Cale tes lignes une fois, elles sortiront aussi en sous-titres dans tes Reels.' },
   { sel: ['.nav [data-view=vProjets]'], t: 'Projets', b: 'Prépare ton single, ton EP ou ton album : pochette, tracklist, et où en est chaque titre.' },
   { sel: ['.nav [data-view=vPartager]'], t: 'Partager', b: 'Exporte ton son en MP3, monte un Reel avec ta photo, ta vidéo ou un selfie, et envoie ta session à un collègue pour qu\'il pose son couplet.' },
