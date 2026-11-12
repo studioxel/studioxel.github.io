@@ -385,7 +385,7 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
     <button class="toggle" id="bTour">📖 Revoir le tuto</button>
     <button class="toggle" id="bAvis">💬 Donner mon avis</button>
     <button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-    <span class="grp" id="ver">Version 46</span>
+    <span class="grp" id="ver">Version 47</span>
     <span class="grp" id="latInfo" title="Le retard du téléphone est mesuré et corrigé tout seul à chaque prise">Calage auto</span>
   </div>
 </div>
@@ -623,7 +623,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 </section>
 
 <div class="help">
-  StudioXel · version 46.
+  StudioXel · version 47.
   Touche la pastille de couleur à gauche du nom d'une piste pour changer sa couleur.
   🔓 sur une piste verrouille une prise réussie : plus de réenregistrement, de coupe ni de déplacement par erreur.
   Glisse le doigt pour avancer dans la timeline. Touche une prise pour placer la lecture. Appui long : la phrase est sélectionnée pour la supprimer, la déplacer ou la copier. ⧉ duplique une piste.
@@ -643,7 +643,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 46;
+const APP_VER = 47;
 const COLORS = ['#6fa8ff','#f2b544','#c58bff','#4fd1b5','#ff8a65','#9be15d','#ff7eb6'];
 const HDR = 216, CEIL = Math.pow(10, -1 / 20);
 const store = {
@@ -669,7 +669,7 @@ let ctx, bus, mpre, preGain, lim, limOut, chainOut, bypass, outAn, outData;
 let mic = null, micAnalyser = null, micData = null;
 let sources = [], playStartCtx = 0, playStartPos = 0, metroTimer = null, nextBeatT = 0, nextBeatIdx = 0;
 let rec = null, recInfo = null, idSeq = 0;
-let monSrc = null, micSrc = null, micSink = null, fbCount = 0, fbFreq = null, recLive = [], recQuietWarn = false;
+let fbBin = -1, monSrc = null, micSrc = null, micSink = null, fbCount = 0, fbFreq = null, recLive = [], recQuietWarn = false;
 let doseOpen = null;
 let colorOpen = null;
 const PALETTE = ['#6fa8ff', '#38bdf8', '#4fd1b5', '#9be15d', '#f2b544', '#ff8a65', '#ff4b4b', '#ff7eb6', '#c58bff', '#e7eaf0'];
@@ -4000,16 +4000,27 @@ function loop(){
     }
   }
   if(monSrc && micAnalyser){
+    /* Larsen = un sifflement : une seule fréquence très pointue, qui reste au même endroit plus d'une demi-seconde.
+       Chanter fort ou une note de l'instru ne déclenche rien. */
     if(!fbFreq || fbFreq.length !== micAnalyser.frequencyBinCount) fbFreq = new Float32Array(micAnalyser.frequencyBinCount);
     micAnalyser.getFloatFrequencyData(fbFreq);
-    let mx = -Infinity, sum = 0, n = 0;
-    for(let i = 4; i < fbFreq.length; i++){ const v = fbFreq[i]; if(v > mx) mx = v; if(isFinite(v)){ sum += v; n++; } }
-    const tonal = n && mx > -30 && mx - sum / n > 45, loud = peakOf(micAnalyser, micData) > 0.85;
-    fbCount = (tonal || loud) ? fbCount + 1 : Math.max(0, fbCount - 2);
-    if(fbCount > 12){
-      try{ monSrc.disconnect(); }catch(e){} monSrc = null; fbCount = 0;
-      S.mon = false; $('#tMon').setAttribute('aria-pressed', 'false');
-      toast('Larsen détecté : retour voix coupé. Baisse le volume ou mets des écouteurs, puis rallume-le dans Réglages.');
+    let mx = -Infinity, pb = 0;
+    for(let i = 8; i < fbFreq.length - 8; i++) if(fbFreq[i] > mx){ mx = fbFreq[i]; pb = i; }
+    let nb = 0, nn = 0;
+    for(let k = pb - 8; k <= pb + 8; k++) if(Math.abs(k - pb) > 2 && isFinite(fbFreq[k])){ nb += fbFreq[k]; nn++; }
+    const sharp = nn && mx > -40 && mx - nb / nn > 28;
+    fbCount = (sharp && Math.abs(pb - fbBin) <= 1) ? fbCount + 1 : Math.max(0, fbCount - 2);
+    fbBin = pb;
+    if(fbCount > 35){
+      fbCount = 0;
+      if(monSrc.gain.value > 0.25){
+        monSrc.gain.setTargetAtTime(monSrc.gain.value * 0.5, ctx.currentTime, 0.05);
+        toast('Ça commence à siffler : je baisse le retour voix. Baisse un peu le volume si ça continue.');
+      } else {
+        try{ monSrc.disconnect(); }catch(e){} monSrc = null;
+        S.mon = false; $('#tMon').setAttribute('aria-pressed', 'false');
+        toast('Larsen : retour voix coupé. Baisse le volume ou mets des écouteurs, puis rallume-le dans Réglages.');
+      }
     }
   }
   const op = peakOf(outAn, outData);
