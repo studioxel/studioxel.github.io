@@ -44,6 +44,8 @@ button{cursor:pointer}
 .top small{color:var(--muted)}
 
 .transport{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:10px}
+.tbtn.mon[aria-pressed=true]{background:var(--ok);border-color:var(--ok);color:#06231c;font-weight:800}
+.routechip{height:30px;padding:0 10px;border-radius:15px;border:1px solid var(--line);background:transparent;color:var(--muted);font-size:12px;font-weight:700;white-space:nowrap;max-width:170px;overflow:hidden;text-overflow:ellipsis}
 .tbtn{height:40px;min-width:44px;padding:0 12px;border-radius:8px;border:1px solid var(--line);background:var(--raise);display:inline-flex;align-items:center;justify-content:center;gap:6px}
 .tbtn:disabled{opacity:.4}
 .tbtn svg{width:16px;height:16px;fill:currentColor}
@@ -369,6 +371,8 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
   <button class="tbtn" id="bStop" title="Stop" aria-label="Stop"><svg viewBox="0 0 16 16"><path d="M3 3h10v10H3z"/></svg></button>
   <button class="tbtn rec" id="bRec" title="Enregistrer sur la piste armée">● REC</button>
   <button class="tbtn" id="bUndo" disabled title="Annuler la dernière action">↶ Annuler</button>
+  <button class="tbtn mon" id="bMon" aria-pressed="false" title="T'entendre en direct, même sans enregistrer">🎧 Retour</button>
+  <button class="routechip" id="routeChip" title="Ce que l'appli a détecté pour l'écoute">📱 Haut-parleur</button>
   <div class="clock" id="clock">0:00.0</div>
   <div class="grp" id="micGrp" hidden>Micro <div class="meter"><i id="meter"></i></div></div>
   <span class="spacer"></span>
@@ -381,11 +385,11 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
     <span class="grp">Écoute</span>
     <div class="seg" id="outSeg" role="group" aria-label="Écoute"><button data-o="auto" aria-pressed="false">Auto</button><button data-o="casque" aria-pressed="false">Casque</button><button data-o="hp" aria-pressed="false">Haut-parleur</button></div>
     <span class="grp" id="outInfo"></span>
-    <button class="toggle" id="tMon" aria-pressed="false" title="Entendre ta voix avec les effets pendant la prise">Retour voix</button>
+    <button class="toggle" id="tMon" aria-pressed="false" title="T'entendre en direct avec les effets, même sans enregistrer">Retour voix</button>
     <button class="toggle" id="bTour">📖 Revoir le tuto</button>
     <button class="toggle" id="bAvis">💬 Donner mon avis</button>
     <button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-    <span class="grp" id="ver">Version 47</span>
+    <span class="grp" id="ver">Version 48</span>
     <span class="grp" id="latInfo" title="Le retard du téléphone est mesuré et corrigé tout seul à chaque prise">Calage auto</span>
   </div>
 </div>
@@ -623,7 +627,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 </section>
 
 <div class="help">
-  StudioXel · version 47.
+  StudioXel · version 48.
   Touche la pastille de couleur à gauche du nom d'une piste pour changer sa couleur.
   🔓 sur une piste verrouille une prise réussie : plus de réenregistrement, de coupe ni de déplacement par erreur.
   Glisse le doigt pour avancer dans la timeline. Touche une prise pour placer la lecture. Appui long : la phrase est sélectionnée pour la supprimer, la déplacer ou la copier. ⧉ duplique une piste.
@@ -643,7 +647,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 47;
+const APP_VER = 48;
 const COLORS = ['#6fa8ff','#f2b544','#c58bff','#4fd1b5','#ff8a65','#9be15d','#ff7eb6'];
 const HDR = 216, CEIL = Math.pow(10, -1 / 20);
 const store = {
@@ -1042,7 +1046,7 @@ async function getMic(){
   catch(e){ if(e.name === 'NotAllowedError') throw e; mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } }); }
   const lbl = (mic.getAudioTracks()[0]?.label || '');
   S.micLabel = lbl;
-  if(isHeadsetLabel(lbl) && !S.headset){ S.headset = true; applyOutMode(); }
+  detectHeadset(true);
   micAnalyser = null;
   return mic;
 }
@@ -1064,7 +1068,50 @@ function unlockSpeaker(){
     const pr = silentEl.play(); if(pr) pr.catch(() => {});
   }catch(e){}
 }
-function releaseMic(){
+/* le micro alimente l'indicateur de niveau et la bande qui se dessine en direct (rien n'est envoyé aux enceintes) */
+function openMicGraph(){
+  if(micSrc || !mic) return;
+  try{
+    micSrc = ctx.createMediaStreamSource(mic);
+    micAnalyser = ctx.createAnalyser(); micAnalyser.fftSize = 1024; micData = new Float32Array(micAnalyser.fftSize);
+    micSink = ctx.createGain(); micSink.gain.value = 0;
+    micSrc.connect(micAnalyser); micAnalyser.connect(micSink); micSink.connect(ctx.destination);
+  }catch(e){ micSrc = null; micAnalyser = null; }
+}
+/* retour voix : ta voix passe par les effets de la piste armée (ou de la première piste de voix) */
+function monTrack(){ return S.tracks.find(x => x.arm) || S.tracks.find(x => x.preset !== 'instru') || null; }
+function attachMon(t){
+  if(monSrc || !micSrc) return;
+  try{
+    const mg = ctx.createGain(); mg.gain.value = 0.7; micSrc.connect(mg);
+    const tr = t || monTrack();
+    mg.connect(tr ? tr.chain.hp : bus.masterIn);
+    monSrc = mg; fbCount = 0; fbBin = -1;
+  }catch(e){ monSrc = null; }
+}
+function detachMon(){ if(monSrc){ try{ monSrc.disconnect(); }catch(e){} monSrc = null; } }
+function setMonUI(){
+  $('#bMon').setAttribute('aria-pressed', String(!!S.mon)); $('#tMon').setAttribute('aria-pressed', String(!!S.mon));
+  setRecUI();
+}
+async function monOn(){
+  ensureCtx();
+  try{ await getMic(); }
+  catch(e){ toast(e.name === 'NotAllowedError' ? 'Accès au micro refusé : autorise le micro pour avoir le retour voix.' : (e.message || 'Micro introuvable.')); S.mon = false; setMonUI(); return; }
+  await detectHeadset(true);
+  if(!(await wake())){ toast('Touche ▶ une fois puis rallume le retour.'); }
+  S.mon = true; openMicGraph(); attachMon(); setMonUI();
+  toast(S.casque ? '🎧 Retour voix allumé : tu t\'entends en direct, avec les effets de ta piste.'
+    : S.route === 'bt' ? '🚗 Retour voix allumé sur ton Bluetooth. Ta voix revient avec un petit décalage, c\'est le Bluetooth. Garde le volume raisonnable.'
+    : '🔊 Retour voix allumé sans casque : garde le volume bas, je baisse ou je coupe tout seul si ça siffle.');
+}
+function monOff(){
+  S.mon = false; detachMon(); setMonUI();
+  if(!S.recording) releaseMic(true);
+}
+function releaseMic(force){
+  if(S.mon && !force){ setRecUI(); return; }
+  if(S.mon){ S.mon = false; detachMon(); try{ setMonUI(); }catch(e){} }
   audioSessionPlay();
   if(monSrc){ try{ monSrc.disconnect(); }catch(e){} monSrc = null; }
   if(micSrc){ try{ micSrc.disconnect(); }catch(e){} micSrc = null; }
@@ -1084,16 +1131,9 @@ async function record(){
   catch(e){ toast(e.name === 'NotAllowedError' ? 'Accès au micro refusé. Il faut ouvrir la page en ligne (https) et autoriser le micro.' : (e.message || 'Micro introuvable.')); return; }
   if(S.playing) pause();
   if(S.loop.on) S.pos = S.loop.start;
-  if(!(await wake())){ releaseMic(); toast('L\'iPhone a coupé le son en branchant le micro. Touche ▶ une fois, puis relance REC.'); return; }
-  /* le micro alimente l'indicateur de niveau et la bande qui se dessine en direct (rien n'est envoyé aux enceintes) */
-  try{
-    micSrc = ctx.createMediaStreamSource(mic);
-    micAnalyser = ctx.createAnalyser(); micAnalyser.fftSize = 1024; micData = new Float32Array(micAnalyser.fftSize);
-    micSink = ctx.createGain(); micSink.gain.value = 0;
-    micSrc.connect(micAnalyser); micAnalyser.connect(micSink); micSink.connect(ctx.destination);
-  }catch(e){ micSrc = null; micAnalyser = null; }
-  /* retour voix : actif dès que tu l'allumes ; le détecteur de larsen veille */
-  if(S.mon && micSrc){ try{ const mg = ctx.createGain(); mg.gain.value = 0.6; micSrc.connect(mg); mg.connect(t.chain.hp); monSrc = mg; fbCount = 0; }catch(e){ monSrc = null; } }
+  if(!(await wake())){ releaseMic(true); toast('L\'iPhone a coupé le son en branchant le micro. Touche ▶ une fois, puis relance REC.'); return; }
+  openMicGraph();
+  if(S.mon){ detachMon(); attachMon(t); }
   recLive = []; recQuietWarn = false;
   if(silentEl) try{ silentEl.pause(); }catch(e){}
   const chunks = [];
@@ -1121,8 +1161,8 @@ async function record(){
       let tr = recInfo.track;
       pushUndo('la prise', false, true);
       let off0 = recInfo.pos, punched = false;
-      if(!recInfo.punch && tr.buffer) tr = trackBelow(tr, true);
-      if(recInfo.punch && tr.buffer){ const pm = punchMerge(tr, buf, recInfo.pos, recInfo.end); buf = pm.buffer; off0 = pm.offset; punched = true; }
+      /* la piste est déjà remplie : la prise se pose par-dessus, à l'endroit enregistré (Annuler pour revenir) */
+      if(tr.buffer){ const pm = punchMerge(tr, buf, recInfo.pos, recInfo.punch ? recInfo.end : recInfo.pos + buf.duration); buf = pm.buffer; off0 = pm.offset; punched = true; }
       claim(tr);
       if(punched){ tr.takes.push({ buffer: buf, offset: off0, punch: true }); tr.take = tr.takes.length - 1; }
       else { tr.takes = [{ buffer: buf, offset: off0 }]; tr.take = 0; }
@@ -1130,7 +1170,7 @@ async function record(){
       if(!punched){ await adaptVoice(tr); await autoLevel(tr); }
       renderTracks();
       if(tr.atOn){ toast('Prise gardée, auto-tune en cours…'); await applyAutotune(tr); }
-      else toast(punched ? 'Phrase remplacée dans la boucle.' : 'Prise gardée sur « ' + tr.name + ' » · niveau calé sur l\'instru.');
+      else toast(recInfo.punch ? 'Phrase remplacée dans la boucle.' : punched ? 'Prise posée sur « ' + tr.name + ' », à la place de ce qui était dessous. Annuler pour revenir.' : 'Prise gardée sur « ' + tr.name + ' » · niveau calé sur l\'instru.');
       scheduleSave();
     }catch(e){ toast('Impossible de lire la prise : ' + e.message); }
   };
@@ -1147,6 +1187,7 @@ function finishRec(){ S.recording = false; setRecUI(); if(rec && rec.state !== '
 
 /* ---------- Calage automatique (latence) ---------- */
 function routeKey(){
+  if(S.routeInfo?.wireless && S.outMode !== 'hp') return 'bt';
   if(/airpods|bluetooth|beats|buds/i.test(S.micLabel || '')) return 'bt';
   return S.casque ? 'wired' : 'speaker';
 }
@@ -1224,7 +1265,7 @@ $('#bUndo').onclick = undo;
 
 /* ---------- Pistes ---------- */
 let claimNext = false;
-/* Une piste déjà remplie n'est jamais écrasée : la nouvelle prise ou le nouvel import va sur une piste créée juste en dessous */
+/* Crée une piste juste en dessous (utilisé par la duplication et les copies de bandes) */
 function trackBelow(t, moveArm){
   const base = t.name.replace(/\s\d+$/, '');
   let k = 2; while(S.tracks.some(x => x.name === base + ' ' + k)) k++;
@@ -1421,7 +1462,7 @@ list.addEventListener('click', e => {
     toast(t.keep ? '🔒 Prise de « ' + t.name + ' » verrouillée : plus de réenregistrement, de coupe ni de déplacement possible.' : '🔓 Prise de « ' + t.name + ' » déverrouillée.');
     return;
   }
-  if(act === 'arm'){ if(S.recording) return; const v = !t.arm; S.tracks.forEach(x => x.arm = false); t.arm = v; renderTracks(); }
+  if(act === 'arm'){ if(S.recording) return; const v = !t.arm; S.tracks.forEach(x => x.arm = false); t.arm = v; renderTracks(); if(monSrc){ detachMon(); attachMon(); } }
   if(act === 'mute' || act === 'solo') pushUndo(act === 'mute' ? 'le muet' : 'le solo');
   if(act === 'mute'){ t.mute = !t.mute; el.setAttribute('aria-pressed', t.mute); applyMix(); }
   if(act === 'solo'){ t.solo = !t.solo; el.setAttribute('aria-pressed', t.solo); applyMix(); }
@@ -1467,7 +1508,7 @@ $('#file').addEventListener('change', async e => {
   try{
     const buf = await ctx.decodeAudioData(await f.arrayBuffer());
     pushUndo('l\'import');
-    const t = importFor.buffer ? trackBelow(importFor, false) : importFor;
+    const t = importFor;
     claim(t);
     t.takes = [{ buffer: buf, offset: 0 }]; t.take = 0;
     t.buffer = buf; t.offset = 0;
@@ -3680,25 +3721,46 @@ function applyOutMode(){
   S.casque = S.outMode === 'casque' || (S.outMode === 'auto' && S.headset);
   document.querySelectorAll('#outSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.o === S.outMode));
   const info = $('#outInfo');
-  if(info) info.textContent = S.outMode === 'auto' ? (S.headset ? '🎧 casque détecté' : '🔊 haut-parleur détecté') : '';
+  if(info) info.textContent = S.outMode === 'auto' ? (S.headset ? '🎧 écouteurs détectés' : S.route === 'bt' ? '🚗 Bluetooth détecté' : '🔊 haut-parleur') : '';
+  try{ showRoute(); }catch(e){}
   showLat();
   return was !== S.casque;
+}
+const EAR_MIC = /airpods|earpods|beats|buds|headphone|headset|casque|[ée]couteur|bose|sony wh|sony wf|jabra|sennheiser|soundcore|jbl (tune|live|vibe|endurance)|powerbeats|pixel buds|galaxy buds|nothing ear|marshall (major|minor|mode)/i;
+const WIRELESS = /airpods|beats|buds|bose|sony|jabra|bluetooth|soundcore|jbl|powerbeats|marshall|nothing/i;
+const EXT_MIC = /usb|lightning|rode|røde|shure|blue yeti|zoom|irig|boya|saramonic|hollyland|dji mic/i;
+/* Ce qu'on entend : écouteurs (pas de larsen possible), Bluetooth voiture/enceinte (larsen possible, décalage), ou le téléphone */
+function classifyRoute(labels){
+  const lab = labels.filter(l => l);
+  const ear = lab.find(l => EAR_MIC.test(l));
+  if(ear) return { kind: 'ecouteurs', name: ear.replace(/\s*\(.*\)\s*$/, ''), wireless: WIRELESS.test(ear) };
+  const other = lab.find(l => !BUILTIN_MIC.test(l) && !EXT_MIC.test(l));
+  if(other) return { kind: 'bt', name: other.replace(/\s*\(.*\)\s*$/, ''), wireless: true };
+  return { kind: 'tel', name: '', wireless: false };
+}
+function showRoute(){
+  const c = $('#routeChip'); if(!c) return;
+  const r = S.routeInfo || { kind: 'tel' };
+  c.textContent = S.outMode === 'casque' ? '🎧 Casque (forcé)' : S.outMode === 'hp' ? '🔊 Haut-parleur (forcé)'
+    : r.kind === 'ecouteurs' ? '🎧 ' + (r.name || 'Écouteurs') : r.kind === 'bt' ? '🚗 ' + (r.name || 'Bluetooth') : '📱 Haut-parleur';
 }
 async function detectHeadset(silent){
   try{
     const ds = await navigator.mediaDevices.enumerateDevices();
     const labels = ds.filter(d => d.kind === 'audioinput').map(d => d.label || '');
+    if(S.micLabel) labels.unshift(S.micLabel);
     const known = labels.some(l => l);
-    const lab = labels.filter(l => l);
-    /* un nom de casque connu, ou un micro en plus de celui du téléphone */
-    const hs = lab.some(isHeadsetLabel) || (lab.some(l => BUILTIN_MIC.test(l)) && lab.some(l => !BUILTIN_MIC.test(l)));
-    if(known || hs){
-      const before = S.headset; S.headset = hs;
-      applyOutMode();
-      if(!silent && before !== hs && S.outMode === 'auto') toast(hs ? '🎧 Casque détecté : l\'appli passe en mode casque.' : '🔊 Casque débranché : l\'appli passe en mode haut-parleur.');
-    } else applyOutMode();
-  }catch(e){ applyOutMode(); }
+    if(known){
+      const r = classifyRoute(labels), before = S.routeInfo?.kind;
+      S.routeInfo = r; S.headset = r.kind === 'ecouteurs'; S.route = r.kind;
+      applyOutMode(); showRoute();
+      if(!silent && before && before !== r.kind && S.outMode === 'auto')
+        toast(r.kind === 'ecouteurs' ? '🎧 ' + (r.name || 'Écouteurs') + ' détectés : mode casque.' : r.kind === 'bt' ? '🚗 ' + (r.name || 'Bluetooth') + ' détecté : son sur la voiture ou l\'enceinte.' : '📱 Plus rien de branché : haut-parleur du téléphone.');
+    } else { applyOutMode(); showRoute(); }
+  }catch(e){ applyOutMode(); showRoute(); }
 }
+/* au lancement : si le micro est déjà autorisé, on regarde tout de suite ce qui est branché */
+(async () => { try{ const st = await navigator.permissions?.query({ name: 'microphone' }); if(st?.state === 'granted') detectHeadset(true); else showRoute(); }catch(e){ showRoute(); } })();
 $('#outSeg').addEventListener('click', e => {
   const b = e.target.closest('button'); if(!b) return;
   S.outMode = b.dataset.o; store.set('outMode', S.outMode); applyOutMode();
@@ -3768,7 +3830,9 @@ const TOUR = [
   { t: 'Le tour du studio', b: 'Maintenant je te fais faire le tour du studio en deux minutes, bouton par bouton. Tu peux passer quand tu veux, et revoir le tuto dans Réglages.' },
   { sel: ['#list .row:nth-child(1) [data-act=import]'], t: 'Ton instru', b: 'Touche « Importer » sur la piste Instru et choisis ton beat (MP3 ou WAV). Je trouve tout seul le BPM et la tonalité, et je cale le niveau. C\'est la toute première chose à faire.' },
   { sel: ['#list .row:nth-child(2) .chip'], t: 'R, M, S', b: 'R arme la piste : c\'est là que ta voix va s\'enregistrer. M coupe la piste, S l\'écoute toute seule. Arme Lead avant ton premier couplet.' },
-  { sel: ['#bRec'], t: 'REC', b: 'Piste armée ? Touche REC : 4 bips de décompte et tu kickes. Retouche REC pour t\'arrêter. Si la piste a déjà une prise, je t\'en crée une nouvelle juste en dessous : rien n\'est écrasé.' },
+  { sel: ['#bRec'], t: 'REC', b: 'Piste armée ? Touche REC : 4 bips de décompte et tu kickes. Retouche REC pour t\'arrêter. Si la piste a déjà une prise, la nouvelle se pose par-dessus à cet endroit (Annuler pour revenir). Pour garder les deux, ajoute une piste avec le + ou duplique avec ⧉ : c\'est toi qui décides.' },
+  { sel: ['#bMon'], t: 'Retour 🎧', b: 'Allume-le pour t\'entendre en direct avec les effets de ta piste, même sans enregistrer : parfait pour chauffer ta voix. Avec des écouteurs c\'est l\'idéal. Sur le haut-parleur ou en Bluetooth, garde le volume raisonnable : si ça siffle, je baisse tout seul.' },
+  { sel: ['#routeChip'], t: 'Ton écoute', b: 'Ici je t\'affiche ce que j\'ai détecté : 🎧 tes écouteurs (AirPods…), 🚗 un Bluetooth de voiture ou d\'enceinte, ou 📱 le haut-parleur. Si je me trompe, touche-le et choisis toi-même.' },
   { sel: ['#bHome', '#bPlay', '#bStop'], t: 'Lecture', b: '▶ lance ou met en pause, ⏹ arrête, ⏮ revient au début. Réécoute ta prise juste après l\'avoir posée, c\'est là que tu sais si elle est bonne.' },
   { sel: ['#bUndo'], t: 'Annuler', b: 'Une bêtise ? Annuler revient en arrière, étape par étape : une prise, un effet, une piste supprimée, tout s\'annule.' },
   { sel: ['#list .row:nth-child(2) .l2'], t: 'Volume et pan', b: 'VOL règle le niveau de la piste, PAN la place à gauche ou à droite. Je cale déjà les niveaux tout seul, tu peaufines si besoin. Astuce : le lead au centre, les backs un peu sur les côtés.' },
@@ -3899,7 +3963,7 @@ function fmt(s, short){
 let toastT;
 function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 3600); }
 function setPlayIcon(){ $('#icoPlay').innerHTML = S.playing ? '<path d="M3 2h4v12H3zM9 2h4v12H9z"/>' : '<path d="M3 2l11 6-11 6z"/>'; }
-function setRecUI(){ renderQuick(); $('#micGrp').hidden = !(S.recording && micAnalyser); $('#bRec').classList.toggle('on', S.recording); $('#playhead').classList.toggle('rec', S.recording); }
+function setRecUI(){ renderQuick(); $('#micGrp').hidden = !((S.recording || S.mon) && micAnalyser); $('#bRec').classList.toggle('on', S.recording); $('#playhead').classList.toggle('rec', S.recording); }
 
 $('#bPlay').onclick = async () => {
   if(S.recording){ pause(); return; }
@@ -3920,8 +3984,11 @@ $('#bpm').onchange = e => {
   bus.setBpm(S.bpm); renderTracks(); restart();
 };
 const tog = (id, key, persist) => { const b = $(id); b.setAttribute('aria-pressed', S[key]); b.onclick = () => { S[key] = !S[key]; b.setAttribute('aria-pressed', S[key]); if(persist) store.set(key, S[key]); }; };
-tog('#tMetro', 'metro'); tog('#tCount', 'countIn', true); tog('#tMon', 'mon');
-$('#tMon').addEventListener('click', () => { if(S.mon) toast(S.casque ? 'Retour voix activé : tu t\'entendras pendant la prise.' : 'Retour voix activé. Sans casque, garde le volume raisonnable : s\'il y a du larsen, je le coupe tout seul. En Bluetooth, ta voix revient avec un petit décalage, c\'est normal.'); });
+tog('#tMetro', 'metro'); tog('#tCount', 'countIn', true);
+$('#tMon').setAttribute('aria-pressed', 'false');
+$('#tMon').onclick = () => S.mon ? monOff() : monOn();
+$('#bMon').onclick = () => S.mon ? monOff() : monOn();
+$('#routeChip').onclick = () => { $('#settings').hidden = false; $('#bSet').setAttribute('aria-expanded', 'true'); };
 $('#zIn').onclick = () => { S.pps = Math.min(200, S.pps * 1.5); renderTracks(); };
 $('#zOut').onclick = () => { S.pps = Math.max(8, S.pps / 1.5); renderTracks(); };
 $('#ruler').addEventListener('click', e => seek(e.offsetX / S.pps));
@@ -3942,17 +4009,8 @@ let outHold = 0, micHold = 0;
 /* La prise se dessine sur la piste pendant que tu kickes */
 function liveLane(){
   const t = recInfo.track; if(!t) return null;
-  const row = document.querySelector(`.row[data-id="${t.id}"]`); if(!row) return null;
-  if(t.buffer && !recInfo.punch){
-    let g = row.nextElementSibling;
-    if(!g || !g.classList.contains('ghost')){
-      g = document.createElement('div'); g.className = 'row ghost';
-      g.innerHTML = `<div class="hdr"><div class="l1"><b class="recdot">● Nouvelle prise</b></div><p class="note">Elle arrive sur une nouvelle piste, juste ici.</p></div><div class="lane" style="${row.querySelector('.lane').getAttribute('style')}"></div>`;
-      row.after(g);
-    }
-    return g.querySelector('.lane');
-  }
-  return row.querySelector('.lane');
+  const row = document.querySelector(`.row[data-id="${t.id}"]`);
+  return row ? row.querySelector('.lane') : null;
 }
 function drawLive(){
   const lane = liveLane(); if(!lane) return;
@@ -3999,16 +4057,18 @@ function loop(){
       else recQuietWarn = true;
     }
   }
-  if(monSrc && micAnalyser){
+  if(monSrc && micAnalyser && !S.casque){
     /* Larsen = un sifflement : une seule fréquence très pointue, qui reste au même endroit plus d'une demi-seconde.
        Chanter fort ou une note de l'instru ne déclenche rien. */
     if(!fbFreq || fbFreq.length !== micAnalyser.frequencyBinCount) fbFreq = new Float32Array(micAnalyser.frequencyBinCount);
     micAnalyser.getFloatFrequencyData(fbFreq);
     let mx = -Infinity, pb = 0;
-    for(let i = 8; i < fbFreq.length - 8; i++) if(fbFreq[i] > mx){ mx = fbFreq[i]; pb = i; }
-    let nb = 0, nn = 0;
+    for(let i = 10; i < fbFreq.length - 8; i++) if(fbFreq[i] > mx){ mx = fbFreq[i]; pb = i; }
+    let nb = 0, nn = 0, sec = -Infinity;
     for(let k = pb - 8; k <= pb + 8; k++) if(Math.abs(k - pb) > 2 && isFinite(fbFreq[k])){ nb += fbFreq[k]; nn++; }
-    const sharp = nn && mx > -40 && mx - nb / nn > 28;
+    for(let k = 4; k < fbFreq.length; k++) if(Math.abs(k - pb) > 6 && fbFreq[k] > sec) sec = fbFreq[k];
+    /* une voix a plein d'harmoniques de même force ; un larsen, c'est une seule fréquence qui écrase tout */
+    const sharp = nn && mx > -40 && mx - nb / nn > 28 && mx - sec > 15;
     fbCount = (sharp && Math.abs(pb - fbBin) <= 1) ? fbCount + 1 : Math.max(0, fbCount - 2);
     fbBin = pb;
     if(fbCount > 35){
@@ -4058,9 +4118,9 @@ async function askMicEarly(){
 /* Le micro n'est plus ouvert au lancement : il s'ouvre au premier REC seulement */
 const firstTouch = () => { audioSessionPlay(); unlockSpeaker(); ensureCtx(); };
 /* Micro coupé dès qu'on n'enregistre plus : appli en arrière-plan ou fermée */
-document.addEventListener('visibilitychange', () => { if(document.hidden){ if(S.recording) pause(); else releaseMic(); } });
-window.addEventListener('pagehide', () => releaseMic());
-setInterval(() => { if(mic && !S.recording && !(rec && rec.state === 'recording')) releaseMic(); }, 3000);
+document.addEventListener('visibilitychange', () => { if(document.hidden){ if(S.recording) pause(); else releaseMic(true); } });
+window.addEventListener('pagehide', () => releaseMic(true));
+setInterval(() => { if(mic && !S.mon && !S.recording && !(rec && rec.state === 'recording')) releaseMic(); }, 3000);
 document.addEventListener('pointerdown', firstTouch, { once: true });
 ['touchend', 'click'].forEach(ev => document.addEventListener(ev, () => { if(ctx.state !== 'running') ctx.resume().catch(() => {}); }, { passive: true }));
 ctx.onstatechange = () => { if(ctx.state !== 'running' && (S.playing || S.recording)) ctx.resume().catch(() => {}); };
