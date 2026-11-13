@@ -452,13 +452,19 @@ body.ed-open .wmark{z-index:41}
     <span class="tpt" id="tpTot">0:00</span>
   </div>
   <div class="settings" id="settings" hidden>
-    <label class="grp">BPM <input type="number" id="bpm" min="40" max="220" value="90"></label>
-    <button class="toggle" id="tCount" aria-pressed="true" title="1 mesure de décompte avant la prise">Décompte</button>
-    <button class="toggle" id="tMetro" aria-pressed="false">Métronome</button>
-    <label class="grp">Ton blaze <input id="meName" style="width:120px;height:34px;background:var(--raise);border:1px solid var(--line);border-radius:6px;padding:0 8px;text-transform:none;letter-spacing:0" placeholder="ex. Xela"></label>
-    <span class="grp">Écoute</span>
-    <div class="seg" id="outSeg" role="group" aria-label="Écoute"><button data-o="auto" aria-pressed="false">Auto</button><button data-o="casque" aria-pressed="false">Casque</button><button data-o="hp" aria-pressed="false">Haut-parleur</button></div>
-    <span class="grp" id="outInfo"></span>
+    <div class="autobox"><div class="autot">Enregistrement</div>
+      <div class="bkrow"><label class="grp">Tempo (BPM) <input type="number" id="bpm" min="40" max="220" value="90"></label>
+      <button class="toggle" id="tCount" aria-pressed="true" title="1 mesure de décompte avant la prise">Décompte</button>
+      <button class="toggle" id="tMetro" aria-pressed="false">Métronome</button></div>
+      <p class="note">Le tempo est détecté tout seul quand tu importes ton instru. Change-le seulement s'il est faux.</p>
+    </div>
+    <div class="autobox"><div class="autot">Toi</div>
+      <label class="grp">Ton blaze <input id="meName" style="width:120px;height:34px;background:var(--raise);border:1px solid var(--line);border-radius:6px;padding:0 8px;text-transform:none;letter-spacing:0" placeholder="ex. Xela"></label>
+    </div>
+    <div class="autobox"><div class="autot">Écoute</div>
+      <div class="seg" id="outSeg" role="group" aria-label="Écoute"><button data-o="auto" aria-pressed="false">Auto</button><button data-o="casque" aria-pressed="false">Casque</button><button data-o="hp" aria-pressed="false">Haut-parleur</button></div>
+      <p class="note">Auto : je détecte tout seul tes écouteurs. Choisis toi-même si la pastille d'écoute en haut se trompe.</p>
+    </div>
     <div class="autobox"><div class="autot">Ta sauvegarde</div>
       <p class="note">Tous tes sons (audio, texte, réglages) dans un seul fichier. Range-le dans iCloud Drive, Google Drive, Dropbox ou OneDrive : tu le récupères sur n'importe quel téléphone.</p>
       <div class="bkrow"><button class="toggle" data-bk="save">💾 Sauvegarder tous mes sons</button><button class="toggle" data-bk="load">♻️ Restaurer une sauvegarde</button></div>
@@ -470,17 +476,18 @@ body.ed-open .wmark{z-index:41}
       <button class="toggle" data-auto="level" aria-pressed="true">📏 Niveaux et voix réglés tout seuls</button>
       <button class="toggle" data-auto="bk" aria-pressed="true">💾 Me rappeler de sauvegarder</button>
     </div>
-    <button class="toggle" id="tMon" aria-pressed="false" title="T'entendre en direct avec les effets, même sans enregistrer">Retour voix</button>
-    <button class="toggle" id="bGuide">🎤 Premier son guidé</button>
-    <button class="toggle" id="bTour">📖 Revoir le tuto</button>
-    <button class="toggle" id="bAvis">💬 Donner mon avis</button>
-    <button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-    <span class="grp" id="ver">Version 64</span>
-    <span class="grp" id="latInfo" title="Le retard du téléphone est mesuré et corrigé tout seul à chaque prise">Calage auto</span>
+    <div class="autobox"><div class="autot">Aide</div>
+      <div class="bkrow"><button class="toggle" id="bGuide">🎤 Premier son guidé</button>
+      <button class="toggle" id="bTour">📖 Revoir le tuto</button>
+      <button class="toggle" id="bAvis">💬 Donner mon avis</button></div>
+    </div>
+    <div class="autobox"><div class="autot">Appli</div>
+      <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
+      <span class="grp" id="ver">Version 66</span></div>
+    </div>
   </div>
 </div>
 
-<div class="card quick" id="quick" aria-label="Effets en direct" hidden></div>
 
 <nav class="nav" role="tablist" aria-label="Vues">
   <button role="tab" data-view="vPistes" aria-selected="true">Pistes</button>
@@ -587,12 +594,6 @@ body.ed-open .wmark{z-index:41}
       <div class="advbody">
         <div class="sls" id="mSliders"></div>
         <div class="grrow"><span>Limiteur</span><div class="meter wide gr"><i id="limGr"></i></div><output id="limDb">0 dB</output></div>
-        <div class="report">
-          <div class="stat"><span>Mix brut</span><b id="rRaw">–</b></div>
-          <div class="stat"><span>Master</span><b id="rMaster">–</b></div>
-          <div class="stat"><span>Crête max</span><b id="rPeak">–</b></div>
-          <div class="stat"><span>Gain ajouté</span><b id="rGain">–</b></div>
-        </div>
         <div class="btns">
           <button class="sbtn" id="bAnalyse">Appliquer le volume à l'écoute</button>
           <button class="sbtn" id="bRawExp">Exporter sans master</button>
@@ -727,14 +728,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
   <input type="file" id="pjCoverFile" accept="image/*" hidden>
 </section>
 
-<div class="help">
-  StudioXel · version 64.
-  Touche la pastille de couleur à gauche du nom d'une piste pour changer sa couleur.
-  🔓 sur une piste verrouille une prise réussie : plus de réenregistrement, de coupe ni de déplacement par erreur.
-  Glisse le doigt pour avancer dans la timeline. Touche une prise pour placer la lecture. Appui long : la phrase est sélectionnée pour la supprimer, la déplacer ou la copier. ⧉ duplique une piste.
-  Chaque piste a ses effets : touche Reverb, Écho, Doubler ou Auto-tune pour les allumer, retouche-les pour doser.
-  Arme une piste avec R, puis REC. Tout se sauvegarde tout seul dans le téléphone. Le « + » regroupe pistes, repères, boucle et sessions.
-</div>
+
 
 <div class="reelrec" id="reelRec" hidden>
   <div id="rrBox"></div>
@@ -750,7 +744,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 64;
+const APP_VER = 66;
 try{ const li = document.querySelector('link[rel="apple-touch-icon"]'); if(li) document.getElementById('wmLogo').src = li.href; }catch(e){}
 const COLORS = ['#6fa8ff','#f2b544','#c58bff','#4fd1b5','#ff8a65','#9be15d','#ff7eb6'];
 const HDR = 216, CEIL = Math.pow(10, -1 / 20);
@@ -1304,7 +1298,7 @@ function attachMon(t){
 function remon(){ if(monSrc){ detachMon(); attachMon(); } }
 function detachMon(){ if(monSrc){ try{ monSrc.disconnect(); }catch(e){} monSrc = null; } if(monTune){ try{ monTune.disconnect(); }catch(e){} monTune = null; } }
 function setMonUI(){
-  $('#bMon').setAttribute('aria-pressed', String(!!S.mon)); $('#tMon').setAttribute('aria-pressed', String(!!S.mon));
+  $('#bMon').setAttribute('aria-pressed', String(!!S.mon));
   setRecUI();
 }
 async function monOn(auto){
@@ -1523,8 +1517,6 @@ function renderTracks(){
     const row = document.createElement('div');
     const lk = isLocked(t);
     row.className = 'row' + (lk ? ' locked' : '') + (t.keep ? ' kept' : ''); row.dataset.id = t.id;
-    const takes = false
-      ? `<select data-act="take" aria-label="Prise" ${t.keep ? 'disabled' : ''}>${t.takes.map((tk, i) => `<option value="${i}" ${i === t.take ? 'selected' : ''}>Prise ${i + 1}${tk.tuned ? ' · AT' : ''}${tk.xf ? ' · modifiée' : ''}${tk.punch ? ' · retouchée' : ''}</option>`).join('')}</select>` : '';
     row.innerHTML = `
       <div class="hdr">
         <div class="l1"><button class="swatch" data-act="color" style="background:${t.color}" aria-expanded="${colorOpen === t.id}" aria-label="Couleur de la piste" title="Changer la couleur"></button>
@@ -1540,10 +1532,8 @@ function renderTracks(){
         </div>
         <div class="fxzone">${fxZoneHTML(t)}</div>
         ${t.ownerName && S.tracks.some(x => x.owner && x.owner !== ME.id) ? `<div class="lockb">${lk ? '🔒 Verrouillée · ' : '✓ '}${esc(t.ownerName)}</div>` : ''}
-        <div style="display:none">
-        </div>
         <div class="l3">
-          <button class="sbtn" data-act="import">Importer</button>${takes}
+          <button class="sbtn" data-act="import">Importer</button>
           <span style="flex:1"></span>
           <button class="sbtn keep" data-act="keep" aria-pressed="${!!t.keep}" aria-label="${t.keep ? 'Déverrouiller la prise' : 'Verrouiller la prise'}" title="${t.keep ? 'Prise verrouillée' : 'Verrouiller la prise'}">${t.keep ? '🔒' : '🔓'}</button>
           <button class="sbtn" data-act="dup" aria-label="Dupliquer la piste" title="Dupliquer">⧉</button>
@@ -1727,15 +1717,6 @@ list.addEventListener('input', e => {
   if(act === 'vol'){ t.vol = +el.value; applyMix(); }
   if(act === 'pan'){ t.pan = +el.value; applyMix(); }
   if(act === 'name'){ t.name = el.value; }
-});
-list.addEventListener('change', e => {
-  const el = e.target; if(el.dataset.act !== 'take') return;
-  const t = trackById(el.closest('.row').dataset.id);
-  if(isLocked(t)){ lockToast(t); renderTracks(); return; }
-  if(t.keep){ keepToast(); renderTracks(); return; }
-  pushUndo('le changement de prise');
-  t.take = +el.value; t.buffer = t.takes[t.take].buffer; t.offset = t.takes[t.take].offset;
-  restart(); renderTracks();
 });
 $('#file').addEventListener('change', async e => {
   const f = e.target.files[0]; e.target.value = '';
@@ -1966,7 +1947,6 @@ function updRowFx(t){
   if(z) z.innerHTML = fxZoneHTML(t);
 }
 function renderQuick(){ S.tracks.forEach(updRowFx); }
-$('#quick').addEventListener('click', e => fxAction(e, quickTrack()));
 $('#strip').addEventListener('click', e => fxAction(e, selTrack()));
 
 $('#strip').addEventListener('change', e => {
@@ -2450,10 +2430,6 @@ async function runMaster(){
   let g = M.target - L0, out = gainLimit(raw, g), L1 = await lufs(out);
   g += M.target - L1; out = gainLimit(raw, g); L1 = await lufs(out);
   M.gain = g; preGain.gain.setTargetAtTime(dbl(g), ctx.currentTime, 0.05); saveM();
-  $('#rRaw').textContent = L0.toFixed(1) + ' LUFS';
-  $('#rMaster').textContent = L1.toFixed(1) + ' LUFS';
-  $('#rPeak').textContent = todb(out.peak).toFixed(1) + ' dB';
-  $('#rGain').textContent = dbs(g);
   return out;
 }
 $('#bAnalyse').onclick = async () => {
@@ -4294,7 +4270,7 @@ const TOUR = [
   { sel: ['#list .row:nth-child(2) .lane'], t: 'La timeline', b: 'Glisse le doigt pour avancer dans le morceau. Une touche place la lecture. Un appui long sur une phrase la sélectionne : tu peux la supprimer, la déplacer ou l\'envoyer sur une autre piste.\nPour bosser au poil : touche deux fois une prise, ou sa loupe 🔍. Elle s\'ouvre en grand : tu sélectionnes au doigt, tu écoutes en boucle, et tu coupes, montes le son, fais un fondu, répètes un passage ou recales la prise de 10 ms en 10 ms.' },
   { sel: ['#zOut', '#zIn'], t: 'Le zoom', b: 'Les loupes zooment et dézooment la timeline. Zoome pour couper une phrase au poil près.' },
   { sel: ['#plusBtn'], t: 'Le bouton +', b: 'Ajoute une piste, pose un repère (couplet, refrain), lance une boucle pour refaire juste une phrase, et retrouve toutes tes sessions. Tout se sauvegarde tout seul.' },
-  { sel: ['#bSet'], t: 'Réglages', b: 'Mets ton blaze : il signe tes pistes. Tu y trouves aussi le décompte, le métronome et le réglage de l\'écoute (Auto, Casque ou Haut-parleur) si la pastille d\'écoute se trompe. Dans « Automatique ou manuel », tu choisis ce que je fais tout seul : retour voix, texte pendant la prise, calage du texte, réglage des niveaux. Et si tu veux refaire ton premier son pas à pas : « 🎤 Premier son guidé ».' },
+  { sel: ['#bSet'], t: 'Réglages', b: 'Mets ton blaze : il signe tes pistes. Tout est rangé par rubriques : enregistrement (tempo, décompte, métronome), écoute (Auto, Casque ou Haut-parleur) si la pastille d\'écoute se trompe. Dans « Automatique ou manuel », tu choisis ce que je fais tout seul : retour voix, texte pendant la prise, calage du texte, réglage des niveaux. Et si tu veux refaire ton premier son pas à pas : « 🎤 Premier son guidé ».' },
   { sel: ['.nav [data-view=vMix]'], t: 'Mix', b: 'Les effets de chaque piste en grand, plus l\'égaliseur et la compression pour ceux qui veulent aller loin. « Rééquilibrer » remet les niveaux d\'aplomb.' },
   { sel: ['.nav [data-view=vMaster]'], t: 'Master', b: 'La touche finale de ta maquette : un style et un volume (Streaming ou Fort). Ton son sort propre et fort, sans jamais saturer.' },
   { sel: ['.nav [data-view=vTexte]'], t: 'Texte', b: 'Écris tes lyrics ici, ou touche « 🎙️ Dicter mon texte » et dis-les : ils s\'écrivent tout seuls (relis, la dictée se trompe sur le rap). Le prompteur les fait défiler pendant que tu kickes. Je cale le texte tout seul : sur le tempo pendant ta première prise, puis pile sur ta voix une fois la prise posée. Tu peux toujours caler à la main. Le calage sort aussi en sous-titres dans tes Reels.' },
@@ -4520,7 +4496,7 @@ function startTour(force, steps){
       <h3 id="tTitle"></h3><p id="tBody"></p>
       <label class="toff" id="tOffRow"><input type="checkbox" id="tOff" ${store.get('tourOff', false) ? 'checked' : ''}> Ne plus me montrer ce tuto</label>
       <div class="tchoice" id="tChoice" hidden><button class="sbtn primary" data-t="guide">🎤 Guide-moi pour mon premier son</button><button class="sbtn" data-t="next">📖 Le tour des boutons</button></div>
-      <div class="tnav"><button class="sbtn" data-t="skip">Passer</button><span class="tcount" id="tCount"></span><button class="sbtn" data-t="prev" aria-label="Précédent">←</button><button class="sbtn primary" data-t="next">Suivant →</button></div>
+      <div class="tnav"><button class="sbtn" data-t="skip">Passer</button><span class="tcount" id="tStepN"></span><button class="sbtn" data-t="prev" aria-label="Précédent">←</button><button class="sbtn primary" data-t="next">Suivant →</button></div>
     </div>`;
   document.body.appendChild(tourEl);
   tourEl.addEventListener('click', e => {
@@ -4545,7 +4521,7 @@ const tourEls = st => (st.sel || []).flatMap(q => [...document.querySelectorAll(
 function showStep(){
   const st = TSTEPS[tourI];
   $('#tTitle').textContent = st.t; $('#tBody').textContent = st.b;
-  $('#tCount').textContent = (tourI + 1) + ' / ' + TSTEPS.length;
+  $('#tStepN').textContent = (tourI + 1) + ' / ' + TSTEPS.length;
   tourEl.querySelector('[data-t=prev]').disabled = tourI === 0;
   tourEl.querySelector('.tnav [data-t=next]').textContent = tourI === TSTEPS.length - 1 ? (TSTEPS === TOUR ? 'C\'est parti 🎤' : 'Compris 👍') : 'Suivant →';
   $('#tOffRow').hidden = TSTEPS !== TOUR || !(tourI === 0 || tourI === TSTEPS.length - 1);
@@ -4901,8 +4877,6 @@ $('#bpm').onchange = e => {
 };
 const tog = (id, key, persist) => { const b = $(id); b.setAttribute('aria-pressed', S[key]); b.onclick = () => { S[key] = !S[key]; b.setAttribute('aria-pressed', S[key]); if(persist) store.set(key, S[key]); }; };
 tog('#tMetro', 'metro'); tog('#tCount', 'countIn', true);
-$('#tMon').setAttribute('aria-pressed', 'false');
-$('#tMon').onclick = () => { if(S.mon){ S.monUserOff = true; S.monAuto = false; monOff(); } else { S.monUserOff = false; monOn(); } };
 $('#bMon').onclick = () => { if(S.mon){ S.monUserOff = true; S.monAuto = false; monOff(); } else { S.monUserOff = false; monOn(); } };
 $('#routeChip').onclick = () => { $('#settings').hidden = false; $('#bSet').setAttribute('aria-expanded', 'true'); };
 $('#zIn').onclick = () => { S.pps = Math.min(200, S.pps * 1.5); renderTracks(); };
@@ -5014,7 +4988,7 @@ function loop(){
         toast('Ça commence à siffler : je baisse le retour voix. Baisse un peu le volume si ça continue.');
       } else {
         try{ monSrc.disconnect(); }catch(e){} monSrc = null;
-        S.mon = false; $('#tMon').setAttribute('aria-pressed', 'false');
+        S.mon = false; setMonUI();
         toast('Larsen : retour voix coupé. Baisse le volume ou mets des écouteurs, puis rallume-le dans Réglages.');
       }
     }
