@@ -202,6 +202,12 @@ button{cursor:pointer}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
 [hidden]{display:none!important}
 .settings{flex-basis:100%;display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding-top:10px;border-top:1px solid var(--line)}
+.settings{background:var(--bg);border:2px solid var(--accent);border-radius:12px;padding:12px;margin-top:4px}
+.sethead{flex-basis:100%;display:flex;align-items:center;gap:10px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.sethead b{flex:1;font:800 20px var(--display);color:var(--accent)}
+.setclose{height:44px;padding:0 16px;font-weight:800;font-size:15px;background:var(--accent);color:#1a1405;border-color:var(--accent)}
+.setclose2{flex-basis:100%;height:50px;margin-top:4px}
+#bSet[aria-expanded=true]{background:var(--accent);color:#1a1405;border-color:var(--accent);font-weight:800}
 .fxlist{display:flex;flex-direction:column;gap:8px}
 .fxrow{display:flex;align-items:center;gap:8px 10px;flex-wrap:wrap;background:var(--raise);border:1px solid var(--line);border-radius:12px;padding:8px 10px}
 .fxbtn{height:44px;min-width:170px;border-radius:22px;border:1px solid var(--line);background:var(--bg);font-weight:700;font-size:15px;display:inline-flex;align-items:center;gap:10px;padding:0 16px;color:var(--muted)}
@@ -393,6 +399,26 @@ body.ed-open .toast{z-index:46}
 .edtools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .edtools .sbtn{height:46px;font-size:14px;font-weight:700}
 body.ed-open{overflow:hidden}
+/* ---------- Mode simple : l'essentiel seulement ---------- */
+body.simple .nav [data-view=vMix],body.simple .nav [data-view=vMaster],body.simple .nav [data-view=vProjets]{display:none}
+body.simple .row .l2,body.simple .row .fxzone,body.simple .row .swatch,body.simple .row .chip.mute,body.simple .row .chip.solo,body.simple .row .l3 .keep,body.simple .row .l3 [data-act=dup],body.simple .row .l3 .del,body.simple .row .lockb{display:none}
+body.simple .row:not([data-preset=instru]) .l3{display:none}
+body.simple .lane{min-height:92px}
+body.simple #routeChip,body.simple #bRep,body.simple #bMon,body.simple #zOut,body.simple #zIn,body.simple #loopPill{display:none}
+body.simple .adv{display:none!important}
+body.simple #viewP .pbar,body.simple #viewP .tsman,body.simple #tsMinus,body.simple #tsPlus{display:none}
+.stepbar{display:flex;flex-direction:column;gap:10px;padding:14px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--accent) 8%,var(--panel))}
+.stepbar .stn{font:800 12px var(--display);letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.stepbar h3{margin:0;font:800 20px var(--display)}
+.stepbar p{margin:0;color:var(--muted);line-height:1.4}
+.stepbar .stb{display:flex;gap:8px;flex-wrap:wrap}
+.stepbar .stb .sbtn{height:46px;padding:0 16px;font-size:15px;font-weight:800}
+.stepbar .stb .sbtn.big{flex:1 1 100%;height:54px;font-size:17px}
+.stepbar .stchips{display:flex;gap:6px;flex-wrap:wrap}
+.stepbar .stchips .sbtn[aria-pressed=true]{background:var(--accent);color:#1a1405;border-color:var(--accent)}
+.stepbar .stdots{display:flex;gap:6px}.stepbar .stdots i{flex:1;height:4px;border-radius:2px;background:var(--line)}.stepbar .stdots i.on{background:var(--accent)}
+.stepbar .stadv{align-self:flex-start;background:none;border:0;color:var(--muted);text-decoration:underline;padding:2px 0;font-size:13px}
+body:not(.simple) .stepbar{display:none}
 body.ed-open .transport{position:fixed;top:env(safe-area-inset-top,0px);left:max(6px,env(safe-area-inset-left,0px));right:max(6px,env(safe-area-inset-right,0px));z-index:42;margin:0}
 body.ed-open .transport #settings{display:none}
 body.ed-open .reclyr{z-index:43}
@@ -424,6 +450,9 @@ body.ed-open .wmark{z-index:41}
 .tstart{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);font-size:14px}
 .tstart .sbtn{height:36px;font-size:13px}
 .tstart .note{flex-basis:100%;margin:0}
+.tsrow{display:flex;gap:6px;flex-wrap:wrap;align-items:center;flex-basis:100%}
+.tsman{display:block}.tsman summary{cursor:pointer;color:var(--muted);padding:4px 0}.tsman .tsrow{margin-top:6px}
+.tsrow .sbtn[aria-pressed=true]{background:var(--accent);color:#1a1405;border-color:var(--accent)}
 .pl.virt .t{opacity:.45;font-style:italic}
 .rlcd{font:700 13px var(--mono, ui-monospace);color:var(--accent);margin-right:auto}
 .tprog{flex-basis:100%;display:flex;align-items:center;gap:10px}
@@ -497,6 +526,11 @@ body.ed-open .wmark{z-index:41}
     <span class="tpt" id="tpTot">0:00</span>
   </div>
   <div class="settings" id="settings" hidden>
+    <div class="sethead"><b>⚙️ Réglages</b><button class="sbtn setclose" data-setclose>✕ Fermer</button></div>
+    <div class="autobox"><div class="autot">Affichage</div>
+      <div class="seg" id="modeSeg"><button class="toggle" data-mode="simple" aria-pressed="true">🟢 Simple</button><button class="toggle" data-mode="adv" aria-pressed="false">🧰 Avancé (tous les outils)</button></div>
+      <p class="note">Simple : l'essentiel, étape par étape. Avancé : toutes les pistes, effets, Mix, Master, éditeur, projets.</p>
+    </div>
     <div class="autobox"><div class="autot">Enregistrement</div>
       <div class="bkrow"><label class="grp">Tempo (BPM) <input type="number" id="bpm" min="40" max="220" value="90"></label>
       <button class="toggle" id="tCount" aria-pressed="true" title="1 mesure de décompte avant la prise">Décompte</button>
@@ -523,17 +557,18 @@ body.ed-open .wmark{z-index:41}
       <button class="toggle" data-auto="bk" aria-pressed="true">💾 Me rappeler de sauvegarder</button>
     </div>
     <div class="autobox"><div class="autot">Aide</div>
-      <div class="bkrow"><button class="toggle" id="bGuide">🎤 Premier son guidé</button>
+      <div class="bkrow"><button class="toggle adv" id="bGuide">🎤 Premier son guidé</button>
       <button class="toggle" id="bTour">📖 Revoir le tuto</button>
       <button class="toggle" id="bAvis">💬 Donner mon avis</button></div>
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 1.1.2 · Bêta</span></div>
+      <span class="grp" id="ver">Version 1.2.2 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
     </div>
+    <button class="sbtn setclose setclose2" data-setclose>✕ Fermer les réglages</button>
   </div>
 </div>
 
@@ -762,7 +797,12 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
   </div>
   <div id="viewP" hidden>
     <div class="tstart"><span>Les paroles commencent à <b id="tsVal">0:00</b></span><button class="sbtn" id="tsHere">📍 Ici (tête de lecture)</button><button class="sbtn" id="tsMinus" aria-label="1 mesure plus tôt">− 1 mesure</button><button class="sbtn" id="tsPlus" aria-label="1 mesure plus tard">+ 1 mesure</button>
-      <p class="note">Avant ta première prise, le texte défile une ligne par mesure à partir de là. Si tu poses des repères (+ → Repère) qui portent le nom d'une section, par exemple « Refrain », cette section démarre pile sur son repère.</p></div>
+      <details class="tsrow tsman"><summary>Vitesse du texte : <b id="tsMode">auto</b></summary>
+        <div class="tsrow"><button class="sbtn" data-lb="0" aria-pressed="true">Auto</button><button class="sbtn" data-lb="0.5" aria-pressed="false">½ mesure</button><button class="sbtn" data-lb="1" aria-pressed="false">1 mesure</button><button class="sbtn" data-lb="2" aria-pressed="false">2 mesures</button></div>
+        <div class="tsrow"><span>Tempo <b id="tsBpm">90</b> BPM</span><button class="sbtn" data-bx="2" aria-label="Tempo fois deux">×2</button><button class="sbtn" data-bx="0.5" aria-label="Tempo divisé par deux">÷2</button></div>
+        <p class="note">En auto, chaque ligne dure le temps de la dire, d'après ses syllabes et ton débit. L'appli apprend ton débit à chaque prise. Le manuel, c'est seulement si tu veux forcer.</p>
+      </details>
+      <p class="note">Avant ta première prise, le texte défile ligne par ligne à partir de là. Si tu poses des repères (+ → Repère) qui portent le nom d'une section, par exemple « Refrain », cette section démarre pile sur son repère.</p></div>
     <div class="prompt" id="prompt"></div>
     <div class="pbar">
       <button class="sbtn" id="tap">Caler la ligne suivante</button>
@@ -802,8 +842,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 81; // numéro interne (jamais affiché)
-const APP_PUB = '1.1.2';
+const APP_VER = 86; // numéro interne (jamais affiché)
+const APP_PUB = '1.2.2';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -825,7 +865,7 @@ try{
 }catch(e){} // numéro public
 try{ const li = document.querySelector('link[rel="apple-touch-icon"]'); if(li) document.getElementById('wmLogo').src = li.href; }catch(e){}
 const COLORS = ['#6fa8ff','#f2b544','#c58bff','#4fd1b5','#ff8a65','#9be15d','#ff7eb6'];
-const HDR = 216, CEIL = Math.pow(10, -1 / 20);
+let HDR = 216; const CEIL = Math.pow(10, -1 / 20);
 const store = {
   get(k, d){ try{ const v = localStorage.getItem('cabine.' + k); return v === null ? d : JSON.parse(v); }catch(e){ return d; } },
   set(k, v){ try{ localStorage.setItem('cabine.' + k, JSON.stringify(v)); }catch(e){} }
@@ -1609,7 +1649,7 @@ function renderTracks(){
   S.tracks.forEach(t => {
     const row = document.createElement('div');
     const lk = isLocked(t);
-    row.className = 'row' + (lk ? ' locked' : '') + (t.keep ? ' kept' : ''); row.dataset.id = t.id;
+    row.className = 'row' + (lk ? ' locked' : '') + (t.keep ? ' kept' : ''); row.dataset.id = t.id; row.dataset.preset = t.preset;
     row.innerHTML = `
       <div class="hdr">
         <div class="l1"><button class="swatch" data-act="color" style="background:${t.color}" aria-expanded="${colorOpen === t.id}" aria-label="Couleur de la piste" title="Changer la couleur"></button>
@@ -2809,6 +2849,7 @@ $('#bDict').onclick = () => {
 };
 ['keyup', 'click', 'select'].forEach(ev => ta.addEventListener(ev, lstat));
 function renderPrompt(){
+  try{ updLineUI(); }catch(e){}
   const lines = ta.value.split('\n'), box = $('#prompt');
   if(!lines.some(l => l.trim() && !isHead(l))){ box.innerHTML = '<div class="hint">Écris ton texte dans l\'onglet Écrire. Ici, lance la lecture et appuie sur « Caler la ligne suivante » au début de chaque ligne : le prompteur suivra ensuite tout seul.</div>'; return; }
   const VS = Object.keys(syncs).length ? {} : (AUTO.sync ? virtualSyncs() : {});
@@ -2837,18 +2878,38 @@ function setTextStart(t){
   if(syncsAuto && !store.get('syncsTid', null)){ syncs = {}; store.set('syncs', syncs); }
   if(!$('#viewP').hidden) renderPrompt();
 }
+function updLineUI(){
+  document.querySelectorAll('[data-lb]').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.lb === (S.lineBars || 0))));
+  const md = $('#tsMode'); if(md) md.textContent = S.lineBars ? ({0.5: '½ mesure', 1: '1 mesure', 2: '2 mesures'}[S.lineBars]) + ' par ligne' : 'auto';
+  const bp = $('#tsBpm'); if(bp) bp.textContent = Math.round(S.bpm * 10) / 10;
+}
+const tempoSynced = () => !Object.keys(syncs).length || (syncsAuto && store.get('syncsTid', null) == null);
+function reTempo(){ if(tempoSynced() && Object.keys(syncs).length) syncs = virtualSyncs(), store.set('syncs', syncs); renderPrompt(); updLineUI(); scheduleSave(); }
+document.querySelectorAll('[data-lb]').forEach(b => b.onclick = () => {
+  S.lineBars = +b.dataset.lb; reTempo();
+  toast((S.lineBars ? 'Une ligne = ' + b.textContent : 'Vitesse auto : chaque ligne dure le temps de la dire') + '.' + (tempoSynced() ? '' : ' Ton texte est calé sur ta prise : touche « 🎵 Caler sur le tempo » pour appliquer.'));
+});
+document.querySelectorAll('[data-bx]').forEach(b => b.onclick = () => {
+  const v = Math.round(Math.min(220, Math.max(40, S.bpm * +b.dataset.bx)) * 10) / 10;
+  if(v === S.bpm){ toast('Tempo déjà au bout (40 à 220).'); return; }
+  $('#bpm').value = v; $('#bpm').onchange({ target: $('#bpm') }); reTempo();
+  toast('Tempo passé à ' + v + ' BPM (échos et métronome suivent).');
+});
 $('#tsHere').onclick = () => { setTextStart(now()); toast('📍 Les paroles commencent à ' + fmt(S.textStart, true) + '.'); };
 $('#tsMinus').onclick = () => setTextStart((S.textStart || 0) - 4 * 60 / S.bpm);
 $('#tsPlus').onclick = () => setTextStart((S.textStart || 0) + 4 * 60 / S.bpm);
 const normSec = x => x.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '');
 /* Calage « virtuel » quand rien n'est calé : une ligne par mesure à partir du début des paroles, chaque section sur son repère s'il existe */
 function virtualSyncs(){
-  const lines = ta.value.split('\n'), bar = 4 * 60 / S.bpm, m = {};
+  const lines = ta.value.split('\n'), beat = 60 / S.bpm, m = {};
+  const rate = clamp(store.get('sylRate', 5), 2.5, 9);
+  /* auto : la ligne dure le temps de la dire (syllabes ÷ ton débit), arrondi au temps près pour rester sur la grille */
+  const durOf = l => S.lineBars ? 4 * beat * S.lineBars : Math.max(2, Math.round(Math.max(1, syl(l)) / rate / beat)) * beat;
   let cur = S.textStart || 0;
   lines.forEach((l, i) => {
     if(!l.trim()) return;
     if(isHead(l)){ const mk = S.markers.find(x => normSec(x.name) === normSec(l.trim().slice(1, -1))); if(mk) cur = Math.max(cur, mk.t); return; }
-    m[i] = cur; cur += bar;
+    m[i] = cur; cur += durOf(l);
   });
   return m;
 }
@@ -2890,10 +2951,21 @@ function alignLyrics(buf, offset){
   }
   return out;
 }
+/* ton débit (syllabes par seconde), appris sur tes prises : sert au calage auto des sons suivants */
+function learnRate(m){
+  try{
+    const lines = ta.value.split('\n'), ks = Object.keys(m).map(Number).sort((a, b) => a - b), r = [];
+    for(let k = 0; k + 1 < ks.length; k++){ const d = m[ks[k + 1]] - m[ks[k]]; if(d > 0.4 && d < 12) r.push(Math.max(1, syl(lines[ks[k]])) / d); }
+    if(r.length < 3) return;
+    r.sort((a, b) => a - b); const med = clamp(r[r.length >> 1], 2.5, 9);
+    store.set('sylRate', Math.round((store.get('sylRate', 5) * 0.5 + med * 0.5) * 100) / 100);
+  }catch(e){}
+}
 function autoSyncFrom(t, quiet){
   if(!t?.buffer) return false;
   const m = alignLyrics(t.buffer, t.offset); if(!m) return false;
   syncs = m; syncsAuto = true; store.set('syncs', syncs); store.set('syncsAuto', true); store.set('syncsTid', t.uid || t.id);
+  learnRate(m);
   if(!$('#viewP').hidden) renderPrompt();
   if(!quiet) toast('📝 Prompteur calé tout seul sur ta prise de « ' + t.name + ' ». Vérifie dans Texte > Prompteur.');
   return true;
@@ -2911,7 +2983,7 @@ $('#syncTake').onclick = () => {
 };
 $('#syncTempo').onclick = () => {
   if(!ta.value.trim()){ toast('Écris d\'abord ton texte dans l\'onglet Écrire.'); return; }
-  if(syncToTempo()) toast('🎵 Texte calé sur le tempo : une ligne par mesure à partir de ' + fmt(S.textStart || 0, true) + (S.markers.length ? ', chaque section sur son repère' : '') + '. Une prise le recalera sur ta voix.');
+  if(syncToTempo()) toast('🎵 Texte calé sur le tempo' + (S.lineBars ? ' : une ligne = ' + ({0.5: '½ mesure', 1: '1 mesure', 2: '2 mesures'}[S.lineBars]) : ', chaque ligne le temps de la dire') + ', à partir de ' + fmt(S.textStart || 0, true) + (S.markers.length ? ', chaque section sur son repère' : '') + '. Une prise le recalera sur ta voix.');
 };
 let curLine = null;
 /* ---------- Pendant la prise : le texte s'affiche tout seul (ou on propose de l'écrire) ---------- */
@@ -3191,7 +3263,7 @@ async function saveSession(){
     }
     const rec = { id: sess.id, name: sess.name, link: sess.link || '', created: sess.created || Date.now(), updated: Date.now(),
       bpm: S.bpm, instruKey: S.instruKey || null, markers: S.markers, loopBars: S.loop.bars, dur: trackEnd(),
-      lyrics: ta.value, syncs, syncsAuto, syncsTid: store.get('syncsTid', null), textStart: S.textStart || 0,
+      lyrics: ta.value, syncs, syncsAuto, syncsTid: store.get('syncsTid', null), textStart: S.textStart || 0, lineBars: S.lineBars || 0,
       M: { preset: M.preset, low: M.low, high: M.high, glue: M.glue, target: M.target }, tracks };
     await dbDo('sessions', 'readwrite', st => st.put(JSON.parse(JSON.stringify(rec))));
     const i = sessIndex.findIndex(x => x.id === rec.id), lite = { id: rec.id, name: rec.name, link: rec.link, updated: rec.updated, dur: rec.dur };
@@ -3227,7 +3299,7 @@ async function loadSession(id){
   S.instruKey = rec.instruKey || null; S.markers = rec.markers || []; S.loop = { on: false, bars: rec.loopBars || 4, start: 0 };
   /* chaque son a son propre texte et son propre calage */
   if(rec.lyrics != null){ ta.value = rec.lyrics; syncs = rec.syncs || {}; syncsAuto = rec.syncsAuto ?? true; store.set('syncsTid', rec.syncsTid ?? null); }
-  S.textStart = rec.textStart || 0;
+  S.textStart = rec.textStart || 0; S.lineBars = rec.lineBars || 0; try{ updLineUI(); }catch(e){}
   store.set('lyrics', ta.value); store.set('syncs', syncs); store.set('syncsAuto', syncsAuto); lstat(); if(!$('#viewP').hidden) renderPrompt(); updTextStart();
   Object.assign(M, rec.M || {}); mpre.set();
   sess = { id: rec.id, name: rec.name, link: rec.link, created: rec.created }; store.set('sessId', rec.id);
@@ -3256,7 +3328,7 @@ async function newSession(){
   [['Instru', 'instru'], ['Lead', 'lead'], ['Refrain', 'lead'], ['Back', 'back'], ['Ambiance', 'ambiance']].forEach(([n, p]) => addTrack(n, p));
   defaultRefrain();
   S.markers = []; S.loop.on = false; S.instruKey = null; S.pos = 0; S.sel = null;
-  ta.value = ''; syncs = {}; syncsAuto = true; S.textStart = 0; store.set('lyrics', ''); store.set('syncs', {}); store.set('syncsAuto', true); store.set('syncsTid', null); lstat(); updTextStart();
+  ta.value = ''; syncs = {}; syncsAuto = true; S.textStart = 0; S.lineBars = 0; store.set('lyrics', ''); store.set('syncs', {}); store.set('syncsAuto', true); store.set('syncsTid', null); lstat(); updTextStart();
   sess = { id: null, name: '', link: '', created: 0 }; store.set('sessId', null);
   sessReady = true;
   renderTracks(); renderMix(); renderSessBar(); renderLoopUI(); setSessState('Nouvelle session');
@@ -4543,7 +4615,7 @@ const TOUR = [
   { sel: ['#list .row:nth-child(2) .lane'], t: 'La timeline', b: 'Glisse le doigt pour avancer dans le morceau. Une touche place la lecture. Un appui long sur une phrase la sélectionne : tu peux la supprimer, la déplacer ou l\'envoyer sur une autre piste.\nPour bosser au poil : touche deux fois une prise, ou sa loupe 🔍. Elle s\'ouvre en grand : tu sélectionnes au doigt, tu écoutes en boucle, et tu coupes, montes le son, fais un fondu, répètes un passage, coupes tous les blancs d\'un coup (parfait pour les backs) ou recales la prise de 10 ms en 10 ms. La barre du haut (lecture, pause, REC) reste là.' },
   { sel: ['#zOut', '#zIn'], t: 'Le zoom', b: 'Les loupes zooment et dézooment la timeline. Zoome pour couper une phrase au poil près.' },
   { sel: ['#plusBtn'], t: 'Le bouton +', b: 'Ajoute une piste, pose un repère (couplet, refrain), lance une boucle pour refaire juste une phrase, et retrouve toutes tes sessions. Tout se sauvegarde tout seul.' },
-  { sel: ['#bSet'], t: 'Réglages', b: 'Mets ton blaze : il signe tes pistes. Tout est rangé par rubriques : enregistrement (tempo, décompte, métronome), écoute (Auto, Casque ou Haut-parleur) si la pastille d\'écoute se trompe. Dans « Automatique ou manuel », tu choisis ce que je fais tout seul : retour voix, texte pendant la prise, calage du texte, réglage des niveaux. Et si tu veux refaire ton premier son pas à pas : « 🎤 Premier son guidé ».' },
+  { sel: ['#bSet'], t: 'Réglages', b: 'Ouverts, ils ont un cadre jaune et le bouton devient « ✕ Fermer ». Tout en haut, « Affichage » : Simple (l\'essentiel, étape par étape) ou Avancé (tous les outils). Mets ton blaze : il signe tes pistes. Tout est rangé par rubriques : enregistrement (tempo, décompte, métronome), écoute (Auto, Casque ou Haut-parleur) si la pastille d\'écoute se trompe. Dans « Automatique ou manuel », tu choisis ce que je fais tout seul : retour voix, texte pendant la prise, calage du texte, réglage des niveaux. Et si tu veux refaire ton premier son pas à pas : « 🎤 Premier son guidé ».' },
   { sel: ['.nav [data-view=vMix]'], t: 'Mix', b: 'Ici tu peaufines ta voix. En haut, la zone à écouter : touche un ou plusieurs passages chantés (ou tire les poignées) et lance-les en boucle pendant que tu règles. « 🎯 Suit le chant » affiche tout seul la piste qui chante. Ensuite : les styles de voix en un appui, les effets en grand, l\'égaliseur et la compression pour aller loin. « Rééquilibrer » remet les niveaux d\'aplomb.' },
   { sel: ['.nav [data-view=vMaster]'], t: 'Master', b: 'La touche finale de ta maquette : un style et un volume (Streaming ou Fort). Ton son sort propre et fort, sans jamais saturer.' },
   { sel: ['.nav [data-view=vTexte]'], t: 'Texte', b: 'Écris tes lyrics ici, ou touche « 🎙️ Dicter mon texte » et dis-les : ils s\'écrivent tout seuls (relis, la dictée se trompe sur le rap). Le prompteur les fait défiler pendant que tu kickes. Je cale le texte tout seul : sur le tempo pendant ta première prise, puis pile sur ta voix une fois la prise posée. Tu peux toujours caler à la main. Le calage sort aussi en sous-titres dans tes Reels.' },
@@ -4842,7 +4914,8 @@ let tourI = -1, tourEl = null, TSTEPS = null;
 function startTour(force, steps){
   if(tourEl) return;
   if(!steps && !force && store.get('tourOff', false)) return;
-  TSTEPS = steps || TOUR;
+  if(steps) steps = steps.filter(st => !st.sel || tourEls(st).length);
+  TSTEPS = steps || (isSimple() ? SIMPLE_TOUR : TOUR);
   if(!steps) document.querySelector('.nav [data-view="vPistes"]').click();
   try{ closePlus(); }catch(e){}
   $('#settings').hidden = true; $('#bSet').setAttribute('aria-expanded', 'false');
@@ -4869,10 +4942,10 @@ function startTour(force, steps){
 }
 function endTour(){
   if(!tourEl) return;
-  if(TSTEPS === TOUR) track(tourI >= TSTEPS.length - 1 ? 'tuto-termine' : 'tuto-quitte-etape-' + (tourI + 1));
-  if(TSTEPS === TOUR) store.set('tourOff', !!$('#tOff')?.checked);
+  if(TSTEPS === TOUR || TSTEPS === SIMPLE_TOUR) track(tourI >= TSTEPS.length - 1 ? 'tuto-termine' : 'tuto-quitte-etape-' + (tourI + 1));
+  if(TSTEPS === TOUR || TSTEPS === SIMPLE_TOUR) store.set('tourOff', !!$('#tOff')?.checked);
   window.removeEventListener('resize', placeStep); window.removeEventListener('scroll', placeStep);
-  const wasMain = TSTEPS === TOUR;
+  const wasMain = TSTEPS === TOUR || TSTEPS === SIMPLE_TOUR;
   tourEl.remove(); tourEl = null; tourI = -1;
   if(wasMain) window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -4882,7 +4955,7 @@ function showStep(){
   $('#tTitle').textContent = st.t; $('#tBody').textContent = st.b;
   $('#tStepN').textContent = (tourI + 1) + ' / ' + TSTEPS.length;
   tourEl.querySelector('[data-t=prev]').disabled = tourI === 0;
-  tourEl.querySelector('.tnav [data-t=next]').textContent = tourI === TSTEPS.length - 1 ? (TSTEPS === TOUR ? 'C\'est parti 🎤' : 'Compris 👍') : 'Suivant →';
+  tourEl.querySelector('.tnav [data-t=next]').textContent = tourI === TSTEPS.length - 1 ? (TSTEPS === TOUR || TSTEPS === SIMPLE_TOUR ? 'C\'est parti 🎤' : 'Compris 👍') : 'Suivant →';
   $('#tOffRow').hidden = TSTEPS !== TOUR || !(tourI === 0 || tourI === TSTEPS.length - 1);
   $('#tChoice').hidden = !st.choice; tourEl.querySelector('.tnav [data-t=next]').hidden = !!st.choice;
   const els = tourEls(st);
@@ -4909,6 +4982,7 @@ $('#bTour').onclick = () => startTour(true);
 const HELP = {
   vPistes: [
     { t: 'L\'onglet Pistes', b: 'C\'est ta table d\'enregistrement : tes pistes à gauche, la timeline à droite. Je te montre tout ce qu\'il y a ici.' },
+    { sel: ['#stepBar'], t: 'Les étapes', b: 'En mode simple, tout se fait ici : une étape à la fois (instru, texte, voix, export, partage). Le gros bouton fait l\'action pour toi. Pour tous les outils : « Plus d\'outils (mode avancé) ».' },
     { sel: ['#sessTitle', '#sessState'], t: 'Ta session', b: 'Le nom de ton son et son état. « Sauvegardé » : tout est gardé dans le téléphone, rien à faire.' },
     { sel: ['#zOut', '#zIn'], t: 'Zoom', b: 'Les loupes resserrent ou élargissent la timeline. Zoome pour bosser une phrase, dézoome pour voir tout le morceau.' },
     { sel: ['#plusBtn'], t: 'Le +', b: 'Ajouter une piste, poser un repère (couplet, refrain), lancer une boucle de quelques mesures pour refaire une phrase, renommer ta session, la lier à un projet et retrouver toutes tes sessions.' },
@@ -4947,7 +5021,7 @@ const HELP = {
     { sel: ['.secbar'], t: 'Les sections', b: 'Ajoute Intro, Couplet (numéroté tout seul), Pré-refrain, Refrain, Pont ou Outro là où est ton curseur. Un deuxième Refrain recopie le premier, tu modifies si besoin.' },
     { sel: ['#lstat'], t: 'Les syllabes', b: 'Le nombre de syllabes de la ligne où tu es, pour équilibrer tes rimes et ton flow.' },
     { sel: ['#bDict'], t: 'Dicter', b: 'Dis tes lignes a cappella, elles s\'écrivent toutes seules, une par pause. Relis : le rap piège la dictée.' },
-    { t: 'Le prompteur', b: 'Règle « Les paroles commencent à » (📍 Ici, ou ± 1 mesure) pour que l\'intro de l\'instru ne fasse pas défiler le texte. Pose des repères au nom de tes sections (+ → Repère) : chaque section démarre pile dessus. Ensuite le texte se cale tout seul : sur le tempo pendant ta première prise, puis sur ta voix une fois la prise posée. Tu peux aussi caler à la main (« Caler la ligne suivante » au début de chaque ligne pendant la lecture), ou forcer « Caler sur ma prise » / « Caler sur le tempo ». Pendant REC, ton texte s\'affiche en bas tout seul.' }
+    { t: 'Le prompteur', b: 'Règle « Les paroles commencent à » (📍 Ici, ou ± 1 mesure) pour que l\'intro de l\'instru ne fasse pas défiler le texte. Pose des repères au nom de tes sections (+ → Repère) : chaque section démarre pile dessus. La vitesse du texte est automatique : chaque ligne dure le temps de la dire, et l\'appli apprend ton débit à chaque prise. Pour forcer, ouvre « Vitesse du texte ». Ensuite le texte se cale tout seul : sur le tempo pendant ta première prise, puis sur ta voix une fois la prise posée. Tu peux aussi caler à la main (« Caler la ligne suivante » au début de chaque ligne pendant la lecture), ou forcer « Caler sur ma prise » / « Caler sur le tempo ». Pendant REC, ton texte s\'affiche en bas tout seul.' }
   ],
   vProjets: [
     { t: 'L\'onglet Projets', b: 'Pour préparer un single, un EP ou un album.' },
@@ -4956,7 +5030,7 @@ const HELP = {
   ],
   vPartager: [
     { t: 'L\'onglet Partager', b: 'Tout ce qui sort de l\'appli : ton son, tes Reels, tes pistes pour un ingé son, ta session pour un collègue.' },
-    { sel: ['#bMaster'], t: 'Exporter ton son', b: 'Fabrique ton morceau final avec le master. Ensuite : partager en MP3 ou enregistrer en WAV (meilleure qualité).' },
+    { sel: ['#bMaster'], t: 'Exporter ton son', b: 'Fabrique ton morceau final avec le master. Ensuite : partager en MP3 ou enregistrer en WAV (meilleure qualité). Si tu retouches ton son après (Mix, effets, prises), l\'ancien fichier disparaît et un message te dit de réexporter : tu n\'envoies jamais une vieille version.' },
     { sel: ['#rsCanvas', '#rsPlay'], t: 'Le studio Reel', b: 'L\'aperçu de ta vidéo verticale. ▶ Aperçu pour la voir bouger avant de la créer.' },
     { sel: ['#reelMode'], t: '1 · Le fond', b: 'L\'appli qui tourne, une photo ou une affiche, une vidéo, ou un selfie filmé en direct.' },
     { sel: ['#reelFilter'], t: '2 · Le look', b: 'Un filtre de couleur sur toute la vidéo.' },
@@ -5227,6 +5301,86 @@ function showBeta(){
     if(b === 'avis') openAvis();
   });
 }
+/* ---------- Mode simple : les étapes d'un son, une à la fois ---------- */
+const isSimple = () => store.get('uiMode', 'simple') === 'simple';
+const SIMPLE_TOUR = [
+  TOUR[0], TOUR[1],
+  { sel: ['#stepBar'], t: 'Suis les étapes 👇', b: 'Tout se fait ici, une étape à la fois : charge ton instru, écris ton texte, enregistre ta voix, réécoute, exporte. Le gros bouton fait l\'action pour toi.' },
+  { sel: ['#bSet'], t: 'Plus d\'outils ?', b: 'Effets détaillés, Mix, Master, éditeur de prise, projets… Tout est dans Réglages → Affichage → « Avancé ». Tu peux revenir au mode simple quand tu veux.' },
+  { t: 'À toi de kicker 🎤', b: 'C\'est parti : suis les étapes en haut de l\'écran. — Le Xel' }
+];
+function applyMode(){
+  const simple = isSimple();
+  document.body.classList.toggle('simple', simple);
+  HDR = simple ? 150 : 216; document.documentElement.style.setProperty('--hdr', HDR + 'px');
+  document.querySelectorAll('#modeSeg [data-mode]').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.mode === 'simple') === simple)));
+  if(simple){ const v = document.querySelector('.nav [aria-selected=true]')?.dataset.view; if(['vMix', 'vMaster', 'vProjets'].includes(v)) document.querySelector('.nav [data-view="vPistes"]').click(); }
+  stepKey = ''; renderTracks(); updStep();
+}
+/* sections réservées au mode avancé */
+(() => {
+  const pad = $('#vPartager .pad'); let adv = false;
+  if(pad) [...pad.children].forEach(el => { if(el.classList.contains('sec')) adv = /ingé son|collègue/i.test(el.textContent); if(adv) el.classList.add('adv'); });
+  document.querySelectorAll('#settings .autobox').forEach(bx => { if(/Automatique ou manuel/.test(bx.querySelector('.autot')?.textContent || '')) bx.classList.add('adv'); });
+})();
+document.querySelectorAll('#modeSeg [data-mode]').forEach(b => b.onclick = () => {
+  store.set('uiMode', b.dataset.mode); applyMode(); track('mode-' + b.dataset.mode);
+  toast(b.dataset.mode === 'simple' ? 'Mode simple : l\'essentiel, étape par étape.' : 'Mode avancé : tous les outils sont là. Le ? de chaque onglet explique tout.');
+});
+const stepEl = document.createElement('div'); stepEl.className = 'stepbar'; stepEl.id = 'stepBar';
+$('#vPistes .cardhead').after(stepEl);
+let stepKey = '', stepSkip = { sid: null, instru: false, text: false }, stepRetake = false;
+const vocalTracks = () => S.tracks.filter(t => t.preset !== 'instru');
+function armTrack(t){ if(!t || S.recording) return; S.tracks.forEach(x => x.arm = false); t.arm = true; renderTracks(); try{ if(monSrc){ detachMon(); attachMon(); } }catch(e){} }
+function updStep(){
+  if(!isSimple()) return;
+  if(stepSkip.sid !== (sess && sess.id)) stepSkip = { sid: sess && sess.id, instru: false, text: false };
+  const instru = S.tracks.find(t => t.preset === 'instru'), hasInstru = !!instru?.buffer;
+  const voc = vocalTracks(), hasTake = voc.some(t => t.buffer), lyr = ta.value.trim().length > 0;
+  const exported = !!lastMaster && masterSig === mixSig();
+  let n, st;
+  if(S.recording) st = 'rec';
+  else if(!hasInstru && !stepSkip.instru && !hasTake) { st = 'instru'; n = 1; }
+  else if(!lyr && !stepSkip.text && !hasTake) { st = 'text'; n = 2; }
+  else if(!hasTake || stepRetake) { st = 'voice'; n = 3; }
+  else if(!exported) { st = 'export'; n = 4; }
+  else { st = 'done'; n = 5; }
+  if(st === 'voice' && !S.tracks.some(t => t.arm)){ const f = voc.find(t => !t.buffer) || voc[0]; if(f){ S.tracks.forEach(x => x.arm = false); f.arm = true; renderTracks(); } }
+  const armed = S.tracks.find(t => t.arm);
+  const key = [st, armed && armed.id, voc.map(t => t.name + (t.buffer ? 1 : 0)).join(','), S.playing].join('|');
+  if(key === stepKey) return; stepKey = key;
+  const dots = `<div class="stdots">${[1, 2, 3, 4, 5].map(i => `<i class="${i <= (n || 3) ? 'on' : ''}"></i>`).join('')}</div>`;
+  const chips = `<div class="stchips">${voc.map(t => `<button class="sbtn" data-sarm="${t.id}" aria-pressed="${!!t.arm}">${esc(t.name)}${t.buffer ? ' ✓' : ''}</button>`).join('')}</div>`;
+  const adv = '<button class="stadv" data-s="adv">🧰 Plus d\'outils (mode avancé)</button>';
+  let h = '';
+  if(st === 'rec') h = `<div class="stn">● Enregistrement</div><h3>Ça tourne, kicke 🎤</h3><p>Retouche REC (ou le bouton ici) quand tu as fini.</p><div class="stb"><button class="sbtn primary big" data-s="stop">⏹ Arrêter</button></div>`;
+  else if(st === 'instru') h = `${dots}<div class="stn">Étape 1 sur 5</div><h3>Charge ton instru</h3><p>Le beat sur lequel tu vas kicker (MP3 ou WAV, depuis ton téléphone).</p><div class="stb"><button class="sbtn primary big" data-s="instru">📂 Choisir mon instru</button><button class="sbtn" data-s="noinstru">Je kicke sans instru</button></div>`;
+  else if(st === 'text') h = `${dots}<div class="stn">Étape 2 sur 5</div><h3>Écris ton texte</h3><p>Pas obligé, mais il défilera tout seul pendant que tu enregistres.</p><div class="stb"><button class="sbtn primary big" data-s="write">✍️ Écrire mon texte</button><button class="sbtn" data-s="notext">Passer</button></div>`;
+  else if(st === 'voice') h = `${dots}<div class="stn">Étape 3 sur 5</div><h3>Enregistre ta voix</h3><p>Choisis la piste, puis appuie sur REC. Un décompte part, et tu kickes.</p>${chips}<div class="stb"><button class="sbtn primary big" data-s="rec">● Enregistrer${armed ? ' sur ' + esc(armed.name) : ''}</button>${hasTake ? '<button class="sbtn" data-s="next">C\'est bon, suite →</button>' : ''}</div>`;
+  else if(st === 'export') h = `${dots}<div class="stn">Étape 4 sur 5</div><h3>Réécoute et exporte</h3><p>Ça te va ? Exporte ton son. Sinon, refais une prise ou ajoute une voix (refrain, backs).</p><div class="stb"><button class="sbtn primary big" data-s="export">📤 Exporter mon son</button><button class="sbtn" data-s="play">${S.playing ? '⏸ Pause' : '▶ Réécouter'}</button><button class="sbtn" data-s="retake">🎤 Refaire / ajouter une voix</button></div>`;
+  else h = `${dots}<div class="stn">Étape 5 sur 5</div><h3>Ton son est prêt 🔥</h3><p>Envoie-le où tu veux, ou fais-en un Reel dans Partager.</p><div class="stb"><button class="sbtn primary big" data-s="share">📲 Partager mon son</button><button class="sbtn" data-s="reel">🎬 Faire un Reel</button><button class="sbtn" data-s="retake">🎤 Retoucher</button></div>`;
+  stepEl.innerHTML = h + adv;
+}
+stepEl.addEventListener('click', async e => {
+  const sa = e.target.closest('[data-sarm]'); if(sa){ armTrack(trackById(+sa.dataset.sarm) || S.tracks.find(t => String(t.id) === sa.dataset.sarm)); stepKey = ''; updStep(); return; }
+  const a = e.target.closest('[data-s]')?.dataset.s; if(!a) return;
+  const instru = S.tracks.find(t => t.preset === 'instru');
+  if(a === 'instru'){ if(instru){ importFor = instru; $('#file').click(); } }
+  else if(a === 'noinstru') stepSkip.instru = true;
+  else if(a === 'write'){ document.querySelector('.nav [data-view="vTexte"]').click(); setTimeout(() => ta.focus(), 150); }
+  else if(a === 'notext') stepSkip.text = true;
+  else if(a === 'rec' || a === 'stop'){ if(a === 'rec' && !S.tracks.some(t => t.arm)) armTrack(vocalTracks().find(t => !t.buffer) || vocalTracks()[0]); stepRetake = false; record(); }
+  else if(a === 'next') stepRetake = false;
+  else if(a === 'retake'){ stepRetake = true; const nx = vocalTracks().find(t => !t.buffer); if(nx) armTrack(nx); }
+  else if(a === 'play') $('#bPlay').click();
+  else if(a === 'export') $('#bMaster').click();
+  else if(a === 'share') $('#bShareMp3').click();
+  else if(a === 'reel'){ document.querySelector('.nav [data-view="vPartager"]').click(); }
+  else if(a === 'adv'){ store.set('uiMode', 'adv'); applyMode(); track('mode-adv'); toast('Mode avancé : tous les outils sont là. Retour au simple dans Réglages → Affichage.'); return; }
+  stepKey = ''; updStep();
+});
+setInterval(updStep, 500);
+applyMode();
 setTimeout(showBeta, 300);
 { const b = $('#tNoTrack'); b.setAttribute('aria-pressed', String(store.get('noTrack', false)));
   if(store.get('noTrack', false)) b.hidden = false;
@@ -5336,7 +5490,11 @@ $('#bHome').onclick = () => seek(0);
 $('#bReload').onclick = () => { location.replace(location.pathname + '?v=' + Date.now()); };
 $('#bSet').onclick = () => { const st = $('#settings'); st.hidden = !st.hidden; $('#bSet').setAttribute('aria-expanded', !st.hidden); };
 /* Réglages ouverts : la barre du haut arrête de rester collée, sinon le défilement bloque */
-try{ const st = $('#settings'), tr = st.closest('.transport'); new MutationObserver(() => tr.classList.toggle('setopen', !st.hidden)).observe(st, { attributes: true, attributeFilter: ['hidden'] }); }catch(e){}
+try{ const st = $('#settings'), tr = st.closest('.transport'), bs = $('#bSet');
+  const sync = () => { tr.classList.toggle('setopen', !st.hidden); bs.textContent = st.hidden ? '⚙️ Réglages' : '✕ Fermer'; bs.setAttribute('aria-expanded', String(!st.hidden)); };
+  new MutationObserver(sync).observe(st, { attributes: true, attributeFilter: ['hidden'] }); sync();
+  document.querySelectorAll('[data-setclose]').forEach(b => b.onclick = () => { st.hidden = true; tr.scrollIntoView({ block: 'start', behavior: 'smooth' }); });
+}catch(e){}
 $('#bRec').onclick = record;
 $('#bpm').value = S.bpm;
 $('#bpm').onchange = e => {
