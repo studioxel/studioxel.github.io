@@ -435,6 +435,12 @@ body.ed-open .wmark{z-index:41}
 .instb .sbtn{height:40px;flex:none;font-weight:800}
 .insta{position:absolute;left:50%;bottom:-30px;transform:translateX(-50%);font-style:normal;font-size:26px;color:var(--accent);animation:instb 1.2s ease-in-out infinite}
 @keyframes instb{50%{transform:translate(-50%,6px)}}
+.vsc{border-style:dashed!important}
+.vsrow button{white-space:nowrap}
+.vsgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.vsgrid .sbtn{height:auto;min-height:54px;display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 10px;text-align:left}
+.vsgrid .sbtn b{font-size:14px}.vsgrid .sbtn span{font-size:11px;color:var(--muted)}
+.vsgrid .sbtn[aria-pressed=true]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--raise))}
 </style>
 </head>
 <body>
@@ -463,7 +469,8 @@ body.ed-open .wmark{z-index:41}
       <div class="bkrow"><label class="grp">Tempo (BPM) <input type="number" id="bpm" min="40" max="220" value="90"></label>
       <button class="toggle" id="tCount" aria-pressed="true" title="1 mesure de décompte avant la prise">Décompte</button>
       <button class="toggle" id="tMetro" aria-pressed="false">Métronome</button></div>
-      <p class="note">Le tempo est détecté tout seul quand tu importes ton instru. Change-le seulement s'il est faux.</p>
+      <div class="bkrow"><span class="grp">Pré-roulement</span><div class="seg" id="preSeg" role="group" aria-label="Pré-roulement"><button data-pr="0">Aucun</button><button data-pr="1">1 mesure</button><button data-pr="2">2 mesures</button></div></div>
+      <p class="note">Le tempo est détecté tout seul quand tu importes ton instru. Le pré-roulement : quand tu refais un passage sur une piste déjà enregistrée, tu réentends ta prise d'avant juste avant, puis l'enregistrement démarre pile au bon endroit (ça remplace le décompte).</p>
     </div>
     <div class="autobox"><div class="autot">Toi</div>
       <label class="grp">Ton blaze <input id="meName" style="width:120px;height:34px;background:var(--raise);border:1px solid var(--line);border-radius:6px;padding:0 8px;text-transform:none;letter-spacing:0" placeholder="ex. Xela"></label>
@@ -490,7 +497,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 68</span></div>
+      <span class="grp" id="ver">Version 69</span></div>
       <p class="note" id="envInfo"></p>
     </div>
   </div>
@@ -753,7 +760,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 68;
+const APP_VER = 69;
 try{ const li = document.querySelector('link[rel="apple-touch-icon"]'); if(li) document.getElementById('wmLogo').src = li.href; }catch(e){}
 const COLORS = ['#6fa8ff','#f2b544','#c58bff','#4fd1b5','#ff8a65','#9be15d','#ff7eb6'];
 const HDR = 216, CEIL = Math.pow(10, -1 / 20);
@@ -1094,11 +1101,13 @@ function play(at){
   playStartCtx = at ?? ctx.currentTime + 0.05;
   playStartPos = S.pos;
   S.tracks.forEach(t => {
-    if(!t.buffer || (S.recording && t.arm)) return;
+    const preOnly = S.recording && t.arm && recInfo?.pre > 0;
+    if(!t.buffer || (S.recording && t.arm && !preOnly)) return;
     const rel = playStartPos - t.offset;
     if(rel >= t.buffer.duration) return;
     const s = ctx.createBufferSource(); s.buffer = t.buffer; s.connect(t.chain.input);
     if(rel < 0) s.start(playStartCtx - rel); else s.start(playStartCtx, rel);
+    if(preOnly) s.stop(playStartCtx + recInfo.pre);
     sources.push(s);
   });
   S.playing = true;
@@ -1352,6 +1361,10 @@ async function record(){
   catch(e){ toast(e.name === 'NotAllowedError' ? 'Accès au micro refusé. Il faut ouvrir la page en ligne (https) et autoriser le micro.' : (e.message || 'Micro introuvable.')); return; }
   if(S.playing) pause();
   if(S.loop.on) S.pos = S.loop.start;
+  /* pré-roulement : on réentend sa prise d'avant 1 ou 2 mesures, puis l'enregistrement démarre pile à l'endroit voulu */
+  const preBars = store.get('preroll', 1), punchAt = S.pos;
+  const usePre = preBars > 0 && punchAt > 0.05 && !!t.buffer;
+  if(usePre) S.pos = Math.max(0, punchAt - preBars * 4 * 60 / S.bpm);
   if(!(await wake())){ releaseMic(true); toast('L\'iPhone a coupé le son en branchant le micro. Touche ▶ une fois, puis relance REC.'); return; }
   openMicGraph();
   if(S.mon){ detachMon(); attachMon(t); }
@@ -1375,6 +1388,11 @@ async function record(){
       if(len <= raw.sampleRate * 0.1){ toast('Prise trop courte, rien gardé.'); return; }
       let buf = ctx.createBuffer(raw.numberOfChannels, len, raw.sampleRate);
       for(let c = 0; c < raw.numberOfChannels; c++) buf.copyToChannel(raw.getChannelData(c).subarray(from), c);
+      if(recInfo.pre > 0){
+        const cut = Math.round(recInfo.pre * buf.sampleRate);
+        if(buf.length - cut <= buf.sampleRate * 0.1){ toast('Arrêté pendant le pré-roulement : rien gardé.'); return; }
+        buf = bufSlice(buf, cut, buf.length);
+      }
       /* Mise à niveau automatique de la prise : crête ramenée à −1 dB */
       let pk = 0;
       for(let c = 0; c < buf.numberOfChannels; c++){ const d = buf.getChannelData(c); for(let i = 0; i < d.length; i++){ const a = Math.abs(d[i]); if(a > pk) pk = a; } }
@@ -1401,8 +1419,10 @@ async function record(){
   S.recording = true; setRecUI(); if(AUTO.lyr) showRecLyrics();
   const beat = 60 / S.bpm;
   let t0 = ctx.currentTime + 0.15;
-  if(S.countIn){ const b = ctx.currentTime + 0.1; for(let i = 0; i < 4; i++) click(b + i * beat, i === 0); t0 = b + 4 * beat; }
-  recInfo = { punch: S.loop.on, end: S.loop.on ? loopEnd() : null, track: t, recStart, t0, pos: S.pos, b: S.countIn ? t0 - 4 * beat : null, beat, route: routeKey() };
+  const cIn = S.countIn && !usePre;
+  if(cIn){ const b = ctx.currentTime + 0.1; for(let i = 0; i < 4; i++) click(b + i * beat, i === 0); t0 = b + 4 * beat; }
+  recInfo = { punch: S.loop.on, end: S.loop.on ? loopEnd() : null, track: t, recStart, t0, pos: punchAt, playFrom: S.pos, pre: usePre ? punchAt - S.pos : 0, b: cIn ? t0 - 4 * beat : null, beat, route: routeKey() };
+  if(usePre) toast('⏪ Pré-roulement : écoute ta prise, l\'enregistrement démarre à ' + fmt(punchAt, true) + '.');
   play(t0);
 }
 function finishRec(){ S.recording = false; setRecUI(); hideRecLyrics(); if(rec && rec.state !== 'inactive') rec.stop(); }
@@ -1440,7 +1460,7 @@ function detectClickLatency(raw, info){
 const undoStack = [];
 let undoAt = 0, undoLbl = '';
 function snapTrack(t){
-  return { id: t.id, name: t.name, color: t.color, preset: t.preset, fx: { ...t.fx }, vr: t.vr, vol: t.vol, pan: t.pan,
+  return { id: t.id, name: t.name, color: t.color, preset: t.preset, vstyle: t.vstyle, fx: { ...t.fx }, vr: t.vr, vol: t.vol, pan: t.pan,
     mute: t.mute, solo: t.solo, arm: t.arm, offset: t.offset, buffer: t.buffer, take: t.take, takes: t.takes.map(k => ({ ...k })),
     trim: t.trim, atOn: t.atOn, at: { ...t.at }, lv: t.lv ? { ...t.lv } : undefined, vp: t.vp, adapted: t.adapted, semi: t.semi, bpmOrig: t.bpmOrig, origTake: t.origTake, uid: t.uid, owner: t.owner, ownerName: t.ownerName, keep: t.keep };
 }
@@ -1847,6 +1867,7 @@ function renderMix(){
     Object.keys(FXNAMES).filter(k => k !== 'perso' || cur.preset === 'perso')
       .map(k => `<option value="${k}" ${k === cur.preset ? 'selected' : ''}>${FXNAMES[k]}</option>`).join('')}</select></div>
     ${cur.adapted ? `<p class="note" style="color:var(--ok)">✓ Égaliseur et compression réglés sur ta voix${cur.vp?.f0med ? (cur.vp.f0med < 165 ? ' (voix grave)' : cur.vp.f0med < 255 ? ' (voix médium)' : ' (voix aiguë)') : ''}${cur.vp?.dr > 12 ? ', très dynamique' : ''}.</p>` : ''}
+    ${cur.preset !== 'instru' || cur.vstyle != null ? `<div class="field"><label>Style de voix en un appui</label><div class="vsgrid">${VSTYLES.map((v, i) => `<button class="sbtn" data-vsm="${i}" aria-pressed="${cur.vstyle === i}"><b>${v.n}</b><span>${v.d}</span></button>`).join('')}</div></div>` : ''}
     <div class="fxlist">
       ${fxRowHTML(cur, 'rev', 'Reverb')}
       ${fxRowHTML(cur, 'dly', 'Écho')}
@@ -1935,15 +1956,43 @@ async function fxAction(e, t){
 function refreshFx(){ if(!$('#vMix').hidden) renderMix(); else renderQuick(); }
 const quickTrack = () => S.tracks.find(x => x.arm) || selTrack();
 /* Effets propres à chaque piste, directement dans la piste */
+
+/* ---------- Styles de voix en un appui : EQ, compression et effets réglés d'un coup ---------- */
+const VSTYLES = [
+  { n: '🎤 Propre', d: 'Claire, nette, un peu d\'espace', fx: { low: -2, mid: 2.5, midF: 3000, high: 3, thr: -22, ratio: 4, makeup: -4, rev: FXL.rev[0], dly: FXL.dly[0], dbl: 0, sat: 0, rad: 0 } },
+  { n: '🖤 Sombre saturée', d: 'Grave, grain, sèche', fx: { low: 2, mid: -1.5, midF: 900, high: -1.5, thr: -26, ratio: 5, makeup: -3, rev: FXL.rev[0], dly: FXL.dly[0], dbl: 0, sat: 2, rad: 0 } },
+  { n: '☁️ Aérienne', d: 'Brillante, grande salle, écho', fx: { low: -3, mid: 1, midF: 3500, high: 5, thr: -22, ratio: 3, makeup: -3, rev: FXL.rev[2], dly: FXL.dly[1], dbl: FXL.dbl[0], sat: 0, rad: 0 } },
+  { n: '🌊 Noyée', d: 'Auto-tune Robot, doublée, planante', at: 2, fx: { low: -2, mid: 1, midF: 2500, high: 3, thr: -24, ratio: 4, makeup: -4, rev: FXL.rev[1], dly: FXL.dly[1], dbl: FXL.dbl[1], sat: 0, rad: 0 } },
+  { n: '🔥 Refrain qui claque', d: 'Large, présente, énergique', fx: { low: -2, mid: 2, midF: 2800, high: 4, thr: -24, ratio: 4, makeup: -3, rev: FXL.rev[1], dly: FXL.dly[1], dbl: FXL.dbl[2], sat: 1, rad: 0 } },
+  { n: '🎯 Brute', d: 'Sèche, en avant, sans effets', fx: { low: -1, mid: 3, midF: 3000, high: 2, thr: -20, ratio: 4, makeup: -3, rev: 0, dly: 0, dbl: 0, sat: 1, rad: 0 } },
+  { n: '📻 Lo-fi', d: 'Téléphone, grain, petite pièce', fx: { low: 0, mid: 0, midF: 1500, high: 0, thr: -22, ratio: 3, makeup: -2, rev: FXL.rev[0], dly: 0, dbl: 0, sat: 1, rad: 2 } }
+];
+async function applyVStyle(t, i){
+  const v = VSTYLES[i]; if(!t || !v) return;
+  if(isLocked(t)){ lockToast(t); return; }
+  pushUndo('le style de voix');
+  Object.assign(t.fx, v.fx); t.vstyle = i;
+  if(t.preset !== 'perso'){ t.preset = 'perso'; }
+  t.chain.set(t, audible(t), true);
+  if(v.at != null){
+    t.at.speed = AT_SP[v.at];
+    if(!(isTuned(t) || t.atOn)){ if(t.buffer && !t.keep && !(S.recording && t.arm)) await toggleAT(t); else t.atOn = true; }
+    else if(isTuned(t) && !t.keep) await applyAutotune(t);
+  }
+  remon(); refreshFx(); scheduleSave();
+  toast(v.n + ' sur « ' + t.name + ' » : ' + v.d.toLowerCase() + '. Tu peux retoucher chaque effet ensuite.');
+}
 const TFX_NAMES = { rev: 'Reverb', dly: 'Écho', dbl: 'Doubler', at: 'Auto-tune', sat: 'Chaleur', rad: 'Radio', vr: 'Sans voix' };
 const tfxKeys = t => t.preset === 'instru' ? ['vr'] : ['rev', 'dly', 'dbl', 'at', 'sat', 'rad'];
 const tfxOn = (t, k) => k === 'at' ? (isTuned(t) || !!t.atOn) : fxGet(t, k) > 0;
 function fxZoneHTML(t){
   const lk = isLocked(t);
-  let h = '<div class="fxchips">' + tfxKeys(t).map(k => {
+  const vsOpen = doseOpen && doseOpen.id === t.id && doseOpen.k === 'vs';
+  let h = '<div class="fxchips">' + (t.preset !== 'instru' ? `<button class="fxc vsc${vsOpen ? ' open' : ''}" data-vs="1" aria-expanded="${!!vsOpen}" ${lk ? 'disabled' : ''}>✨ Style</button>` : '') + tfxKeys(t).map(k => {
     const open = doseOpen && doseOpen.id === t.id && doseOpen.k === k;
     return `<button class="fxc${open ? ' open' : ''}" data-tfx="${k}" aria-pressed="${tfxOn(t, k)}" ${lk ? 'disabled' : ''}>${TFX_NAMES[k]}</button>`;
   }).join('') + '</div>';
+  if(!lk && vsOpen) h += `<div class="dose vsrow" role="group" aria-label="Styles de voix">${VSTYLES.map((v, i) => `<button data-vsl="${i}" aria-pressed="${t.vstyle === i}">${v.n}</button>`).join('')}</div>`;
   if(!lk && doseOpen && doseOpen.id === t.id && tfxOn(t, doseOpen.k)){
     const k = doseOpen.k, names = k === 'at' ? AT_N : LVN[k];
     const cur = k === 'at' ? nearest(AT_SP, t.at.speed) : nearest(LV[k], fxGet(t, k));
@@ -1956,7 +2005,7 @@ function updRowFx(t){
   if(z) z.innerHTML = fxZoneHTML(t);
 }
 function renderQuick(){ S.tracks.forEach(updRowFx); }
-$('#strip').addEventListener('click', e => fxAction(e, selTrack()));
+$('#strip').addEventListener('click', e => { const b = e.target.closest('[data-vsm]'); if(b){ applyVStyle(selTrack(), +b.dataset.vsm); return; } fxAction(e, selTrack()); });
 
 $('#strip').addEventListener('change', e => {
   const t0 = selTrack();
@@ -4267,13 +4316,13 @@ const TOUR = [
   { t: 'On commence comment ?', b: 'Deux façons de démarrer :\n🎤 Je te guide pour poser ton premier son, étape par étape : tu touches ce que je te montre, je m\'occupe du reste. Conseillé si c\'est ta première fois.\n📖 Ou je te fais le tour de tous les boutons.\nTu retrouves les deux dans Réglages quand tu veux.', choice: true },
   { sel: ['#list .row:nth-child(1) [data-act=import]'], t: 'Ton instru', b: 'Touche « Importer » sur la piste Instru et choisis ton beat (MP3 ou WAV). Je trouve tout seul le BPM et la tonalité, et je cale le niveau. C\'est la toute première chose à faire.' },
   { sel: ['#list .row:nth-child(2) .chip'], t: 'R, M, S', b: 'R arme la piste : c\'est là que ta voix va s\'enregistrer. M coupe la piste, S l\'écoute toute seule. De base t\'as Instru, Lead pour tes couplets, Refrain (déjà un peu doublé pour sonner plus large), Back et Ambiance. Arme Lead avant ton premier couplet.' },
-  { sel: ['#bRec'], t: 'REC', b: 'Piste armée ? Touche REC : 4 bips de décompte et tu kickes. La barre MICRO en haut bouge avec ta voix, ta prise se dessine sur la piste en direct, et ton texte s\'affiche en bas s\'il est écrit (onglet Texte). Retouche REC pour t\'arrêter. Si la piste a déjà une prise, la nouvelle se pose par-dessus à cet endroit (Annuler pour revenir). Pour garder les deux, ajoute une piste avec le + ou duplique avec ⧉ : c\'est toi qui décides.' },
+  { sel: ['#bRec'], t: 'REC', b: 'Piste armée ? Touche REC : 4 bips de décompte et tu kickes. La barre MICRO en haut bouge avec ta voix, ta prise se dessine sur la piste en direct, et ton texte s\'affiche en bas s\'il est écrit (onglet Texte). Retouche REC pour t\'arrêter. Si la piste a déjà une prise, la nouvelle se pose par-dessus à cet endroit (Annuler pour revenir), et tu réentends 1 mesure de ta prise d\'avant pour reprendre le flow pile au bon moment (pré-roulement, réglable). Pour garder les deux, ajoute une piste avec le + ou duplique avec ⧉ : c\'est toi qui décides.' },
   { sel: ['#bMon'], t: 'Retour 🎧', b: 'Allume-le pour t\'entendre en direct avec les effets de la piste armée, auto-tune compris, même sans enregistrer : parfait pour chauffer ta voix. Avec des écouteurs c\'est l\'idéal, et je l\'allume tout seul dès que je les détecte. Sur le haut-parleur ou en Bluetooth, garde le volume raisonnable : si ça siffle, je baisse tout seul.' },
   { sel: ['#routeChip'], t: 'Ton écoute', b: 'Ici je t\'affiche ce que j\'ai détecté : 🎧 tes écouteurs (AirPods…), 🚗 un Bluetooth de voiture ou d\'enceinte, ou 📱 le haut-parleur. Si je me trompe, touche-le et choisis toi-même.' },
   { sel: ['#bHome', '#bPlay', '#bStop', '#tProg'], t: 'Lecture', b: '▶ lance ou met en pause, ⏹ arrête, ⏮ revient au début. La barre en dessous montre où tu en es dans le son : touche-la ou glisse dessus pour te déplacer, les petits traits sont tes repères. Réécoute ta prise juste après l\'avoir posée, c\'est là que tu sais si elle est bonne.' },
   { sel: ['#bUndo'], t: 'Annuler', b: 'Une bêtise ? Annuler revient en arrière, étape par étape : une prise, un effet, une piste supprimée, tout s\'annule.' },
   { sel: ['#list .row:nth-child(2) .l2'], t: 'Volume et pan', b: 'VOL règle le niveau de la piste, PAN la place à gauche ou à droite. Je cale déjà les niveaux tout seul, tu peaufines si besoin. Astuce : le lead au centre, les backs un peu sur les côtés.' },
-  { sel: ['#list .row:nth-child(2) .fxzone'], t: 'Les effets', b: 'Touche un effet pour l\'allumer, retouche-le pour doser. Reverb pour l\'espace, Écho pour les fins de phrase, Doubler pour épaissir un refrain, Auto-tune pour corriger ou styliser (Naturel, Marqué, Robot, ou le mode Planant 🛸 avec tout le vibe), Chaleur pour du grain, Radio pour une voix filtrée façon téléphone ou lo-fi.\nLes doses changent vraiment le son : la Reverb passe d\'une pièce à une grande salle, l\'Écho d\'un slap court à un grand écho de fin de phrase. Ça se règle même en pleine prise.' },
+  { sel: ['#list .row:nth-child(2) .fxzone'], t: 'Les effets', b: '« ✨ Style » règle tout d\'un coup : Propre, Sombre saturée, Aérienne, Noyée, Refrain qui claque, Brute ou Lo-fi. Ou touche un effet pour l\'allumer, retouche-le pour doser. Reverb pour l\'espace, Écho pour les fins de phrase, Doubler pour épaissir un refrain, Auto-tune pour corriger ou styliser (Naturel, Marqué, Robot, ou le mode Planant 🛸 avec tout le vibe), Chaleur pour du grain, Radio pour une voix filtrée façon téléphone ou lo-fi.\nLes doses changent vraiment le son : la Reverb passe d\'une pièce à une grande salle, l\'Écho d\'un slap court à un grand écho de fin de phrase. Ça se règle même en pleine prise.' },
   { sel: ['#list .row:nth-child(2) [data-act=keep]', '#list .row:nth-child(2) [data-act=up]', '#list .row:nth-child(2) [data-act=down]', '#list .row:nth-child(2) [data-act=dup]', '#list .row:nth-child(2) [data-act=del]'], t: 'Cadenas, ordre, copie, poubelle', b: '🔓 verrouille une prise réussie : plus rien ne peut l\'abîmer par erreur. ↑ et ↓ (à droite du volume) montent ou descendent la piste : range-les dans l\'ordre que tu veux. ⧉ duplique la piste. ✕ la supprime.' },
   { sel: ['#list .row:nth-child(2) .swatch'], t: 'La couleur', b: 'Touche la pastille pour changer la couleur de la piste. Pratique pour t\'y retrouver quand t\'empiles les backs.' },
   { sel: ['#list .row:nth-child(2) .lane'], t: 'La timeline', b: 'Glisse le doigt pour avancer dans le morceau. Une touche place la lecture. Un appui long sur une phrase la sélectionne : tu peux la supprimer, la déplacer ou l\'envoyer sur une autre piste.\nPour bosser au poil : touche deux fois une prise, ou sa loupe 🔍. Elle s\'ouvre en grand : tu sélectionnes au doigt, tu écoutes en boucle, et tu coupes, montes le son, fais un fondu, répètes un passage ou recales la prise de 10 ms en 10 ms.' },
@@ -4875,6 +4924,8 @@ window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); instEv
 window.addEventListener('appinstalled', () => { instHide(); toast('📲 StudioXel est installé : lance-le depuis son icône.'); });
 setTimeout(instShow, 2500);
 setTimeout(() => { const el = $('#envInfo'); if(el) el.textContent = 'Ouvert sur : ' + envLine(); }, 1500);
+(() => { const seg = $('#preSeg'); const upd = () => seg.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.pr === store.get('preroll', 1))));
+  upd(); seg.addEventListener('click', e => { const b = e.target.closest('[data-pr]'); if(!b) return; store.set('preroll', +b.dataset.pr); upd(); toast(+b.dataset.pr ? '⏪ Pré-roulement : ' + b.textContent + ' de ta prise avant de réenregistrer.' : 'Pré-roulement coupé : décompte classique.'); }); })();
 $('#bGuide').onclick = () => startGuide();
 document.querySelectorAll('[data-auto]').forEach(b => {
   b.setAttribute('aria-pressed', String(!!AUTO[b.dataset.auto]));
@@ -4892,6 +4943,8 @@ list.addEventListener('click', async e => {
   if(!c && !d) return;
   const t = trackById(e.target.closest('.row').dataset.id); if(!t) return;
   if(isLocked(t)){ lockToast(t); return; }
+  if(c && c.dataset.vs){ doseOpen = doseOpen && doseOpen.id === t.id && doseOpen.k === 'vs' ? null : { id: t.id, k: 'vs' }; updRowFx(t); return; }
+  if(d && d.dataset.vsl != null){ await applyVStyle(t, +d.dataset.vsl); updRowFx(t); return; }
   if(c){
     const k = c.dataset.tfx;
     if(!tfxOn(t, k)){ doseOpen = { id: t.id, k }; await fxDo(t, k); }
