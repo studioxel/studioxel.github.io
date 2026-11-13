@@ -416,6 +416,14 @@ body.ed-open .wmark{z-index:41}
 .tstart .note{flex-basis:100%;margin:0}
 .pl.virt .t{opacity:.45;font-style:italic}
 .rlcd{font:700 13px var(--mono, ui-monospace);color:var(--accent);margin-right:auto}
+.tprog{flex-basis:100%;display:flex;align-items:center;gap:10px}
+.tpt{font:12px var(--mono, ui-monospace);color:var(--muted);min-width:34px;text-align:center}
+.tpbar{position:relative;flex:1;height:22px;cursor:pointer;touch-action:none}
+.tpbar::before{content:"";position:absolute;left:0;right:0;top:9px;height:4px;border-radius:2px;background:var(--line)}
+.tpbar > i{position:absolute;left:0;top:9px;height:4px;border-radius:2px;background:var(--accent);width:0}
+.tprog.rec .tpbar > i{background:var(--rec)}
+.tpbar b{position:absolute;top:4px;width:14px;height:14px;margin-left:-7px;border-radius:50%;background:var(--fg);box-shadow:0 1px 4px rgba(0,0,0,.5);left:0}
+.tpmk i{position:absolute;top:5px;width:2px;height:12px;margin-left:-1px;background:var(--muted);border-radius:1px}
 </style>
 </head>
 <body>
@@ -434,6 +442,11 @@ body.ed-open .wmark{z-index:41}
   <div class="grp" id="micGrp" hidden>Micro <div class="meter"><i id="meter"></i></div></div>
   <span class="spacer"></span>
   <button class="tbtn" id="bSet" aria-expanded="false" aria-controls="settings">Réglages</button>
+  <div class="tprog" id="tProg" role="slider" aria-label="Avancement de la lecture" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0">
+    <span class="tpt" id="tpCur">0:00</span>
+    <div class="tpbar" id="tpBar"><i id="tpFill"></i><div class="tpmk" id="tpMk"></div><b id="tpHead"></b></div>
+    <span class="tpt" id="tpTot">0:00</span>
+  </div>
   <div class="settings" id="settings" hidden>
     <label class="grp">BPM <input type="number" id="bpm" min="40" max="220" value="90"></label>
     <button class="toggle" id="tCount" aria-pressed="true" title="1 mesure de décompte avant la prise">Décompte</button>
@@ -453,7 +466,7 @@ body.ed-open .wmark{z-index:41}
     <button class="toggle" id="bTour">📖 Revoir le tuto</button>
     <button class="toggle" id="bAvis">💬 Donner mon avis</button>
     <button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-    <span class="grp" id="ver">Version 61</span>
+    <span class="grp" id="ver">Version 62</span>
     <span class="grp" id="latInfo" title="Le retard du téléphone est mesuré et corrigé tout seul à chaque prise">Calage auto</span>
   </div>
 </div>
@@ -703,7 +716,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 </section>
 
 <div class="help">
-  StudioXel · version 61.
+  StudioXel · version 62.
   Touche la pastille de couleur à gauche du nom d'une piste pour changer sa couleur.
   🔓 sur une piste verrouille une prise réussie : plus de réenregistrement, de coupe ni de déplacement par erreur.
   Glisse le doigt pour avancer dans la timeline. Touche une prise pour placer la lecture. Appui long : la phrase est sélectionnée pour la supprimer, la déplacer ou la copier. ⧉ duplique une piste.
@@ -724,7 +737,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 61;
+const APP_VER = 62;
 try{ const li = document.querySelector('link[rel="apple-touch-icon"]'); if(li) document.getElementById('wmLogo').src = li.href; }catch(e){}
 const COLORS = ['#6fa8ff','#f2b544','#c58bff','#4fd1b5','#ff8a65','#9be15d','#ff7eb6'];
 const HDR = 216, CEIL = Math.pow(10, -1 / 20);
@@ -4257,7 +4270,7 @@ const TOUR = [
   { sel: ['#bRec'], t: 'REC', b: 'Piste armée ? Touche REC : 4 bips de décompte et tu kickes. La barre MICRO en haut bouge avec ta voix, ta prise se dessine sur la piste en direct, et ton texte s\'affiche en bas s\'il est écrit (onglet Texte). Retouche REC pour t\'arrêter. Si la piste a déjà une prise, la nouvelle se pose par-dessus à cet endroit (Annuler pour revenir). Pour garder les deux, ajoute une piste avec le + ou duplique avec ⧉ : c\'est toi qui décides.' },
   { sel: ['#bMon'], t: 'Retour 🎧', b: 'Allume-le pour t\'entendre en direct avec les effets de la piste armée, auto-tune compris, même sans enregistrer : parfait pour chauffer ta voix. Avec des écouteurs c\'est l\'idéal, et je l\'allume tout seul dès que je les détecte. Sur le haut-parleur ou en Bluetooth, garde le volume raisonnable : si ça siffle, je baisse tout seul.' },
   { sel: ['#routeChip'], t: 'Ton écoute', b: 'Ici je t\'affiche ce que j\'ai détecté : 🎧 tes écouteurs (AirPods…), 🚗 un Bluetooth de voiture ou d\'enceinte, ou 📱 le haut-parleur. Si je me trompe, touche-le et choisis toi-même.' },
-  { sel: ['#bHome', '#bPlay', '#bStop'], t: 'Lecture', b: '▶ lance ou met en pause, ⏹ arrête, ⏮ revient au début. Réécoute ta prise juste après l\'avoir posée, c\'est là que tu sais si elle est bonne.' },
+  { sel: ['#bHome', '#bPlay', '#bStop', '#tProg'], t: 'Lecture', b: '▶ lance ou met en pause, ⏹ arrête, ⏮ revient au début. La barre en dessous montre où tu en es dans le son : touche-la ou glisse dessus pour te déplacer, les petits traits sont tes repères. Réécoute ta prise juste après l\'avoir posée, c\'est là que tu sais si elle est bonne.' },
   { sel: ['#bUndo'], t: 'Annuler', b: 'Une bêtise ? Annuler revient en arrière, étape par étape : une prise, un effet, une piste supprimée, tout s\'annule.' },
   { sel: ['#list .row:nth-child(2) .l2'], t: 'Volume et pan', b: 'VOL règle le niveau de la piste, PAN la place à gauche ou à droite. Je cale déjà les niveaux tout seul, tu peaufines si besoin. Astuce : le lead au centre, les backs un peu sur les côtés.' },
   { sel: ['#list .row:nth-child(2) .fxzone'], t: 'Les effets', b: 'Touche un effet pour l\'allumer, retouche-le pour doser. Reverb pour l\'espace, Écho pour les fins de phrase, Doubler pour épaissir un refrain, Auto-tune pour corriger ou styliser (Naturel, Marqué, Robot, ou le mode Planant 🛸 avec tout le vibe), Chaleur pour du grain, Radio pour une voix filtrée façon téléphone ou lo-fi.\nLes doses changent vraiment le son : la Reverb passe d\'une pièce à une grande salle, l\'Écho d\'un slap court à un grand écho de fin de phrase. Ça se règle même en pleine prise.' },
@@ -4798,7 +4811,26 @@ const peakOf = (an, buf) => { an.getFloatTimeDomainData(buf); let p = 0; for(let
 const sc = $('#scroller'), ph = $('#playhead'), clock = $('#clock');
 let userScrollAt = 0;
 ['touchstart', 'touchmove', 'wheel', 'pointerdown'].forEach(ev => sc.addEventListener(ev, () => { userScrollAt = Date.now(); }, { passive: true }));
-let outHold = 0, micHold = 0;
+let outHold = 0, micHold = 0, progKey = '';
+/* Barre d'avancement dans le bloc du haut : où tu en es dans le son, touche ou glisse pour te déplacer */
+function updProg(p){
+  const tot = Math.max(trackEnd(), 1), pct = clamp(p / tot, 0, 1) * 100;
+  $('#tpFill').style.width = pct + '%'; $('#tpHead').style.left = pct + '%';
+  $('#tpCur').textContent = fmt(p, true); $('#tpTot').textContent = fmt(trackEnd(), true);
+  $('#tProg').setAttribute('aria-valuenow', Math.round(pct));
+  $('#tProg').classList.toggle('rec', S.recording);
+  const key = tot + '|' + S.markers.map(m => m.t + m.name).join(',');
+  if(key !== progKey){ progKey = key; $('#tpMk').innerHTML = S.markers.map(m => `<i style="left:${clamp(m.t / tot, 0, 1) * 100}%" title="${esc(m.name)}"></i>`).join(''); }
+}
+(() => {
+  const bar = $('#tpBar'); let drag = false;
+  const at = e => { const r = bar.getBoundingClientRect(); return clamp((e.clientX - r.left) / r.width, 0, 1) * Math.max(trackEnd(), 1); };
+  bar.addEventListener('pointerdown', e => { if(S.recording) return; drag = true; bar.setPointerCapture(e.pointerId); seek(at(e)); });
+  bar.addEventListener('pointermove', e => { if(drag) seek(at(e)); });
+  bar.addEventListener('pointerup', () => { drag = false; });
+  bar.addEventListener('pointercancel', () => { drag = false; });
+  $('#tProg').addEventListener('keydown', e => { if(e.key === 'ArrowRight') seek(now() + 5); if(e.key === 'ArrowLeft') seek(Math.max(0, now() - 5)); });
+})();
 /* La prise se dessine sur la piste pendant que tu kickes */
 function liveLane(){
   const t = recInfo.track; if(!t) return null;
@@ -4835,6 +4867,7 @@ function loop(){
   const p = now(), x = HDR + p * S.pps;
   ph.style.left = x + 'px';
   clock.textContent = fmt(p);
+  updProg(p);
   if(S.playing && !$('#vPistes').hidden && Date.now() - userScrollAt > 2500){
     if(x > sc.scrollLeft + sc.clientWidth - 40 || x < sc.scrollLeft + HDR) sc.scrollLeft = x - HDR - 40;
   }
