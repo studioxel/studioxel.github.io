@@ -366,6 +366,13 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
 .wmark img{width:min(62vw,340px);aspect-ratio:1;object-fit:contain;opacity:.16;mix-blend-mode:screen;-webkit-mask-image:radial-gradient(circle,#000 50%,transparent 70%);mask-image:radial-gradient(circle,#000 50%,transparent 70%)}
 .wmark img:not([src]){display:none}
 .wmurl{position:fixed;right:max(10px,env(safe-area-inset-right,0px));bottom:max(8px,env(safe-area-inset-bottom,0px));font:700 11px var(--display, system-ui);letter-spacing:.04em;color:var(--fg);opacity:.32}
+.tour.guide{pointer-events:none}
+.tour.guide .tbub{pointer-events:auto}
+.tour.guide .tspot{animation:gpulse 1.6s ease-in-out infinite}
+.tour.guide.light .tspot{box-shadow:0 0 0 9999px rgba(5,6,10,.35)}
+@keyframes gpulse{50%{border-color:#fff;outline:3px solid color-mix(in srgb,var(--accent) 40%,transparent)}}
+.tchoice{display:flex;flex-direction:column;gap:8px}
+.tchoice .sbtn{height:46px;font-size:15px;font-weight:800}
 </style>
 </head>
 <body>
@@ -393,10 +400,11 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
     <div class="seg" id="outSeg" role="group" aria-label="Écoute"><button data-o="auto" aria-pressed="false">Auto</button><button data-o="casque" aria-pressed="false">Casque</button><button data-o="hp" aria-pressed="false">Haut-parleur</button></div>
     <span class="grp" id="outInfo"></span>
     <button class="toggle" id="tMon" aria-pressed="false" title="T'entendre en direct avec les effets, même sans enregistrer">Retour voix</button>
+    <button class="toggle" id="bGuide">🎤 Premier son guidé</button>
     <button class="toggle" id="bTour">📖 Revoir le tuto</button>
     <button class="toggle" id="bAvis">💬 Donner mon avis</button>
     <button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-    <span class="grp" id="ver">Version 54</span>
+    <span class="grp" id="ver">Version 55</span>
     <span class="grp" id="latInfo" title="Le retard du téléphone est mesuré et corrigé tout seul à chaque prise">Calage auto</span>
   </div>
 </div>
@@ -634,7 +642,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 </section>
 
 <div class="help">
-  StudioXel · version 54.
+  StudioXel · version 55.
   Touche la pastille de couleur à gauche du nom d'une piste pour changer sa couleur.
   🔓 sur une piste verrouille une prise réussie : plus de réenregistrement, de coupe ni de déplacement par erreur.
   Glisse le doigt pour avancer dans la timeline. Touche une prise pour placer la lecture. Appui long : la phrase est sélectionnée pour la supprimer, la déplacer ou la copier. ⧉ duplique une piste.
@@ -655,7 +663,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 54;
+const APP_VER = 55;
 try{ const li = document.querySelector('link[rel="apple-touch-icon"]'); if(li) document.getElementById('wmLogo').src = li.href; }catch(e){}
 const COLORS = ['#6fa8ff','#f2b544','#c58bff','#4fd1b5','#ff8a65','#9be15d','#ff7eb6'];
 const HDR = 216, CEIL = Math.pow(10, -1 / 20);
@@ -3952,7 +3960,7 @@ const TOUR = [
   { t: 'Comme une vraie appli 📲', b: ((navigator.standalone || matchMedia('(display-mode: standalone)').matches) ? 'Toi c\'est déjà fait ✅ Montre-le à tes potes kickeurs.\n\n' : '') + (/Android/i.test(navigator.userAgent)
     ? 'Mets StudioXel sur ton écran d\'accueil, avec son icône :\n1. Ouvre studioxel.github.io dans Chrome.\n2. Touche les 3 points ⋮ en haut à droite.\n3. Touche « Ajouter à l\'écran d\'accueil » (ou « Installer l\'appli »), puis Ajouter.\nEnsuite lance-la toujours depuis l\'icône.\n\nSur iPhone : dans Safari, Partager puis « Sur l\'écran d\'accueil ».'
     : 'Mets StudioXel sur ton écran d\'accueil, avec son icône :\n1. Ouvre studioxel.github.io dans Safari.\n2. Touche le bouton Partager (le carré avec la flèche).\n3. Descends et touche « Sur l\'écran d\'accueil », puis Ajouter.\nEnsuite lance-la toujours depuis l\'icône : plein écran, comme une vraie appli.\n\nSur Android : dans Chrome, les 3 points ⋮ puis « Ajouter à l\'écran d\'accueil ».') },
-  { t: 'Le tour du studio', b: 'Maintenant je te fais faire le tour du studio en deux minutes, bouton par bouton. Tu peux passer quand tu veux, et revoir le tuto dans Réglages.' },
+  { t: 'On commence comment ?', b: 'Deux façons de démarrer :\n🎤 Je te guide pour poser ton premier son, étape par étape : tu touches ce que je te montre, je m\'occupe du reste. Conseillé si c\'est ta première fois.\n📖 Ou je te fais le tour de tous les boutons.\nTu retrouves les deux dans Réglages quand tu veux.', choice: true },
   { sel: ['#list .row:nth-child(1) [data-act=import]'], t: 'Ton instru', b: 'Touche « Importer » sur la piste Instru et choisis ton beat (MP3 ou WAV). Je trouve tout seul le BPM et la tonalité, et je cale le niveau. C\'est la toute première chose à faire.' },
   { sel: ['#list .row:nth-child(2) .chip'], t: 'R, M, S', b: 'R arme la piste : c\'est là que ta voix va s\'enregistrer. M coupe la piste, S l\'écoute toute seule. De base t\'as Instru, Lead pour tes couplets, Refrain (déjà un peu doublé pour sonner plus large), Back et Ambiance. Arme Lead avant ton premier couplet.' },
   { sel: ['#bRec'], t: 'REC', b: 'Piste armée ? Touche REC : 4 bips de décompte et tu kickes. La barre MICRO en haut bouge avec ta voix, et ta prise se dessine sur la piste en direct. Retouche REC pour t\'arrêter. Si la piste a déjà une prise, la nouvelle se pose par-dessus à cet endroit (Annuler pour revenir). Pour garder les deux, ajoute une piste avec le + ou duplique avec ⧉ : c\'est toi qui décides.' },
@@ -3967,7 +3975,7 @@ const TOUR = [
   { sel: ['#list .row:nth-child(2) .lane'], t: 'La timeline', b: 'Glisse le doigt pour avancer dans le morceau. Une touche place la lecture. Un appui long sur une phrase la sélectionne : tu peux la supprimer, la déplacer ou l\'envoyer sur une autre piste.' },
   { sel: ['#zOut', '#zIn'], t: 'Le zoom', b: 'Les loupes zooment et dézooment la timeline. Zoome pour couper une phrase au poil près.' },
   { sel: ['#plusBtn'], t: 'Le bouton +', b: 'Ajoute une piste, pose un repère (couplet, refrain), lance une boucle pour refaire juste une phrase, et retrouve toutes tes sessions. Tout se sauvegarde tout seul.' },
-  { sel: ['#bSet'], t: 'Réglages', b: 'Mets ton blaze : il signe tes pistes. Tu y trouves aussi le décompte, le métronome et le réglage de l\'écoute (Auto, Casque ou Haut-parleur) si la pastille d\'écoute se trompe.' },
+  { sel: ['#bSet'], t: 'Réglages', b: 'Mets ton blaze : il signe tes pistes. Tu y trouves aussi le décompte, le métronome et le réglage de l\'écoute (Auto, Casque ou Haut-parleur) si la pastille d\'écoute se trompe. Et si tu veux refaire ton premier son pas à pas : « 🎤 Premier son guidé ».' },
   { sel: ['.nav [data-view=vMix]'], t: 'Mix', b: 'Les effets de chaque piste en grand, plus l\'égaliseur et la compression pour ceux qui veulent aller loin. « Rééquilibrer » remet les niveaux d\'aplomb.' },
   { sel: ['.nav [data-view=vMaster]'], t: 'Master', b: 'La touche finale de ta maquette : un style et un volume (Streaming ou Fort). Ton son sort propre et fort, sans jamais saturer.' },
   { sel: ['.nav [data-view=vTexte]'], t: 'Texte', b: 'Écris tes lyrics ici. Le prompteur les fait défiler pendant que tu kickes. Cale tes lignes une fois, elles sortiront aussi en sous-titres dans tes Reels.' },
@@ -3991,12 +3999,14 @@ function startTour(force){
       <div class="tw">${logoSrc ? `<img src="${logoSrc}" alt="">` : ''}Le Xel</div>
       <h3 id="tTitle"></h3><p id="tBody"></p>
       <label class="toff" id="tOffRow"><input type="checkbox" id="tOff" ${store.get('tourOff', false) ? 'checked' : ''}> Ne plus me montrer ce tuto</label>
+      <div class="tchoice" id="tChoice" hidden><button class="sbtn primary" data-t="guide">🎤 Guide-moi pour mon premier son</button><button class="sbtn" data-t="next">📖 Le tour des boutons</button></div>
       <div class="tnav"><button class="sbtn" data-t="skip">Passer</button><span class="tcount" id="tCount"></span><button class="sbtn" data-t="prev" aria-label="Précédent">←</button><button class="sbtn primary" data-t="next">Suivant →</button></div>
     </div>`;
   document.body.appendChild(tourEl);
   tourEl.addEventListener('click', e => {
     const b = e.target.closest('[data-t]'); if(!b) return;
     if(b.dataset.t === 'skip') return endTour();
+    if(b.dataset.t === 'guide'){ endTour(); return startGuide(); }
     if(b.dataset.t === 'prev' && tourI > 0){ tourI--; showStep(); }
     if(b.dataset.t === 'next'){ if(tourI >= TOUR.length - 1) return endTour(); tourI++; showStep(); }
   });
@@ -4016,8 +4026,9 @@ function showStep(){
   $('#tTitle').textContent = st.t; $('#tBody').textContent = st.b;
   $('#tCount').textContent = (tourI + 1) + ' / ' + TOUR.length;
   tourEl.querySelector('[data-t=prev]').disabled = tourI === 0;
-  tourEl.querySelector('[data-t=next]').textContent = tourI === TOUR.length - 1 ? 'C\'est parti 🎤' : 'Suivant →';
+  tourEl.querySelector('.tnav [data-t=next]').textContent = tourI === TOUR.length - 1 ? 'C\'est parti 🎤' : 'Suivant →';
   $('#tOffRow').hidden = !(tourI === 0 || tourI === TOUR.length - 1);
+  $('#tChoice').hidden = !st.choice; tourEl.querySelector('.tnav [data-t=next]').hidden = !!st.choice;
   const els = tourEls(st);
   if(els.length){
     const r = els[0].getBoundingClientRect(), topBar = $('.transport').getBoundingClientRect().bottom;
@@ -4038,6 +4049,99 @@ function placeStep(){
   bub.style.top = (below >= bh ? y1 + 12 : above >= bh ? y0 - 12 - bh : Math.max(12, innerHeight - bh - 12)) + 'px';
 }
 $('#bTour').onclick = () => startTour(true);
+/* ---------- Premier son guidé : l'utilisateur touche ce qu'on lui montre, on avance tout seul ---------- */
+const gLead = () => S.tracks.find(x => x.name === 'Lead') || S.tracks.find(x => x.preset === 'lead') || S.tracks.find(x => x.preset !== 'instru');
+const gInstru = () => S.tracks.find(x => x.preset === 'instru') || S.tracks[0];
+const gRow = t => t ? document.querySelector(`.row[data-id="${t.id}"]`) : null;
+const gIn = (t, q) => { const r = gRow(t); return r ? [...r.querySelectorAll(q)] : []; };
+let gFx0 = '';
+const fxSig = t => t ? JSON.stringify([t.fx.rev, t.fx.dly, t.fx.dbl, t.fx.sat, t.fx.rad, !!t.atOn, isTuned(t)]) : '';
+const GUIDE = [
+  { t: 'Ton premier son 🎤', b: 'On le fait ensemble. Je t\'indique où toucher, tu touches, et je passe à la suite tout seul. Si une étape ne te concerne pas, touche « Passer cette étape ».' },
+  { el: () => gIn(gInstru(), '[data-act=import]'), t: '1 · Ton instru', b: 'Touche « Importer » sur la piste Instru, puis choisis ton beat dans tes fichiers (MP3 ou WAV). Je trouve le BPM et la tonalité tout seul.', wait: () => !!gInstru()?.buffer },
+  { el: () => gIn(gLead(), '[data-act=arm]'), t: '2 · Arme ta piste', b: 'Touche le R de Lead : il passe au rouge. C\'est là que ta voix va s\'enregistrer.', wait: () => !!gLead()?.arm },
+  { el: () => [$('#bMon')], t: '3 · Écoute-toi (si tu veux)', b: 'Avec des écouteurs, touche 🎧 Retour pour t\'entendre en direct avec les effets. Sans écouteurs, passe cette étape.', wait: () => S.mon },
+  { el: () => [$('#bRec')], t: '4 · Enregistre', b: 'Touche REC. 4 bips de décompte, et tu kickes ! Pose quelques mesures, la barre MICRO doit bouger avec ta voix.', wait: () => S.recording, light: true },
+  { el: () => [$('#bRec')], t: '5 · Stop', b: 'Quand t\'as fini, retouche REC pour arrêter. Ta prise se dessine sur la piste.', wait: () => !S.recording && !!gLead()?.buffer, light: true },
+  { el: () => [$('#bHome'), $('#bPlay')], t: '6 · Réécoute', b: 'Touche ⏮ pour revenir au début, puis ▶ pour réécouter ta prise.', wait: () => S.playing },
+  { el: () => gIn(gLead(), '.fxzone'), t: '7 · Les effets', b: 'Touche un effet sur Lead, par exemple Doubler ou Auto-tune, et écoute la différence. Retouche-le pour choisir la dose.', start: () => { gFx0 = fxSig(gLead()); }, wait: () => fxSig(gLead()) !== gFx0 },
+  { el: () => [document.querySelector('.nav [data-view=vPartager]')], t: '8 · Direction Partager', b: 'Touche l\'onglet Partager.', wait: () => !$('#vPartager').hidden },
+  { el: () => [$('#bMaster')], t: '9 · Ton MP3', b: 'Touche « Exporter mon son » : le master se règle tout seul.', wait: () => !$('#shareRow').hidden },
+  { t: 'Bien joué 🔥', b: 'Ton premier son est fait ! Tu peux le partager en MP3, ou monter un Reel juste en dessous.\nPour voir tous les boutons : Réglages, puis « 📖 Revoir le tuto ».', end: true }
+];
+let gI = -1, gEl = null, gTimer = null, gDone = false;
+function startGuide(){
+  if(gEl) return;
+  if(tourEl) endTour();
+  document.querySelector('.nav [data-view="vPistes"]').click();
+  try{ closePlus(); }catch(e){}
+  $('#settings').hidden = true; $('#bSet').setAttribute('aria-expanded', 'false');
+  const logoSrc = document.querySelector('link[rel="apple-touch-icon"]')?.href || '';
+  gEl = document.createElement('div'); gEl.className = 'tour guide';
+  gEl.innerHTML = `<div class="tspot none"></div>
+    <div class="tbub" role="dialog" aria-label="Premier son guidé">
+      <div class="tw">${logoSrc ? `<img src="${logoSrc}" alt="">` : ''}Le Xel</div>
+      <h3 id="gTitle"></h3><p id="gBody"></p>
+      <div class="tnav"><button class="sbtn" data-g="stop">Arrêter</button><span class="tcount" id="gCount"></span><button class="sbtn primary" data-g="next">Passer cette étape</button></div>
+    </div>`;
+  document.body.appendChild(gEl);
+  gEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-g]'); if(!b) return;
+    if(b.dataset.g === 'stop') return endGuide();
+    if(b.dataset.g === 'next'){ if(GUIDE[gI].end) return endGuide(); gStep(gI + 1); }
+  });
+  gTimer = setInterval(gTick, 300);
+  gStep(0);
+}
+function endGuide(){
+  if(!gEl) return;
+  clearInterval(gTimer); gTimer = null; gEl.remove(); gEl = null; gI = -1;
+}
+const gEls = st => (st.el ? st.el() : []).filter(el => el && el.getClientRects().length);
+function gStep(i){
+  gI = Math.min(i, GUIDE.length - 1); gDone = false;
+  const st = GUIDE[gI];
+  if(st.start) st.start();
+  $('#gTitle').textContent = st.t; $('#gBody').textContent = st.b;
+  $('#gCount').textContent = st.end ? '' : (gI === 0 ? '' : gI + ' / ' + (GUIDE.length - 2));
+  const nb = gEl.querySelector('[data-g=next]');
+  nb.textContent = gI === 0 ? 'C\'est parti →' : st.end ? 'Terminer 🎤' : 'Passer cette étape';
+  nb.className = 'sbtn' + (gI === 0 || st.end ? ' primary' : '');
+  gEl.classList.toggle('light', !!st.light);
+  const els = gEls(st);
+  if(els.length){
+    const r = els[0].getBoundingClientRect(), topBar = $('.transport').getBoundingClientRect().bottom;
+    const fixed = els[0].closest('.transport, .nav');
+    if(!fixed && (r.top < topBar + 10 || r.bottom > innerHeight - 260)) window.scrollBy({ top: r.top - Math.max(topBar + 20, innerHeight * 0.3), behavior: 'auto' });
+  }
+  gPlace();
+}
+function gTick(){
+  if(!gEl) return;
+  const st = GUIDE[gI];
+  gPlace();
+  if(!gDone && st.wait && st.wait()){
+    gDone = true;
+    $('#gTitle').textContent = '✅ ' + st.t;
+    setTimeout(() => { if(gEl && GUIDE[gI] === st) gStep(gI + 1); }, 700);
+  }
+}
+function gPlace(){
+  if(!gEl || gI < 0) return;
+  const spot = gEl.querySelector('.tspot'), bub = gEl.querySelector('.tbub'), els = gEls(GUIDE[gI]);
+  if(!els.length){ spot.classList.add('none'); bub.style.top = Math.max(20, (innerHeight - bub.offsetHeight) / 2) + 'px'; return; }
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  els.forEach(el => { const r = el.getBoundingClientRect(); x0 = Math.min(x0, r.left); y0 = Math.min(y0, r.top); x1 = Math.max(x1, r.right); y1 = Math.max(y1, r.bottom); });
+  x0 = Math.max(4, x0 - 6); y0 = Math.max(4, y0 - 6); x1 = Math.min(innerWidth - 4, x1 + 6); y1 = Math.min(innerHeight - 4, y1 + 6);
+  spot.classList.remove('none');
+  Object.assign(spot.style, { left: x0 + 'px', top: y0 + 'px', width: (x1 - x0) + 'px', height: (y1 - y0) + 'px' });
+  const bh = bub.offsetHeight, below = innerHeight - y1 - 12, above = y0 - 12;
+  /* pendant la prise, la bulle descend en bas pour laisser voir la barre MICRO et la piste */
+  if(GUIDE[gI].light){ bub.style.top = Math.max(12, innerHeight - bh - 12) + 'px'; return; }
+  bub.style.top = (below >= bh ? y1 + 12 : above >= bh ? y0 - 12 - bh : Math.max(12, innerHeight - bh - 12)) + 'px';
+}
+$('#bGuide').onclick = () => startGuide();
+
 
 /* ---------- Page principale : effets par piste, menu « + » ---------- */
 function showSessTitle(){ const h = $('#sessTitle'); if(h) h.textContent = sess.name || 'Nouvelle session'; }
