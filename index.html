@@ -424,6 +424,10 @@ body.ed-open .wmark{z-index:41}
 .tprog.rec .tpbar > i{background:var(--rec)}
 .tpbar b{position:absolute;top:4px;width:14px;height:14px;margin-left:-7px;border-radius:50%;background:var(--fg);box-shadow:0 1px 4px rgba(0,0,0,.5);left:0}
 .tpmk i{position:absolute;top:5px;width:2px;height:12px;margin-left:-1px;background:var(--muted);border-radius:1px}
+.bkd .net{height:64px}
+.bkrow{display:flex;gap:6px;flex-wrap:wrap}
+.wbk{display:flex;flex-direction:column;gap:8px;margin-top:6px;padding:10px;border:1px dashed var(--accent);border-radius:10px;font-size:13px;color:var(--fg)}
+.wbk .sbtn{height:38px;font-weight:700}
 </style>
 </head>
 <body>
@@ -455,18 +459,23 @@ body.ed-open .wmark{z-index:41}
     <span class="grp">Écoute</span>
     <div class="seg" id="outSeg" role="group" aria-label="Écoute"><button data-o="auto" aria-pressed="false">Auto</button><button data-o="casque" aria-pressed="false">Casque</button><button data-o="hp" aria-pressed="false">Haut-parleur</button></div>
     <span class="grp" id="outInfo"></span>
+    <div class="autobox"><div class="autot">Ta sauvegarde</div>
+      <p class="note">Tous tes sons (audio, texte, réglages) dans un seul fichier. Range-le dans iCloud Drive, Google Drive, Dropbox ou OneDrive : tu le récupères sur n'importe quel téléphone.</p>
+      <div class="bkrow"><button class="toggle" data-bk="save">💾 Sauvegarder tous mes sons</button><button class="toggle" data-bk="load">♻️ Restaurer une sauvegarde</button></div>
+    </div>
     <div class="autobox"><div class="autot">Automatique ou manuel</div>
       <button class="toggle" data-auto="mon" aria-pressed="true">🎧 Retour voix auto avec écouteurs</button>
       <button class="toggle" data-auto="lyr" aria-pressed="true">📝 Texte affiché pendant la prise</button>
       <button class="toggle" data-auto="sync" aria-pressed="true">🎯 Texte calé tout seul</button>
       <button class="toggle" data-auto="level" aria-pressed="true">📏 Niveaux et voix réglés tout seuls</button>
+      <button class="toggle" data-auto="bk" aria-pressed="true">💾 Me rappeler de sauvegarder</button>
     </div>
     <button class="toggle" id="tMon" aria-pressed="false" title="T'entendre en direct avec les effets, même sans enregistrer">Retour voix</button>
     <button class="toggle" id="bGuide">🎤 Premier son guidé</button>
     <button class="toggle" id="bTour">📖 Revoir le tuto</button>
     <button class="toggle" id="bAvis">💬 Donner mon avis</button>
     <button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-    <span class="grp" id="ver">Version 62</span>
+    <span class="grp" id="ver">Version 64</span>
     <span class="grp" id="latInfo" title="Le retard du téléphone est mesuré et corrigé tout seul à chaque prise">Calage auto</span>
   </div>
 </div>
@@ -649,6 +658,9 @@ body.ed-open .wmark{z-index:41}
     <div class="sec">Ton avis</div>
     <p class="note">Un bug, une idée, un kif ? Dis-le au Xel, il lit tout.</p>
     <div class="btns"><button class="sbtn primary" id="bAvis2">💬 Donner mon avis</button></div>
+    <div class="sec">Ta sauvegarde</div>
+    <p class="note">Ne perds jamais tes sons : un fichier avec tout dedans, à ranger dans iCloud Drive, Google Drive, Dropbox, OneDrive ou par mail.</p>
+    <div class="btns"><button class="sbtn primary" data-bk="save">💾 Sauvegarder tous mes sons</button><button class="sbtn" data-bk="load">♻️ Restaurer</button></div>
     <div class="sec">Pour un ingé son</div>
     <p class="note">Chaque piste en WAV avec ses effets, toutes calées au même départ.</p>
     <div class="btns">
@@ -716,7 +728,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 </section>
 
 <div class="help">
-  StudioXel · version 62.
+  StudioXel · version 64.
   Touche la pastille de couleur à gauche du nom d'une piste pour changer sa couleur.
   🔓 sur une piste verrouille une prise réussie : plus de réenregistrement, de coupe ni de déplacement par erreur.
   Glisse le doigt pour avancer dans la timeline. Touche une prise pour placer la lecture. Appui long : la phrase est sélectionnée pour la supprimer, la déplacer ou la copier. ⧉ duplique une piste.
@@ -730,6 +742,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
   <button class="sbtn" id="rrStop">■ Arrêter</button>
 </div>
 <div class="wmark" aria-hidden="true"><img id="wmLogo" alt=""><span class="wmurl">StudioXel · studioxel.github.io</span></div>
+<input type="file" id="bkFile" hidden>
 <div class="toast" id="toast" role="status"></div>
 
 <script>
@@ -737,7 +750,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 62;
+const APP_VER = 64;
 try{ const li = document.querySelector('link[rel="apple-touch-icon"]'); if(li) document.getElementById('wmLogo').src = li.href; }catch(e){}
 const COLORS = ['#6fa8ff','#f2b544','#c58bff','#4fd1b5','#ff8a65','#9be15d','#ff7eb6'];
 const HDR = 216, CEIL = Math.pow(10, -1 / 20);
@@ -1128,7 +1141,7 @@ function startMetro(){
 
 /* ---------- Enregistrement ---------- */
 /* ce que l'appli fait toute seule : chaque automatisme peut être coupé dans Réglages */
-const AUTO = Object.assign({ mon: true, lyr: true, sync: true, level: true }, store.get('auto', {}));
+const AUTO = Object.assign({ mon: true, lyr: true, sync: true, level: true, bk: true }, store.get('auto', {}));
 let micP = null;
 async function getMic(){
   if(mic) return mic;
@@ -3091,6 +3104,7 @@ function showWelcome(){
     <div class="wsub">Reprendre une session</div>
     ${list.map(x => `<button class="witem" data-w="${x.id}"><b>${esc(x.name)}</b><span>${esc(linkLabel(x.link) || 'Pas liée à un projet')} · ${fmt(x.dur || 0, true)} · ${new Date(x.updated).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}</span></button>`).join('')}
     ${sessIndex.length > 4 ? '<button class="wlink" data-w="all">Voir toutes mes sessions</button>' : ''}
+    ${AUTO.bk && (backupAge() == null ? sessIndex.length >= 2 : backupAge() >= 7) ? `<div class="wbk">💾 ${backupAge() == null ? 'Tes sons ne sont gardés que dans ce téléphone.' : 'Dernière sauvegarde il y a ' + backupAge() + ' jours.'}<button class="sbtn" data-w="bk">Sauvegarder maintenant</button></div>` : ''}
   </div>`;
   document.body.appendChild(w);
   w.querySelector('.wbig').focus();
@@ -3098,6 +3112,7 @@ function showWelcome(){
     const b = e.target.closest('[data-w]'); if(!b && e.target !== w) return;
     const v = b ? b.dataset.w : 'new';
     w.remove();
+    if(v === 'bk'){ makeBackup().then(() => showWelcome()); return; }
     if(v === 'all'){ $('#plusMenu').hidden = false; $('#plusBtn').setAttribute('aria-expanded', 'true'); renderSessBar(); $('#sessList').hidden = false; renderSessList(); return; }
     if(v !== 'new') await openSession(v);
     else startTour();
@@ -4286,6 +4301,7 @@ const TOUR = [
   { sel: ['.nav [data-view=vProjets]'], t: 'Projets', b: 'Prépare ton single, ton EP ou ton album : pochette, tracklist, et où en est chaque titre.' },
   { sel: ['.nav [data-view=vPartager]'], t: 'Partager', b: 'Exporte ton son en MP3, monte un Reel avec ta photo, ta vidéo ou un selfie, et envoie ta session à un collègue pour qu\'il pose son couplet.' },
   { sel: ['.nav [data-view=vPartager]'], t: 'Poste ton Reel', b: 'Ton Reel prêt, choisis ton réseau : Insta, TikTok, Shorts, Snap… Ta légende est copiée toute seule avec les bons hashtags, t\'as plus qu\'à coller. Et dans « Fais tourner l\'appli », envoie le lien à tes potes kickeurs.' },
+  { sel: ['.nav [data-view=vPartager]'], t: 'Ne perds jamais tes sons', b: 'Tes sons sont gardés dans ton téléphone. Pour ne rien perdre : Partager → « 💾 Sauvegarder tous mes sons », et range le fichier dans iCloud Drive, Google Drive ou Dropbox. Sur un nouveau téléphone, « ♻️ Restaurer » et tout revient.' },
   { sel: ['#vPistes .qhelp'], t: 'Le ? de chaque onglet', b: 'En haut de chaque onglet, le petit ? jaune te fait le tour détaillé de tout ce qu\'il y a dedans. Perdu ? Touche-le.' },
   { sel: ['#bSet'], t: 'Ton avis', b: 'Un bug, une idée, un kif ? Dans Réglages ou en bas de Partager, touche « Donner mon avis » : ça m\'arrive direct, je lis tout. C\'est comme ça que l\'appli avance.' },
   { t: 'À toi de kicker 🎤', b: 'C\'est tout bon. Importe ton instru, arme Lead pour tes couplets, Refrain pour ton refrain, et envoie. On se retrouve dans tes Reels. — Le Xel' }
@@ -4611,6 +4627,7 @@ const HELP = {
     { sel: ['#reelText'], t: '5 · Les textes', b: 'Tes paroles en sous-titres (si ton texte est calé) et le titre du son.' },
     { sel: ['#bVideo'], t: 'Créer le Reel', b: 'Lance la fabrication. Ensuite tu choisis ton réseau : la légende est copiée avec les bons hashtags, et je te dis comment rendre le lien cliquable sur chaque réseau.' },
     { sel: ['#linkList'], t: 'Fais tourner l\'appli', b: 'Envoie le lien de StudioXel par WhatsApp, SMS, X, Facebook, Snapchat, ou copie-le.' },
+    { sel: ['#vPartager [data-bk=save]'], t: 'Ta sauvegarde', b: 'Un fichier avec tous tes sons : audio, texte, réglages. Range-le où tu veux : iCloud Drive, Google Drive, Dropbox, OneDrive ou par mail. « Restaurer » le récupère, même sur un autre téléphone. Je te rappelle de le faire de temps en temps (désactivable dans Réglages).' },
     { sel: ['#bAvis2'], t: 'Ton avis', b: 'Un bug, une idée, un kif : ça part direct, je lis tout.' },
     { sel: ['#bStems'], t: 'Pour un ingé son', b: 'Chaque piste en WAV avec ses effets, toutes calées au même départ : c\'est ce que tu lui donnes en studio.' },
     { sel: ['#sessSend', '#sessRecv'], t: 'Pour un collègue', b: 'Envoie ta session à un autre kickeur pour qu\'il pose son couplet sur son tel. Chacun ne peut modifier que ses propres pistes. Mets ton blaze dans Réglages avant.' }
@@ -4710,12 +4727,105 @@ function gPlace(){
   if(GUIDE[gI].light){ bub.style.top = (rlEl ? Math.min(innerHeight - bh - 12, $('.transport').getBoundingClientRect().bottom + 8) : Math.max(12, innerHeight - bh - 12)) + 'px'; return; }
   bub.style.top = (below >= bh ? y1 + 12 : above >= bh ? y0 - 12 - bh : Math.max(12, innerHeight - bh - 12)) + 'px';
 }
+/* ---------- Sauvegarde complète : un fichier avec tous tes sons, à ranger dans iCloud / Fichiers / Drive ---------- */
+async function makeBackup(){
+  if(busy) return; setBusy(true, 'Préparation de ta sauvegarde…');
+  try{
+    clearTimeout(saveTimer); if(sessReady && S.tracks.some(t => t.buffer)) await saveSession();
+    const sessions = await dbDo('sessions', 'readonly', st => st.getAll()) || [];
+    if(!sessions.length){ toast('Aucun son à sauvegarder pour l\'instant.'); setBusy(false); return; }
+    const need = new Set(); sessions.forEach(r => (r.tracks || []).forEach(t => (t.takes || []).forEach(k => k.aid && need.add(k.aid))));
+    const parts = [], audios = []; let off = 0, n = 0;
+    for(const aid of need){
+      const o = await dbDo('audio', 'readonly', st => st.get(aid)); if(!o) continue;
+      const meta = { aid, sr: o.sr, nc: o.ch.length, len: o.ch[0].length, off };
+      for(const c of o.ch){ const a = c instanceof Int16Array ? c : new Int16Array(c); parts.push(a); off += a.byteLength; }
+      audios.push(meta);
+      if(++n % 5 === 0){ toast('Sauvegarde… ' + Math.round(n / need.size * 100) + ' %'); await tick(); }
+    }
+    const json = new TextEncoder().encode(JSON.stringify({ v: 1, app: 'StudioXel', ver: APP_VER, date: Date.now(), me: ME, projects, sessions, audios }));
+    const head = new ArrayBuffer(8), dv = new DataView(head); new Uint8Array(head).set([83, 88, 66, 49]); dv.setUint32(4, json.length, true);
+    const pad = new Uint8Array((2 - (8 + json.length) % 2) % 2);
+    const d = new Date(), name = 'studioxel-sauvegarde-' + d.toISOString().slice(0, 10) + '.sxb';
+    const file = new File([head, json, pad, ...parts], name, { type: 'application/octet-stream' });
+    store.set('lastBackup', Date.now());
+    setBusy(false);
+    const mo = file.size / 1048576;
+    await bkDest(file, sessions.length, mo);
+  }catch(e){ setBusy(false); toast('Sauvegarde impossible : ' + e.message); }
+}
+/* Où ranger la sauvegarde : chaque bouton ouvre le partage du téléphone avec la bonne astuce */
+const BK_DEST = [
+  { k: 'icloud', n: 'iCloud Drive', i: '☁️', tip: 'Choisis « Enregistrer dans Fichiers », puis iCloud Drive.' },
+  { k: 'gdrive', n: 'Google Drive', i: '🟢', tip: 'Choisis l\'appli Drive dans la liste (ou « Enregistrer dans Fichiers », puis Google Drive). L\'appli Google Drive doit être installée.' },
+  { k: 'dropbox', n: 'Dropbox', i: '📦', tip: 'Choisis Dropbox dans la liste. L\'appli Dropbox doit être installée.' },
+  { k: 'onedrive', n: 'OneDrive', i: '🔵', tip: 'Choisis OneDrive dans la liste. L\'appli OneDrive doit être installée.' },
+  { k: 'mail', n: 'M\'envoyer par mail', i: '✉️', tip: 'Choisis Mail et envoie-le à toi-même. Attention : les mails refusent souvent les fichiers de plus de 20 Mo.' },
+  { k: 'other', n: 'Autre', i: '📁', tip: 'Choisis où tu veux le ranger.' }
+];
+function bkDest(file, n, mo){
+  return new Promise(res => {
+    const w = document.createElement('div');
+    w.className = 'welcome'; w.setAttribute('role', 'dialog'); w.setAttribute('aria-label', 'Où ranger ta sauvegarde');
+    w.innerHTML = `<div class="wpanel">
+      <h2>💾 Sauvegarde prête</h2>
+      <p class="note">${n} son${n > 1 ? 's' : ''} · ${mo < 10 ? mo.toFixed(1) : Math.round(mo)} Mo. Où tu la ranges ?</p>
+      <div class="nets bkd">${BK_DEST.map(d => `<button class="net" data-d="${d.k}"><span>${d.i}</span>${d.n}</button>`).join('')}</div>
+      <p class="note" id="bkTip">Un endroit en ligne, c'est le mieux : si tu perds ton téléphone, ta sauvegarde, elle, reste.</p>
+      <button class="wlink" data-d="close">Fermer</button>
+    </div>`;
+    document.body.appendChild(w);
+    w.addEventListener('click', async e => {
+      const b = e.target.closest('[data-d]'); if(!b && e.target !== w) return;
+      if(!b || b.dataset.d === 'close'){ w.remove(); res(); return; }
+      const d = BK_DEST.find(x => x.k === b.dataset.d);
+      $('#bkTip').textContent = d.i + ' ' + d.tip; toast(d.tip);
+      await shareFiles([file], '');
+    });
+  });
+}
+async function restoreBackup(f){
+  if(!f) return;
+  if(busy) return; setBusy(true, 'Lecture de ta sauvegarde…');
+  try{
+    const hd = new Uint8Array(await f.slice(0, 8).arrayBuffer());
+    if(hd[0] !== 83 || hd[1] !== 88 || hd[2] !== 66 || hd[3] !== 49) throw new Error('ce fichier n\'est pas une sauvegarde StudioXel (.sxb)');
+    const len = new DataView(hd.buffer).getUint32(4, true);
+    const data = JSON.parse(new TextDecoder().decode(await f.slice(8, 8 + len).arrayBuffer()));
+    const base = 8 + len + (2 - (8 + len) % 2) % 2;
+    let n = 0;
+    for(const a of data.audios){
+      const ch = [];
+      for(let c = 0; c < a.nc; c++){ const s0 = base + a.off + c * a.len * 2; ch.push(new Int16Array(await f.slice(s0, s0 + a.len * 2).arrayBuffer())); }
+      await dbDo('audio', 'readwrite', st => st.put({ sr: a.sr, ch }, a.aid));
+      if(++n % 5 === 0){ toast('Restauration… ' + Math.round(n / data.audios.length * 100) + ' %'); await tick(); }
+    }
+    let added = 0, kept = 0;
+    for(const r of data.sessions){
+      const cur = await dbDo('sessions', 'readonly', st => st.get(r.id));
+      if(cur && (cur.updated || 0) > (r.updated || 0)){ kept++; continue; }
+      await dbDo('sessions', 'readwrite', st => st.put(r)); added++;
+    }
+    /* projets : on ajoute ceux qui manquent */
+    if(Array.isArray(data.projects)){ data.projects.forEach(p => { if(!projects.some(x => x.id === p.id)) projects.push(p); }); store.set('projects', projects); }
+    if(data.me?.name && !ME.name){ ME.name = data.me.name; store.set('me', ME); }
+    setBusy(false);
+    toast('♻️ ' + added + ' son' + (added > 1 ? 's' : '') + ' restauré' + (added > 1 ? 's' : '') + (kept ? ', ' + kept + ' déjà plus récent' + (kept > 1 ? 's' : '') + ' ici, gardé' + (kept > 1 ? 's' : '') : '') + '. Je recharge l\'appli…');
+    setTimeout(() => location.reload(), 2200);
+  }catch(e){ setBusy(false); toast('Restauration impossible : ' + e.message); }
+}
+document.querySelectorAll('[data-bk]').forEach(b => b.addEventListener('click', () => {
+  if(b.dataset.bk === 'save') makeBackup(); else { $('#bkFile').value = ''; $('#bkFile').click(); }
+}));
+$('#bkFile').addEventListener('change', e => restoreBackup(e.target.files[0]));
+function backupAge(){ const t = store.get('lastBackup', 0); return t ? Math.floor((Date.now() - t) / 86400000) : null; }
+
 $('#bGuide').onclick = () => startGuide();
 document.querySelectorAll('[data-auto]').forEach(b => {
   b.setAttribute('aria-pressed', String(!!AUTO[b.dataset.auto]));
   b.onclick = () => {
     const k = b.dataset.auto; AUTO[k] = !AUTO[k]; store.set('auto', AUTO); b.setAttribute('aria-pressed', String(AUTO[k]));
-    toast((AUTO[k] ? '✅ Automatique : ' : '✋ Manuel : ') + { mon: 'retour voix avec les écouteurs.', lyr: 'texte pendant la prise.', sync: 'calage du texte.', level: 'niveaux et réglages de voix.' }[k]);
+    toast((AUTO[k] ? '✅ Automatique : ' : '✋ Manuel : ') + { mon: 'retour voix avec les écouteurs.', lyr: 'texte pendant la prise.', sync: 'calage du texte.', level: 'niveaux et réglages de voix.', bk: 'rappel de sauvegarde.' }[k]);
   };
 });
 
