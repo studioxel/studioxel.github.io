@@ -383,8 +383,11 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
 .edhead b{flex:1;font:800 18px var(--display);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .edhead .sbtn,.edrow .sbtn{height:40px;padding:0 12px;font-size:14px}
 .edwave{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel)}
-#edCv{display:block;width:100%;height:min(42vh,320px);touch-action:none;cursor:crosshair}
-#edScroll{width:100%;accent-color:var(--accent)}
+#edCv{display:block;width:100%;height:min(30vh,240px);touch-action:none;cursor:crosshair}
+.edstick{position:sticky;top:-12px;z-index:3;background:var(--bg);display:flex;flex-direction:column;gap:8px;padding:6px 0 8px;margin-top:-6px;box-shadow:0 10px 14px -10px rgba(0,0,0,.7)}
+#edOv{display:block;width:100%;height:38px;border:1px solid var(--line);border-radius:8px;background:var(--panel);touch-action:none;cursor:grab}
+.edcut .sbtn{flex:1 1 0;min-width:0}
+body.ed-open .toast{z-index:46}
 .edrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .edinfo{margin-left:auto;font:12px ui-monospace,monospace;color:var(--muted)}
 .edtools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
@@ -526,7 +529,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 1.1 · Bêta</span></div>
+      <span class="grp" id="ver">Version 1.1.1 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -798,8 +801,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 79; // numéro interne (jamais affiché)
-const APP_PUB = '1.1';
+const APP_VER = 80; // numéro interne (jamais affiché)
+const APP_PUB = '1.1.1';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -4550,10 +4553,13 @@ function openEditor(t, a, b){
   if(a != null && b != null){ ed.a = clamp(a - t.offset, 0, dur); ed.b = clamp(b - t.offset, 0, dur); const pad = (ed.b - ed.a) * 0.4 + 0.3; ed.v0 = Math.max(0, ed.a - pad); ed.v1 = Math.min(dur, ed.b + pad); }
   const w = document.createElement('div'); w.className = 'ed'; w.setAttribute('role', 'dialog'); w.setAttribute('aria-label', 'Éditeur de prise');
   w.innerHTML = `<div class="edhead"><button class="sbtn" id="edClose">✕ Fermer</button><b id="edName"></b><button class="sbtn" id="edUndo" aria-label="Annuler">↶ Annuler</button></div>
-    <div class="edwave"><canvas id="edCv"></canvas></div>
-    <input type="range" id="edScroll" min="0" max="1000" value="0" aria-label="Se déplacer dans la prise">
-    <div class="edrow"><button class="sbtn" data-z="out" aria-label="Dézoomer">−</button><button class="sbtn" data-z="in" aria-label="Zoomer">+</button><button class="sbtn" data-z="all">Tout</button><button class="sbtn" data-z="sel">Sélection</button><span class="edinfo" id="edInfo"></span></div>
+    <div class="edstick">
+      <div class="edwave"><canvas id="edCv"></canvas></div>
+      <canvas id="edOv" aria-label="Toute la prise : glisse pour te déplacer"></canvas>
+      <div class="edrow"><button class="sbtn" data-z="out" aria-label="Dézoomer">−</button><button class="sbtn" data-z="in" aria-label="Zoomer">+</button><button class="sbtn" data-z="all">Tout</button><button class="sbtn" data-z="sel">Sélection</button><span class="edinfo" id="edInfo"></span></div>
+    </div>
     <div class="edrow"><button class="sbtn primary" id="edPlay">▶ Écouter</button><button class="sbtn" id="edLoop" aria-pressed="false">🔁 En boucle</button><button class="sbtn" id="edSolo" aria-pressed="false">🎧 Seule</button></div>
+    <div class="edrow edcut"><button class="sbtn" id="edA">⟦ Début ici</button><button class="sbtn" id="edB">Fin ici ⟧</button><button class="sbtn" id="edX" aria-label="Enlever la sélection">✕</button></div>
     <div class="edtools">
       <button class="sbtn" data-op="del">✂️ Supprimer</button><button class="sbtn" data-op="keep">🎯 Garder que ça</button>
       <button class="sbtn" data-op="down">🔉 −3 dB</button><button class="sbtn" data-op="up">🔊 +3 dB</button>
@@ -4562,13 +4568,18 @@ function openEditor(t, a, b){
       <button class="sbtn" data-op="early">⇠ Plus tôt</button><button class="sbtn" data-op="late">⇢ Plus tard</button>
       <button class="sbtn" data-op="norm">📏 Niveau max</button><button class="sbtn" data-op="gate">🔇 Couper les blancs</button>
     </div>
-    <p class="note" id="edHint">Glisse le doigt sur l'onde pour sélectionner, tire les poignées pour ajuster au poil. Une touche place la lecture. Sans sélection, les outils s'appliquent à toute la prise.</p>`;
+    <p class="note" id="edHint">Pour couper pile où tu veux : lance l'écoute et touche « Début ici » puis « Fin ici » au bon moment (ou place le curseur d'une touche sur l'onde). Tu peux aussi glisser le doigt sur l'onde et tirer les poignées. Zoomé, glisse la bande du dessous (ou le haut de l'onde, là où il y a les temps) pour aller à droite ou à gauche. Sans sélection, les outils s'appliquent à toute la prise.</p>`;
   $('#settings').hidden = true; $('#bSet').setAttribute('aria-expanded', 'false');
   document.body.appendChild(w); ed.el = w; document.body.classList.add('ed-open');
   edFit(); window.addEventListener('resize', edFit);
   $('#edName').textContent = t.name;
   w.addEventListener('click', edClick);
-  $('#edScroll').addEventListener('input', e => { const t2 = edT(); if(!t2) return; const span = ed.v1 - ed.v0, d = t2.buffer.duration; ed.v0 = (d - span) * e.target.value / 1000; ed.v1 = ed.v0 + span; edDraw(); });
+  { const ov = $('#edOv'); let ovDrag = false;
+    const ovGo = e => { const t2 = edT(); if(!t2) return; const r = ov.getBoundingClientRect(), d = t2.buffer.duration, span = ed.v1 - ed.v0;
+      const c = clamp((e.clientX - r.left) / r.width, 0, 1) * d; ed.v0 = clamp(c - span / 2, 0, Math.max(0, d - span)); ed.v1 = ed.v0 + span; edDraw(); };
+    ov.addEventListener('pointerdown', e => { ovDrag = true; ov.setPointerCapture(e.pointerId); ovGo(e); });
+    ov.addEventListener('pointermove', e => { if(ovDrag) ovGo(e); });
+    ov.addEventListener('pointerup', () => { ovDrag = false; }); ov.addEventListener('pointercancel', () => { ovDrag = false; }); }
   const cv = $('#edCv');
   cv.addEventListener('pointerdown', edDown); cv.addEventListener('pointermove', edMove); cv.addEventListener('pointerup', edUp); cv.addEventListener('pointercancel', edUp);
   if(S.playing) pause();
@@ -4593,6 +4604,7 @@ function edDown(e){
   const cv = e.currentTarget, r = cv.getBoundingClientRect(), x = e.clientX - r.left;
   cv.setPointerCapture(e.pointerId);
   let mode = 'new';
+  if(e.clientY - r.top < 26){ ed.drag = { mode: 'pan', x0: x, v0: ed.v0, moved: false }; return; }
   if(ed.a != null){ if(Math.abs(x - edT2X(ed.a)) < 24) mode = 'a'; else if(Math.abs(x - edT2X(ed.b)) < 24) mode = 'b'; }
   ed.drag = { mode, x0: x, t0: edX2T(x), moved: false };
 }
@@ -4602,6 +4614,7 @@ function edMove(e){
   const tm = clamp(edX2T(x), 0, d);
   if(Math.abs(x - ed.drag.x0) > 6) ed.drag.moved = true;
   if(!ed.drag.moved) return;
+  if(ed.drag.mode === 'pan'){ const span = ed.v1 - ed.v0, W = e.currentTarget.clientWidth; ed.v0 = clamp(ed.drag.v0 - (x - ed.drag.x0) / W * span, 0, Math.max(0, d - span)); ed.v1 = ed.v0 + span; edDraw(); return; }
   if(ed.drag.mode === 'a'){ ed.a = Math.min(tm, ed.b - 0.01); }
   else if(ed.drag.mode === 'b'){ ed.b = Math.max(tm, ed.a + 0.01); }
   else { ed.a = Math.min(ed.drag.t0, tm); ed.b = Math.max(ed.drag.t0, tm); }
@@ -4610,6 +4623,7 @@ function edMove(e){
 function edUp(e){
   if(!ed?.drag) return;
   const dr = ed.drag; ed.drag = null;
+  if(dr.mode === 'pan' && !dr.moved){ const t = edT(); ed.cur = clamp(edX2T(dr.x0), 0, t.buffer.duration); if(S.playing) pause(); edDraw(); return; }
   if(!dr.moved){
     const t = edT(), tm = clamp(dr.t0, 0, t.buffer.duration);
     if(dr.mode === 'new'){ if(ed.a != null && tm > ed.a && tm < ed.b){ ed.cur = tm; } else { ed.a = ed.b = null; ed.cur = tm; } }
@@ -4623,6 +4637,13 @@ function edClick(e){
   if(b.id === 'edClose') return closeEditor();
   if(b.id === 'edUndo'){ undo(); setTimeout(() => { if(!edT()?.buffer) return closeEditor(); ed.v1 = Math.min(ed.v1, edT().buffer.duration); edDraw(); }, 50); return; }
   if(b.id === 'edPlay') return edPlayToggle();
+  if(b.id === 'edA' || b.id === 'edB' || b.id === 'edX'){
+    const d = t.buffer.duration, p = clamp(S.playing ? now() - t.offset : ed.cur, 0, d);
+    if(b.id === 'edX'){ ed.a = ed.b = null; edDraw(); return; }
+    if(b.id === 'edA'){ ed.a = p; if(ed.b == null || ed.b <= p + 0.01) ed.b = d; toast('Début posé à ' + fmt(t.offset + p, true) + '. Touche « Fin ici » au bon moment.'); }
+    else { ed.b = p; if(ed.a == null || ed.a >= p - 0.01) ed.a = 0; if(S.playing) pause(); ed.cur = ed.a; toast('Sélection prête (' + (ed.b - ed.a).toFixed(2) + ' s). Choisis un outil : ✂️ Supprimer, 🎯 Garder que ça…'); }
+    edDraw(); return;
+  }
   if(b.id === 'edLoop'){ ed.loop = !ed.loop; b.setAttribute('aria-pressed', ed.loop); return; }
   if(b.id === 'edSolo'){ if(ed.soloWas === null) ed.soloWas = !!t.solo; t.solo = !t.solo; b.setAttribute('aria-pressed', t.solo); applyMix(); return; }
   const z = b.dataset.z;
@@ -4638,6 +4659,7 @@ function edClick(e){
 function edPlayToggle(){
   const t = edT(); if(!t) return;
   if(S.playing){ pause(); edDraw(); return; }
+  if(ed.a == null && (ed.cur < ed.v0 || ed.cur > ed.v1)) ed.cur = ed.v0;
   const from = ed.a != null ? ed.a : ed.cur;
   ed.start = t.offset + from; ed.end = ed.a != null ? t.offset + ed.b : null;
   S.pos = ed.start; unlockSpeaker(); wake().then(() => { if(ed) ed.fromEd = true; play(); });
@@ -4689,10 +4711,15 @@ function edDraw(){
   if(ed.a != null){
     [ed.a, ed.b].forEach(tm => { const x = edT2X(tm); g.fillStyle = '#f2b544'; g.fillRect(x - 1.5, 16, 3, H - 16); g.beginPath(); g.arc(x, H - 14, 11, 0, Math.PI * 2); g.fill(); g.beginPath(); g.arc(x, 30, 8, 0, Math.PI * 2); g.fill(); });
   }
+  /* retouche qui vient d'être faite : bien visible */
+  if(ed.flash && performance.now() < ed.flash.until){
+    const k = (ed.flash.until - performance.now()) / 1200, xa = Math.max(0, edT2X(ed.flash.a)), xb = Math.min(W, edT2X(ed.flash.b));
+    g.fillStyle = `rgba(${ed.flash.col},${(0.45 * k).toFixed(3)})`; g.fillRect(xa, 16, Math.max(2, xb - xa), H - 16);
+  } else ed.flash = null;
   /* curseur / tête de lecture */
   const p = S.playing ? now() - t.offset : ed.cur, xp = edT2X(p);
   if(xp >= 0 && xp <= W){ g.fillStyle = S.playing ? '#ff4b4b' : '#e7eaf0'; g.fillRect(xp - 1, 16, 2, H - 16); }
-  const sc = $('#edScroll'), dd = buf.duration; if(sc && !ed.drag && document.activeElement !== sc) sc.value = dd > span ? Math.round(ed.v0 / (dd - span) * 1000) : 0;
+  edDrawOv(t, p);
   $('#edInfo').textContent = ed.a != null ? 'Sélection ' + (ed.b - ed.a).toFixed(2) + ' s' : 'Zoom ' + span.toFixed(span < 10 ? 1 : 0) + ' s';
 }
 /* Couper les blancs : met à zéro tout ce qui n'est pas de la voix, sans rien décaler (idéal pour les backs) */
@@ -4725,6 +4752,24 @@ function gateBlancs(buf, s0, s1){
   for(let c = 0; c < C; c++){ const d = out.getChannelData(c); for(let i = 0; i < g.length; i++){ const k = Math.min(1, sm[Math.min(g.length - 1, i + (F >> 1))] ); d[s0 + i] *= k; } }
   return { buf: out, parts, cut: cutW * 0.01 };
 }
+/* bande du dessous : toute la prise, la zone affichée en clair, glisse pour te déplacer */
+const ovPeaks = new WeakMap();
+function edDrawOv(t, p){
+  const cv = $('#edOv'); if(!cv) return;
+  const W = cv.clientWidth, H = cv.clientHeight, dpr = Math.min(2, devicePixelRatio || 1); if(!W) return;
+  if(cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)){ cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
+  const buf = t.buffer, d = buf.duration, N = 300;
+  let pk = ovPeaks.get(buf);
+  if(!pk){ pk = new Float32Array(N); const c0 = buf.getChannelData(0), per = Math.max(1, Math.floor(c0.length / N)); for(let i = 0; i < N; i++){ let m = 0; for(let j = i * per, e = Math.min(c0.length, j + per); j < e; j += 8){ const v = Math.abs(c0[j]); if(v > m) m = v; } pk[i] = m; } ovPeaks.set(buf, pk); }
+  g.fillStyle = 'rgba(160,170,190,.55)';
+  for(let i = 0; i < N; i++){ const x = i / N * W, h = Math.max(1, pk[i] * (H - 6)); g.fillRect(x, (H - h) / 2, Math.max(1, W / N), h); }
+  const xa = ed.v0 / d * W, xb = ed.v1 / d * W;
+  g.fillStyle = 'rgba(242,181,68,.22)'; g.fillRect(xa, 0, Math.max(4, xb - xa), H);
+  g.strokeStyle = '#f2b544'; g.lineWidth = 2; g.strokeRect(xa + 1, 1, Math.max(4, xb - xa) - 2, H - 2);
+  if(ed.a != null){ g.fillStyle = 'rgba(242,181,68,.6)'; g.fillRect(ed.a / d * W, H - 4, Math.max(2, (ed.b - ed.a) / d * W), 4); }
+  g.fillStyle = S.playing ? '#ff4b4b' : '#e7eaf0'; g.fillRect(clamp(p / d, 0, 1) * W - 1, 0, 2, H);
+}
 function edCopy(b){ const o = ctx.createBuffer(b.numberOfChannels, b.length, b.sampleRate); for(let c = 0; c < b.numberOfChannels; c++) o.copyToChannel(b.getChannelData(c), c); return o; }
 function edOp(op){
   const t = edT(); if(!t?.buffer) return;
@@ -4745,7 +4790,7 @@ function edOp(op){
   if(op === 'gate'){
     const r = gateBlancs(t.buffer, s0, s1);
     if(!r){ undoStack.pop(); updUndo(); toast('Pas de blanc net à couper sur ce passage.'); return; }
-    setTrackBuf(t, r.buf, t.offset); if(S.playing) restart(); renderTracks(); scheduleSave(); edDraw(); track('couper-blancs');
+    setTrackBuf(t, r.buf, t.offset); ed.flash = { a: has ? ed.a : 0, b: has ? ed.b : t.buffer.duration, until: performance.now() + 1200, col: '242,181,68' }; if(S.playing) restart(); renderTracks(); scheduleSave(); edDraw(); track('couper-blancs');
     toast('Blancs coupés : ' + r.cut.toFixed(1) + ' s de silence, ' + r.parts + ' passage' + (r.parts > 1 ? 's' : '') + ' gardé' + (r.parts > 1 ? 's' : '') + (has ? '' : ' (toute la prise)') + '. Le calage ne bouge pas. ↶ Annuler pour revenir.'); return;
   }
   if(op === 'rep'){
@@ -4772,6 +4817,7 @@ function edOp(op){
     }
   }
   setTrackBuf(t, nb, t.offset);
+  ed.flash = { a: has ? ed.a : 0, b: has ? ed.b : t.buffer.duration, until: performance.now() + 1200, col: op === 'del' ? '255,75,75' : '242,181,68' };
   if(op === 'keep' || op === 'del'){ /* la sélection reste, pour enchaîner */ }
   if(S.playing) restart();
   renderTracks(); scheduleSave(); edDraw();
@@ -4860,7 +4906,7 @@ const HELP = {
     { sel: ['#list .row:nth-child(2) .fxzone'], t: 'Les effets de la piste', b: 'Reverb (Pièce, Studio, Salle), Écho (Slap, Ping-pong, Grand), Doubler, Auto-tune (Naturel, Marqué, Robot, Planant 🛸), Chaleur et Radio. Touche pour allumer, retouche pour choisir la dose ou couper. Ça s\'entend en direct.' },
     { sel: ['#list .row:nth-child(2) .l3'], t: 'Importer, cadenas, copie, poubelle', b: 'Importer : met un fichier audio sur la piste (remplace ce qu\'il y a). 🔓 verrouille une prise réussie. ⧉ duplique la piste. ✕ la supprime (touche deux fois pour confirmer).' },
     { sel: ['#list .row:nth-child(2) .lane'], t: 'La timeline', b: 'Glisse pour avancer. Une touche place la lecture. Appui long sur une phrase : elle est sélectionnée, et la barre du bas permet de l\'écouter, la supprimer, la copier ou la déplacer sur une autre piste. Deux touches sur une prise, ou sa loupe 🔍 : elle s\'ouvre en grand dans l\'éditeur.' },
-    { t: 'L\'éditeur de prise', b: 'Dans l\'éditeur : tu sélectionnes au doigt et tu ajustes avec les poignées, tu écoutes en boucle ou la piste seule. Outils : supprimer, garder que la sélection, −3/+3 dB, fondus, répéter, à l\'envers, plus tôt/plus tard de 10 ms, niveau max, et « Couper les blancs » qui met en silence tout ce qui n\'est pas ta voix sans rien décaler (top pour les backs). Sans sélection, ça s\'applique à toute la prise. La barre du haut reste dispo : lecture, pause, REC.' }
+    { t: 'L\'éditeur de prise', b: 'Dans l\'éditeur : pour couper pile au bon moment, lance l\'écoute et touche « Début ici » puis « Fin ici ». Tu peux aussi sélectionner au doigt et ajuster avec les poignées. Zoomé, glisse la bande sous l\'onde pour aller à droite ou à gauche. Chaque retouche s\'allume sur l\'onde. Tu écoutes en boucle ou la piste seule. Outils : supprimer, garder que la sélection, −3/+3 dB, fondus, répéter, à l\'envers, plus tôt/plus tard de 10 ms, niveau max, et « Couper les blancs » qui met en silence tout ce qui n\'est pas ta voix sans rien décaler (top pour les backs). Sans sélection, ça s\'applique à toute la prise. La barre du haut reste dispo : lecture, pause, REC.' }
   ],
   vMix: [
     { t: 'L\'onglet Mix', b: 'Ici tu règles chaque piste en détail.' },
