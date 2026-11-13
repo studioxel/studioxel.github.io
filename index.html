@@ -373,6 +373,20 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
 @keyframes gpulse{50%{border-color:#fff;outline:3px solid color-mix(in srgb,var(--accent) 40%,transparent)}}
 .tchoice{display:flex;flex-direction:column;gap:8px}
 .tchoice .sbtn{height:46px;font-size:15px;font-weight:800}
+.cedit{position:absolute;top:4px;right:4px;width:30px;height:26px;border-radius:6px;border:1px solid var(--line);background:color-mix(in srgb,var(--panel) 85%,transparent);font-size:14px;padding:0;z-index:3}
+.ed{position:fixed;inset:0;z-index:40;background:var(--bg);display:flex;flex-direction:column;gap:10px;padding:max(12px,env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) max(12px,env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px));overflow-y:auto}
+.edhead{display:flex;align-items:center;gap:10px}
+.edhead b{flex:1;font:800 18px var(--display);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.edhead .sbtn,.edrow .sbtn{height:40px;padding:0 12px;font-size:14px}
+.edwave{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel)}
+#edCv{display:block;width:100%;height:min(42vh,320px);touch-action:none;cursor:crosshair}
+#edScroll{width:100%;accent-color:var(--accent)}
+.edrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.edinfo{margin-left:auto;font:12px ui-monospace,monospace;color:var(--muted)}
+.edtools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.edtools .sbtn{height:46px;font-size:14px;font-weight:700}
+body.ed-open{overflow:hidden}
+body.ed-open .wmark{z-index:41}
 </style>
 </head>
 <body>
@@ -404,7 +418,7 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
     <button class="toggle" id="bTour">📖 Revoir le tuto</button>
     <button class="toggle" id="bAvis">💬 Donner mon avis</button>
     <button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-    <span class="grp" id="ver">Version 55</span>
+    <span class="grp" id="ver">Version 56</span>
     <span class="grp" id="latInfo" title="Le retard du téléphone est mesuré et corrigé tout seul à chaque prise">Calage auto</span>
   </div>
 </div>
@@ -436,6 +450,7 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
       <button class="sbtn" id="selStart">Début ici</button>
       <button class="sbtn" id="selEnd">Fin ici</button>
       <button class="sbtn" id="selAll">Toute la prise</button>
+      <button class="sbtn" id="selEdit">🔍 Éditer</button>
     </div>
     <div class="selrow">
       <button class="sbtn del" id="selDel">🗑 Supprimer</button>
@@ -642,7 +657,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 </section>
 
 <div class="help">
-  StudioXel · version 55.
+  StudioXel · version 56.
   Touche la pastille de couleur à gauche du nom d'une piste pour changer sa couleur.
   🔓 sur une piste verrouille une prise réussie : plus de réenregistrement, de coupe ni de déplacement par erreur.
   Glisse le doigt pour avancer dans la timeline. Touche une prise pour placer la lecture. Appui long : la phrase est sélectionnée pour la supprimer, la déplacer ou la copier. ⧉ duplique une piste.
@@ -663,7 +678,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 55;
+const APP_VER = 56;
 try{ const li = document.querySelector('link[rel="apple-touch-icon"]'); if(li) document.getElementById('wmLogo').src = li.href; }catch(e){}
 const COLORS = ['#6fa8ff','#f2b544','#c58bff','#4fd1b5','#ff8a65','#9be15d','#ff7eb6'];
 const HDR = 216, CEIL = Math.pow(10, -1 / 20);
@@ -1053,7 +1068,14 @@ function startMetro(){
 }
 
 /* ---------- Enregistrement ---------- */
+let micP = null;
 async function getMic(){
+  if(mic) return mic;
+  if(micP) return micP;
+  micP = getMic0();
+  try{ return await micP; } finally{ micP = null; }
+}
+async function getMic0(){
   if(mic) return mic;
   if(!navigator.mediaDevices?.getUserMedia) throw new Error('Micro indisponible ici : la page doit être ouverte en ligne (adresse https), pas en aperçu.');
   audioSessionRec();
@@ -1211,7 +1233,11 @@ function setMonUI(){
   $('#bMon').setAttribute('aria-pressed', String(!!S.mon)); $('#tMon').setAttribute('aria-pressed', String(!!S.mon));
   setRecUI();
 }
-async function monOn(){
+async function monOn(auto){
+  if(S.monStarting) return; S.monStarting = true;
+  try{ await monOn0(auto); } finally{ S.monStarting = false; }
+}
+async function monOn0(auto){
   ensureCtx();
   try{ await getMic(); }
   catch(e){ toast(e.name === 'NotAllowedError' ? 'Accès au micro refusé : autorise le micro pour avoir le retour voix.' : (e.message || 'Micro introuvable.')); S.mon = false; setMonUI(); return; }
@@ -1464,7 +1490,8 @@ function renderTracks(){
         const cv = document.createElement('canvas');
         cv.width = Math.min(w, 32000); cv.height = 78; cv.style.width = w + 'px';
         clip.appendChild(cv);
-        if(k === 0) clip.insertAdjacentHTML('beforeend', `<span style="color:${t.color}">${esc(t.name)}${t.keep ? ' · 🔒 validée' : ''}</span>`);
+        if(k === 0) clip.insertAdjacentHTML('beforeend', `<span style="color:${t.color}">${esc(t.name)}${t.keep ? ' · 🔒 validée' : ''}</span><button class="cedit" aria-label="Ouvrir la prise de ${esc(t.name)} dans l'éditeur">🔍</button>`);
+        clip.querySelector('.cedit')?.addEventListener('click', e => { e.stopPropagation(); openEditor(t); });
         lane.appendChild(clip);
         drawWave(cv, t.buffer, t.color, sg.s0, sg.s1);
         dragClip(clip, t);
@@ -1537,7 +1564,7 @@ function dragClip(clip, t){
   const cancelLp = () => { if(lpTimer){ clearTimeout(lpTimer); lpTimer = null; } clip.classList.remove('pressing'); };
   clip.addEventListener('contextmenu', e => e.preventDefault());
   clip.addEventListener('pointerdown', e => {
-    if(S.recording) return;
+    if(S.recording || e.target.closest('.cedit')) return;
     sx = e.clientX; sy = e.clientY; lpDone = false; moved = false;
     const r = clip.parentElement.getBoundingClientRect(), at = (e.clientX - r.left) / S.pps;
     lpTimer = setTimeout(() => {
@@ -1556,7 +1583,12 @@ function dragClip(clip, t){
   clip.addEventListener('pointerup', e => {
     if(sx === undefined) return;
     cancelLp();
-    if(!lpDone && !moved){ const r = clip.parentElement.getBoundingClientRect(); seek((e.clientX - r.left) / S.pps); }
+    if(!lpDone && !moved){
+      const r = clip.parentElement.getBoundingClientRect(), at = (e.clientX - r.left) / S.pps;
+      /* double touche = la prise s'ouvre en grand dans l'éditeur */
+      if(Date.now() - (clip._tap || 0) < 330){ clip._tap = 0; sx = undefined; openEditor(t); return; }
+      clip._tap = Date.now(); seek(at);
+    }
     sx = undefined;
   });
   clip.addEventListener('pointercancel', () => { moved = true; cancelLp(); sx = undefined; });
@@ -3887,10 +3919,24 @@ async function detectHeadset(silent){
       const r = classifyRoute(labels), before = S.routeInfo?.kind;
       S.routeInfo = r; S.headset = r.kind === 'ecouteurs'; S.route = r.kind;
       applyOutMode(); showRoute();
+      autoMon(r.kind, before);
       if(!silent && before && before !== r.kind && S.outMode === 'auto')
         toast(r.kind === 'ecouteurs' ? '🎧 ' + (r.name || 'Écouteurs') + ' détectés : mode casque.' : r.kind === 'bt' ? '🚗 ' + (r.name || 'Bluetooth') + ' détecté : son sur la voiture ou l\'enceinte.' : '📱 Plus rien de branché : haut-parleur du téléphone.');
     } else { applyOutMode(); showRoute(); }
   }catch(e){ applyOutMode(); showRoute(); }
+}
+/* écouteurs détectés = retour voix allumé tout seul (pas de larsen possible). Il se coupe quand on les enlève. */
+function autoMon(kind, before){
+  if(S.outMode !== 'auto') return;
+  if(kind === 'ecouteurs' && !S.mon && !S.monUserOff && !S.monStarting && !S.monAuto){
+    const go = () => { S.monAuto = true; monOn(true).then(() => { if(S.mon) toast('🎧 Écouteurs détectés : retour voix allumé tout seul. Touche 🎧 Retour pour le couper.'); else S.monAuto = false; }); };
+    if(ctx && ctx.state === 'running') go();
+    else document.addEventListener('pointerdown', function once(){ document.removeEventListener('pointerdown', once, true); if(!S.mon && S.route === 'ecouteurs') go(); }, true);
+  }
+  if(kind !== 'ecouteurs' && before === 'ecouteurs' && S.monAuto){
+    S.monAuto = false;
+    if(S.mon){ monOff(); toast('Écouteurs retirés : retour voix coupé pour éviter le larsen.'); }
+  }
 }
 /* au lancement : si le micro est déjà autorisé, on regarde tout de suite ce qui est branché */
 (async () => { try{ const st = await navigator.permissions?.query({ name: 'microphone' }); if(st?.state === 'granted') detectHeadset(true); else showRoute(); }catch(e){ showRoute(); } })();
@@ -3948,6 +3994,7 @@ $('#selAll').onclick = () => {
   bandSel.a = t.offset; bandSel.b = t.offset + t.buffer.duration; drawSel();
   toast('Toute la prise est sélectionnée : glisse la bande pour la déplacer.');
 };
+$('#selEdit').onclick = () => { if(!bandSel) return; const t = trackById(bandSel.tid), a = bandSel.a, b = bandSel.b; openEditor(t, a, b); };
 $('#selListen').onclick = () => {
   if(!bandSel || S.recording) return;
   if(S.playing) pause();
@@ -3964,7 +4011,7 @@ const TOUR = [
   { sel: ['#list .row:nth-child(1) [data-act=import]'], t: 'Ton instru', b: 'Touche « Importer » sur la piste Instru et choisis ton beat (MP3 ou WAV). Je trouve tout seul le BPM et la tonalité, et je cale le niveau. C\'est la toute première chose à faire.' },
   { sel: ['#list .row:nth-child(2) .chip'], t: 'R, M, S', b: 'R arme la piste : c\'est là que ta voix va s\'enregistrer. M coupe la piste, S l\'écoute toute seule. De base t\'as Instru, Lead pour tes couplets, Refrain (déjà un peu doublé pour sonner plus large), Back et Ambiance. Arme Lead avant ton premier couplet.' },
   { sel: ['#bRec'], t: 'REC', b: 'Piste armée ? Touche REC : 4 bips de décompte et tu kickes. La barre MICRO en haut bouge avec ta voix, et ta prise se dessine sur la piste en direct. Retouche REC pour t\'arrêter. Si la piste a déjà une prise, la nouvelle se pose par-dessus à cet endroit (Annuler pour revenir). Pour garder les deux, ajoute une piste avec le + ou duplique avec ⧉ : c\'est toi qui décides.' },
-  { sel: ['#bMon'], t: 'Retour 🎧', b: 'Allume-le pour t\'entendre en direct avec les effets de la piste armée, auto-tune compris, même sans enregistrer : parfait pour chauffer ta voix. Avec des écouteurs c\'est l\'idéal. Sur le haut-parleur ou en Bluetooth, garde le volume raisonnable : si ça siffle, je baisse tout seul.' },
+  { sel: ['#bMon'], t: 'Retour 🎧', b: 'Allume-le pour t\'entendre en direct avec les effets de la piste armée, auto-tune compris, même sans enregistrer : parfait pour chauffer ta voix. Avec des écouteurs c\'est l\'idéal, et je l\'allume tout seul dès que je les détecte. Sur le haut-parleur ou en Bluetooth, garde le volume raisonnable : si ça siffle, je baisse tout seul.' },
   { sel: ['#routeChip'], t: 'Ton écoute', b: 'Ici je t\'affiche ce que j\'ai détecté : 🎧 tes écouteurs (AirPods…), 🚗 un Bluetooth de voiture ou d\'enceinte, ou 📱 le haut-parleur. Si je me trompe, touche-le et choisis toi-même.' },
   { sel: ['#bHome', '#bPlay', '#bStop'], t: 'Lecture', b: '▶ lance ou met en pause, ⏹ arrête, ⏮ revient au début. Réécoute ta prise juste après l\'avoir posée, c\'est là que tu sais si elle est bonne.' },
   { sel: ['#bUndo'], t: 'Annuler', b: 'Une bêtise ? Annuler revient en arrière, étape par étape : une prise, un effet, une piste supprimée, tout s\'annule.' },
@@ -3972,7 +4019,7 @@ const TOUR = [
   { sel: ['#list .row:nth-child(2) .fxzone'], t: 'Les effets', b: 'Touche un effet pour l\'allumer, retouche-le pour doser. Reverb pour l\'espace, Écho pour les fins de phrase, Doubler pour épaissir un refrain, Auto-tune pour corriger ou styliser (Naturel, Marqué, Robot, ou le mode Planant 🛸 avec tout le vibe), Chaleur pour du grain, Radio pour une voix filtrée façon téléphone ou lo-fi.\nLes doses changent vraiment le son : la Reverb passe d\'une pièce à une grande salle, l\'Écho d\'un slap court à un grand écho de fin de phrase. Ça se règle même en pleine prise.' },
   { sel: ['#list .row:nth-child(2) [data-act=keep]', '#list .row:nth-child(2) [data-act=up]', '#list .row:nth-child(2) [data-act=down]', '#list .row:nth-child(2) [data-act=dup]', '#list .row:nth-child(2) [data-act=del]'], t: 'Cadenas, ordre, copie, poubelle', b: '🔓 verrouille une prise réussie : plus rien ne peut l\'abîmer par erreur. ↑ et ↓ (à droite du volume) montent ou descendent la piste : range-les dans l\'ordre que tu veux. ⧉ duplique la piste. ✕ la supprime.' },
   { sel: ['#list .row:nth-child(2) .swatch'], t: 'La couleur', b: 'Touche la pastille pour changer la couleur de la piste. Pratique pour t\'y retrouver quand t\'empiles les backs.' },
-  { sel: ['#list .row:nth-child(2) .lane'], t: 'La timeline', b: 'Glisse le doigt pour avancer dans le morceau. Une touche place la lecture. Un appui long sur une phrase la sélectionne : tu peux la supprimer, la déplacer ou l\'envoyer sur une autre piste.' },
+  { sel: ['#list .row:nth-child(2) .lane'], t: 'La timeline', b: 'Glisse le doigt pour avancer dans le morceau. Une touche place la lecture. Un appui long sur une phrase la sélectionne : tu peux la supprimer, la déplacer ou l\'envoyer sur une autre piste.\nPour bosser au poil : touche deux fois une prise, ou sa loupe 🔍. Elle s\'ouvre en grand : tu sélectionnes au doigt, tu écoutes en boucle, et tu coupes, montes le son, fais un fondu, répètes un passage ou recales la prise de 10 ms en 10 ms.' },
   { sel: ['#zOut', '#zIn'], t: 'Le zoom', b: 'Les loupes zooment et dézooment la timeline. Zoome pour couper une phrase au poil près.' },
   { sel: ['#plusBtn'], t: 'Le bouton +', b: 'Ajoute une piste, pose un repère (couplet, refrain), lance une boucle pour refaire juste une phrase, et retrouve toutes tes sessions. Tout se sauvegarde tout seul.' },
   { sel: ['#bSet'], t: 'Réglages', b: 'Mets ton blaze : il signe tes pistes. Tu y trouves aussi le décompte, le métronome et le réglage de l\'écoute (Auto, Casque ou Haut-parleur) si la pastille d\'écoute se trompe. Et si tu veux refaire ton premier son pas à pas : « 🎤 Premier son guidé ».' },
@@ -3985,6 +4032,204 @@ const TOUR = [
   { sel: ['#bSet'], t: 'Ton avis', b: 'Un bug, une idée, un kif ? Dans Réglages ou en bas de Partager, touche « Donner mon avis » : ça m\'arrive direct, je lis tout. C\'est comme ça que l\'appli avance.' },
   { t: 'À toi de kicker 🎤', b: 'C\'est tout bon. Importe ton instru, arme Lead pour tes couplets, Refrain pour ton refrain, et envoie. On se retrouve dans tes Reels. — Le Xel' }
 ];
+/* ---------- Éditeur de prise : la piste en grand, sélection au poil, outils de retouche ---------- */
+let ed = null;
+function openEditor(t, a, b){
+  if(!t?.buffer){ toast('Cette piste est vide : rien à éditer.'); return; }
+  if(ed) closeEditor();
+  bandSel = null; drawSel();
+  const dur = t.buffer.duration;
+  ed = { tid: t.id, v0: 0, v1: dur, a: null, b: null, cur: clamp(S.pos - t.offset, 0, dur), loop: false, end: null, start: 0, soloWas: null, drag: null };
+  if(a != null && b != null){ ed.a = clamp(a - t.offset, 0, dur); ed.b = clamp(b - t.offset, 0, dur); const pad = (ed.b - ed.a) * 0.4 + 0.3; ed.v0 = Math.max(0, ed.a - pad); ed.v1 = Math.min(dur, ed.b + pad); }
+  const w = document.createElement('div'); w.className = 'ed'; w.setAttribute('role', 'dialog'); w.setAttribute('aria-label', 'Éditeur de prise');
+  w.innerHTML = `<div class="edhead"><button class="sbtn" id="edClose">✕ Fermer</button><b id="edName"></b><button class="sbtn" id="edUndo" aria-label="Annuler">↶ Annuler</button></div>
+    <div class="edwave"><canvas id="edCv"></canvas></div>
+    <input type="range" id="edScroll" min="0" max="1000" value="0" aria-label="Se déplacer dans la prise">
+    <div class="edrow"><button class="sbtn" data-z="out" aria-label="Dézoomer">−</button><button class="sbtn" data-z="in" aria-label="Zoomer">+</button><button class="sbtn" data-z="all">Tout</button><button class="sbtn" data-z="sel">Sélection</button><span class="edinfo" id="edInfo"></span></div>
+    <div class="edrow"><button class="sbtn primary" id="edPlay">▶ Écouter</button><button class="sbtn" id="edLoop" aria-pressed="false">🔁 En boucle</button><button class="sbtn" id="edSolo" aria-pressed="false">🎧 Seule</button></div>
+    <div class="edtools">
+      <button class="sbtn" data-op="del">✂️ Supprimer</button><button class="sbtn" data-op="keep">🎯 Garder que ça</button>
+      <button class="sbtn" data-op="down">🔉 −3 dB</button><button class="sbtn" data-op="up">🔊 +3 dB</button>
+      <button class="sbtn" data-op="fin">↗ Fondu entrée</button><button class="sbtn" data-op="fout">↘ Fondu sortie</button>
+      <button class="sbtn" data-op="rep">🔂 Répéter</button><button class="sbtn" data-op="rev">⏪ À l'envers</button>
+      <button class="sbtn" data-op="early">⇠ Plus tôt</button><button class="sbtn" data-op="late">⇢ Plus tard</button>
+      <button class="sbtn" data-op="norm">📏 Niveau max</button>
+    </div>
+    <p class="note" id="edHint">Glisse le doigt sur l'onde pour sélectionner, tire les poignées pour ajuster au poil. Une touche place la lecture. Sans sélection, les outils s'appliquent à toute la prise.</p>`;
+  document.body.appendChild(w); ed.el = w; document.body.classList.add('ed-open');
+  $('#edName').textContent = t.name;
+  w.addEventListener('click', edClick);
+  $('#edScroll').addEventListener('input', e => { const t2 = edT(); if(!t2) return; const span = ed.v1 - ed.v0, d = t2.buffer.duration; ed.v0 = (d - span) * e.target.value / 1000; ed.v1 = ed.v0 + span; edDraw(); });
+  const cv = $('#edCv');
+  cv.addEventListener('pointerdown', edDown); cv.addEventListener('pointermove', edMove); cv.addEventListener('pointerup', edUp); cv.addEventListener('pointercancel', edUp);
+  if(S.playing) pause();
+  requestAnimationFrame(edTick);
+  edDraw();
+}
+const edT = () => ed && trackById(ed.tid);
+function closeEditor(){
+  if(!ed) return;
+  const t = edT();
+  if(S.playing) pause();
+  if(t && ed.soloWas !== null){ t.solo = ed.soloWas; applyMix(); }
+  ed.el.remove(); ed = null; document.body.classList.remove('ed-open');
+  renderTracks();
+}
+function edX2T(x){ const cv = $('#edCv'); return ed.v0 + (x / cv.clientWidth) * (ed.v1 - ed.v0); }
+function edT2X(tm){ const cv = $('#edCv'); return (tm - ed.v0) / (ed.v1 - ed.v0) * cv.clientWidth; }
+function edDown(e){
+  const t = edT(); if(!t) return;
+  const cv = e.currentTarget, r = cv.getBoundingClientRect(), x = e.clientX - r.left;
+  cv.setPointerCapture(e.pointerId);
+  let mode = 'new';
+  if(ed.a != null){ if(Math.abs(x - edT2X(ed.a)) < 24) mode = 'a'; else if(Math.abs(x - edT2X(ed.b)) < 24) mode = 'b'; }
+  ed.drag = { mode, x0: x, t0: edX2T(x), moved: false };
+}
+function edMove(e){
+  if(!ed?.drag) return;
+  const r = e.currentTarget.getBoundingClientRect(), x = e.clientX - r.left, d = edT().buffer.duration;
+  const tm = clamp(edX2T(x), 0, d);
+  if(Math.abs(x - ed.drag.x0) > 6) ed.drag.moved = true;
+  if(!ed.drag.moved) return;
+  if(ed.drag.mode === 'a'){ ed.a = Math.min(tm, ed.b - 0.01); }
+  else if(ed.drag.mode === 'b'){ ed.b = Math.max(tm, ed.a + 0.01); }
+  else { ed.a = Math.min(ed.drag.t0, tm); ed.b = Math.max(ed.drag.t0, tm); }
+  edDraw();
+}
+function edUp(e){
+  if(!ed?.drag) return;
+  const dr = ed.drag; ed.drag = null;
+  if(!dr.moved){
+    const t = edT(), tm = clamp(dr.t0, 0, t.buffer.duration);
+    if(dr.mode === 'new'){ if(ed.a != null && tm > ed.a && tm < ed.b){ ed.cur = tm; } else { ed.a = ed.b = null; ed.cur = tm; } }
+    ed.cur = tm; if(S.playing){ pause(); }
+  }
+  edDraw();
+}
+function edClick(e){
+  const t = edT(); if(!t) return;
+  const b = e.target.closest('button'); if(!b) return;
+  if(b.id === 'edClose') return closeEditor();
+  if(b.id === 'edUndo'){ undo(); setTimeout(() => { if(!edT()?.buffer) return closeEditor(); ed.v1 = Math.min(ed.v1, edT().buffer.duration); edDraw(); }, 50); return; }
+  if(b.id === 'edPlay') return edPlayToggle();
+  if(b.id === 'edLoop'){ ed.loop = !ed.loop; b.setAttribute('aria-pressed', ed.loop); return; }
+  if(b.id === 'edSolo'){ if(ed.soloWas === null) ed.soloWas = !!t.solo; t.solo = !t.solo; b.setAttribute('aria-pressed', t.solo); applyMix(); return; }
+  const z = b.dataset.z;
+  if(z){
+    const d = t.buffer.duration, mid = ed.a != null && z !== 'out' ? (ed.a + ed.b) / 2 : (ed.v0 + ed.v1) / 2; let span = ed.v1 - ed.v0;
+    if(z === 'in') span = Math.max(0.15, span / 2); else if(z === 'out') span = Math.min(d, span * 2);
+    else if(z === 'all'){ ed.v0 = 0; ed.v1 = d; edDraw(); return; }
+    else if(z === 'sel'){ if(ed.a == null){ toast('Sélectionne d\'abord un passage en glissant sur l\'onde.'); return; } const pad = (ed.b - ed.a) * 0.15 + 0.05; ed.v0 = Math.max(0, ed.a - pad); ed.v1 = Math.min(d, ed.b + pad); edDraw(); return; }
+    ed.v0 = clamp(mid - span / 2, 0, Math.max(0, d - span)); ed.v1 = ed.v0 + span; edDraw(); return;
+  }
+  if(b.dataset.op) edOp(b.dataset.op);
+}
+function edPlayToggle(){
+  const t = edT(); if(!t) return;
+  if(S.playing){ pause(); edDraw(); return; }
+  const from = ed.a != null ? ed.a : ed.cur;
+  ed.start = t.offset + from; ed.end = ed.a != null ? t.offset + ed.b : null;
+  S.pos = ed.start; unlockSpeaker(); wake().then(() => play());
+}
+function edTick(){
+  if(!ed) return;
+  const t = edT();
+  if(t && S.playing && ed.end != null && now() >= ed.end){ pause(); S.pos = ed.start; if(ed.loop) play(); }
+  if(t && S.playing){ const p = now() - t.offset; if(p > ed.v1 || p < ed.v0){ const span = ed.v1 - ed.v0; ed.v0 = clamp(p - span * 0.1, 0, Math.max(0, t.buffer.duration - span)); ed.v1 = ed.v0 + span; } }
+  if(t) edDraw();
+  $('#edPlay') && ($('#edPlay').textContent = S.playing ? '⏸ Pause' : '▶ Écouter');
+  requestAnimationFrame(edTick);
+}
+function edDraw(){
+  const t = edT(); if(!t || !t.buffer) return;
+  const cv = $('#edCv'), W = cv.clientWidth, H = cv.clientHeight, dpr = Math.min(2, devicePixelRatio || 1);
+  if(cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)){ cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const css = getComputedStyle(document.documentElement), col = t.color || '#f2b544';
+  g.fillStyle = css.getPropertyValue('--bg') || '#0b0d12'; g.fillRect(0, 0, W, H);
+  const buf = t.buffer, sr = buf.sampleRate, d0 = buf.getChannelData(0), d1 = buf.numberOfChannels > 1 ? buf.getChannelData(1) : null;
+  const span = ed.v1 - ed.v0;
+  /* grille de temps */
+  const steps = [0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10, 15, 30, 60], st = steps.find(s => span / s <= 8) || 60;
+  g.fillStyle = 'rgba(160,170,190,.5)'; g.font = '11px ui-monospace, monospace'; g.strokeStyle = 'rgba(160,170,190,.15)'; g.lineWidth = 1;
+  for(let tm = Math.ceil((ed.v0 + t.offset) / st) * st; tm < ed.v1 + t.offset; tm += st){
+    const x = edT2X(tm - t.offset); g.beginPath(); g.moveTo(x, 16); g.lineTo(x, H); g.stroke();
+    g.fillText(st < 1 ? tm.toFixed(2) + 's' : fmt(tm, true), x + 3, 12);
+  }
+  /* sélection */
+  if(ed.a != null){
+    const xa = edT2X(ed.a), xb = edT2X(ed.b);
+    g.fillStyle = 'rgba(242,181,68,.18)'; g.fillRect(xa, 16, xb - xa, H - 16);
+  }
+  /* onde : min/max par pixel */
+  const mid = 16 + (H - 16) / 2, amp = (H - 24) / 2;
+  g.fillStyle = col;
+  for(let x = 0; x < W; x++){
+    const s0 = Math.floor((ed.v0 + x / W * span) * sr), s1 = Math.max(s0 + 1, Math.floor((ed.v0 + (x + 1) / W * span) * sr));
+    let mn = 0, mx = 0; const step = Math.max(1, ((s1 - s0) / 400) | 0);
+    for(let i = s0; i < s1 && i < d0.length; i += step){ const v = d1 ? (d0[i] + d1[i]) / 2 : d0[i]; if(v < mn) mn = v; if(v > mx) mx = v; }
+    const y0 = mid - mx * amp, y1 = mid - mn * amp;
+    g.fillRect(x, y0, 1, Math.max(1, y1 - y0));
+  }
+  g.strokeStyle = 'rgba(160,170,190,.25)'; g.beginPath(); g.moveTo(0, mid); g.lineTo(W, mid); g.stroke();
+  /* poignées */
+  if(ed.a != null){
+    [ed.a, ed.b].forEach(tm => { const x = edT2X(tm); g.fillStyle = '#f2b544'; g.fillRect(x - 1.5, 16, 3, H - 16); g.beginPath(); g.arc(x, H - 14, 11, 0, Math.PI * 2); g.fill(); g.beginPath(); g.arc(x, 30, 8, 0, Math.PI * 2); g.fill(); });
+  }
+  /* curseur / tête de lecture */
+  const p = S.playing ? now() - t.offset : ed.cur, xp = edT2X(p);
+  if(xp >= 0 && xp <= W){ g.fillStyle = S.playing ? '#ff4b4b' : '#e7eaf0'; g.fillRect(xp - 1, 16, 2, H - 16); }
+  const sc = $('#edScroll'), dd = buf.duration; if(sc && !ed.drag && document.activeElement !== sc) sc.value = dd > span ? Math.round(ed.v0 / (dd - span) * 1000) : 0;
+  $('#edInfo').textContent = ed.a != null ? 'Sélection ' + (ed.b - ed.a).toFixed(2) + ' s' : 'Zoom ' + span.toFixed(span < 10 ? 1 : 0) + ' s';
+}
+function edCopy(b){ const o = ctx.createBuffer(b.numberOfChannels, b.length, b.sampleRate); for(let c = 0; c < b.numberOfChannels; c++) o.copyToChannel(b.getChannelData(c), c); return o; }
+function edOp(op){
+  const t = edT(); if(!t?.buffer) return;
+  if(isLocked(t)){ lockToast(t); return; }
+  if(t.keep){ keepToast(); return; }
+  const sr = t.buffer.sampleRate, n = t.buffer.length, has = ed.a != null;
+  if((op === 'del' || op === 'keep' || op === 'rep') && !has){ toast('Sélectionne d\'abord un passage en glissant le doigt sur l\'onde.'); return; }
+  const s0 = has ? Math.round(ed.a * sr) : 0, s1 = has ? Math.round(ed.b * sr) : n, F = Math.round(sr * 0.005);
+  const labels = { del: 'la suppression', keep: 'le rognage', down: 'le volume', up: 'le volume', fin: 'le fondu', fout: 'le fondu', rep: 'la répétition', rev: 'l\'inversion', early: 'le décalage', late: 'le décalage', norm: 'le niveau' };
+  pushUndo(labels[op]);
+  if(op === 'early' || op === 'late'){
+    const dt = op === 'early' ? -0.01 : 0.01;
+    t.offset = Math.max(0, t.offset + dt); if(t.takes[t.take]) t.takes[t.take].offset = t.offset;
+    if(S.playing) restart(); renderTracks(); scheduleSave(); edDraw();
+    toast('Prise décalée de 10 ms ' + (dt < 0 ? 'plus tôt' : 'plus tard') + '. Touche encore pour affiner.'); return;
+  }
+  let nb;
+  if(op === 'rep'){
+    const len = s1 - s0, nn = Math.max(n, s1 + len);
+    nb = ctx.createBuffer(t.buffer.numberOfChannels, nn, sr);
+    for(let c = 0; c < nb.numberOfChannels; c++){
+      const src = t.buffer.getChannelData(c), d = nb.getChannelData(c); d.set(src);
+      for(let i = 0; i < len; i++){ const w = i < F ? i / F : 1; d[s1 + i] = d[s1 + i] * (1 - w) + src[s0 + i] * w; }
+    }
+  } else {
+    nb = edCopy(t.buffer);
+    for(let c = 0; c < nb.numberOfChannels; c++){
+      const d = nb.getChannelData(c), L = s1 - s0;
+      if(op === 'del'){ d.fill(0, s0, s1); for(let k = 0; k < F; k++){ if(s0 - 1 - k >= 0) d[s0 - 1 - k] *= k / F; if(s1 + k < n) d[s1 + k] *= k / F; } }
+      else if(op === 'keep'){ d.fill(0, 0, s0); d.fill(0, s1, n); for(let k = 0; k < F; k++){ if(s0 + k < n) d[s0 + k] *= k / F; if(s1 - 1 - k >= 0) d[s1 - 1 - k] *= k / F; } }
+      else if(op === 'down' || op === 'up'){ const gg = op === 'up' ? 1.4125 : 0.7079; for(let i = s0; i < s1; i++){ const e = Math.min(1, (i - s0) / F, (s1 - i) / F); d[i] *= 1 + (gg - 1) * (has ? e : 1); } }
+      else if(op === 'fin'){ for(let i = s0; i < s1; i++) d[i] *= (i - s0) / L; }
+      else if(op === 'fout'){ for(let i = s0; i < s1; i++) d[i] *= (s1 - i) / L; }
+      else if(op === 'rev'){ for(let i = s0, j = s1 - 1; i < j; i++, j--){ const tmp = d[i]; d[i] = d[j]; d[j] = tmp; } for(let k = 0; k < F && s0 + k < s1; k++){ d[s0 + k] *= k / F; d[s1 - 1 - k] *= k / F; } }
+    }
+    if(op === 'norm'){
+      let pk = 0; for(let c = 0; c < nb.numberOfChannels; c++){ const d = nb.getChannelData(c); for(let i = s0; i < s1; i++){ const v = Math.abs(d[i]); if(v > pk) pk = v; } }
+      if(pk > 1e-4){ const gg = Math.min(20, 0.89 / pk); for(let c = 0; c < nb.numberOfChannels; c++){ const d = nb.getChannelData(c); for(let i = s0; i < s1; i++) d[i] *= gg; } }
+    }
+  }
+  setTrackBuf(t, nb, t.offset);
+  if(op === 'keep' || op === 'del'){ /* la sélection reste, pour enchaîner */ }
+  if(S.playing) restart();
+  renderTracks(); scheduleSave(); edDraw();
+  const msg = { del: 'Passage supprimé.', keep: 'Seul ce passage est gardé.', down: 'Volume baissé de 3 dB.', up: 'Volume monté de 3 dB.', fin: 'Fondu d\'entrée appliqué.', fout: 'Fondu de sortie appliqué.', rep: 'Passage répété juste après.', rev: 'Passage passé à l\'envers.', norm: 'Niveau monté au max sans saturer.' }[op];
+  toast(msg + (has ? '' : ' (sur toute la prise)') + ' ↶ Annuler pour revenir.');
+}
+
 let tourI = -1, tourEl = null;
 function startTour(force){
   if(tourEl) return;
@@ -4215,8 +4460,8 @@ $('#bpm').onchange = e => {
 const tog = (id, key, persist) => { const b = $(id); b.setAttribute('aria-pressed', S[key]); b.onclick = () => { S[key] = !S[key]; b.setAttribute('aria-pressed', S[key]); if(persist) store.set(key, S[key]); }; };
 tog('#tMetro', 'metro'); tog('#tCount', 'countIn', true);
 $('#tMon').setAttribute('aria-pressed', 'false');
-$('#tMon').onclick = () => S.mon ? monOff() : monOn();
-$('#bMon').onclick = () => S.mon ? monOff() : monOn();
+$('#tMon').onclick = () => { if(S.mon){ S.monUserOff = true; S.monAuto = false; monOff(); } else { S.monUserOff = false; monOn(); } };
+$('#bMon').onclick = () => { if(S.mon){ S.monUserOff = true; S.monAuto = false; monOff(); } else { S.monUserOff = false; monOn(); } };
 $('#routeChip').onclick = () => { $('#settings').hidden = false; $('#bSet').setAttribute('aria-expanded', 'true'); };
 $('#zIn').onclick = () => { S.pps = Math.min(200, S.pps * 1.5); renderTracks(); };
 $('#zOut').onclick = () => { S.pps = Math.max(8, S.pps / 1.5); renderTracks(); };
