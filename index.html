@@ -441,6 +441,8 @@ body.ed-open .wmark{z-index:41}
 .vsgrid .sbtn{height:auto;min-height:54px;display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 10px;text-align:left}
 .vsgrid .sbtn b{font-size:14px}.vsgrid .sbtn span{font-size:11px;color:var(--muted)}
 .vsgrid .sbtn[aria-pressed=true]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--raise))}
+.mixfol{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:8px 12px 0}
+.mixfol .note{flex:1 1 180px;margin:0}
 </style>
 </head>
 <body>
@@ -497,7 +499,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 69</span></div>
+      <span class="grp" id="ver">Version 70</span></div>
       <p class="note" id="envInfo"></p>
     </div>
   </div>
@@ -578,6 +580,7 @@ body.ed-open .wmark{z-index:41}
 <section class="card view" id="vMix" aria-label="Mixage" hidden>
   <div class="cardhead"><h2>Mixage</h2><span class="spacer"></span><button class="sbtn" id="bLevel">Rééquilibrer les niveaux</button><button class="qhelp" data-help="vMix" aria-label="Aide de cet onglet">?</button></div>
   <div class="pad">
+    <div class="mixfol"><button class="toggle" id="mixFollow" aria-pressed="true">🎯 Suit le chant</button><span class="note">La piste qui chante est choisie toute seule pendant la lecture.</span></div>
     <div class="chips" id="mixChips"></div>
     <div id="strip" class="pad" style="padding:0"></div>
   </div>
@@ -760,7 +763,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 69;
+const APP_VER = 70;
 try{ const li = document.querySelector('link[rel="apple-touch-icon"]'); if(li) document.getElementById('wmLogo').src = li.href; }catch(e){}
 const COLORS = ['#6fa8ff','#f2b544','#c58bff','#4fd1b5','#ff8a65','#9be15d','#ff7eb6'];
 const HDR = 216, CEIL = Math.pow(10, -1 / 20);
@@ -1900,8 +1903,34 @@ function renderMix(){
 }
 $('#mixChips').addEventListener('click', e => {
   const b = e.target.closest('.tchip'); if(!b) return;
-  S.sel = +b.dataset.id; renderMix();
+  S.sel = +b.dataset.id;
+  if(S.mixFollow){ S.mixFollow = false; store.set('mixFollow', false); updFollow(); toast('✋ Tu as choisi la piste toi-même : suivi du chant coupé. Retouche 🎯 pour le remettre.'); }
+  renderMix();
 });
+/* Mix : la piste affichée suit la voix qui chante à l'endroit de la lecture */
+S.mixFollow = store.get('mixFollow', true);
+function updFollow(){ const b = $('#mixFollow'); if(b) b.setAttribute('aria-pressed', String(!!S.mixFollow)); }
+function vocalAt(p){
+  let best = null, bv = 0;
+  for(const t of S.tracks){
+    if(!t.buffer || t.preset === 'instru' || !audible(t)) continue;
+    const rel = p - t.offset; if(rel < 0 || rel >= t.buffer.duration) continue;
+    const env = envOf(t.buffer); let pk = 0; for(let i = 0; i < env.length; i += 7) if(env[i] > pk) pk = env[i];
+    const f = Math.floor(rel / 0.01); let v = 0; for(let k = f - 15; k <= f + 15; k++) if(k >= 0 && k < env.length && env[k] > v) v = env[k];
+    const score = pk ? v / pk : 0;
+    if(score > 0.12 && (score + (t.arm ? 0.3 : 0)) > bv){ bv = score + (t.arm ? 0.3 : 0); best = t; }
+  }
+  return best;
+}
+function mixPick(){
+  if(!S.mixFollow) return false;
+  const t = vocalAt(now()) || S.tracks.find(x => x.arm && x.buffer) || S.tracks.filter(x => x.preset !== 'instru' && x.buffer).slice(-1)[0];
+  if(t && t.id !== S.sel){ S.sel = t.id; return true; }
+  return false;
+}
+let mixFolT = 0;
+$('#mixFollow').onclick = () => { S.mixFollow = !S.mixFollow; store.set('mixFollow', S.mixFollow); updFollow(); if(mixPick()) renderMix(); toast(S.mixFollow ? '🎯 Mix suit le chant : la piste qui chante s\'affiche toute seule.' : '✋ Suivi coupé : tu choisis la piste toi-même.'); };
+updFollow();
 $('#strip').addEventListener('input', e => {
   const t = selTrack(); if(!t) return;
   if(e.target.id === 'fxPreset') return;
@@ -4622,7 +4651,8 @@ const HELP = {
   ],
   vMix: [
     { t: 'L\'onglet Mix', b: 'Ici tu règles chaque piste en détail.' },
-    { sel: ['#mixChips'], t: 'Choisir la piste', b: 'Touche une piste pour afficher ses réglages en dessous.' },
+    { sel: ['#mixFollow'], t: 'Suit le chant', b: 'Allumé, la piste qui chante à l\'endroit de la lecture s\'affiche toute seule : tu lances ▶ et tu règles la voix que tu entends, sans chercher.' },
+    { sel: ['#mixChips'], t: 'Choisir la piste', b: 'Touche une piste pour afficher ses réglages en dessous. Choisir toi-même coupe le suivi du chant.' },
     { sel: ['#bLevel'], t: 'Rééquilibrer', b: 'Remet tous les niveaux d\'aplomb d\'un coup : l\'instru, le lead, les backs et l\'ambiance à leur juste place.' },
     { sel: ['#fxPreset'], t: 'Style de piste', b: 'Voix lead, Back, Ambiance, Instru ou Neutre : change d\'un coup l\'égaliseur, la compression et les effets de base.' },
     { sel: ['#strip .fxlist'], t: 'Les effets en grand', b: 'Les mêmes effets que sur la piste, avec leurs doses. Pour l\'auto-tune, tu choisis aussi la tonalité et la gamme. « Retirer la voix » enlève la voix d\'un son du commerce. Sur l\'instru : tonalité (demi-tons) et vitesse (BPM).' },
@@ -4973,7 +5003,7 @@ document.querySelector('.nav').addEventListener('click', e => {
   document.querySelectorAll('.nav button').forEach(x => x.setAttribute('aria-selected', x === b));
   document.querySelectorAll('.view').forEach(v => v.hidden = v.id !== b.dataset.view);
   if(b.dataset.view === 'vPistes') renderTracks();
-  if(b.dataset.view === 'vMix') renderMix();
+  if(b.dataset.view === 'vMix'){ mixPick(); renderMix(); }
   if(b.dataset.view === 'vMaster') renderMaster();
   if(b.dataset.view === 'vTexte' && !$('#viewP').hidden){ curLine = null; renderPrompt(); }
   if(b.dataset.view === 'vProjets') renderProjets();
@@ -5134,6 +5164,11 @@ function loop(){
     const r = M.bypass ? 0 : Math.abs(lim.reduction || 0);
     $('#limGr').style.width = Math.min(100, r * 8) + '%';
     $('#limDb').textContent = (r > 0.05 ? '−' : '') + r.toFixed(1) + ' dB';
+  }
+  if(!$('#vMix').hidden && S.mixFollow && S.playing && Date.now() - mixFolT > 400){
+    mixFolT = Date.now();
+    const ae = document.activeElement;
+    if(!(ae && ae.closest && ae.closest('#strip') && /INPUT|SELECT/.test(ae.tagName)) && mixPick()) renderMix();
   }
   if(!$('#vMix').hidden){
     const t = selTrack(), gr = $('#trGr');
