@@ -521,9 +521,10 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 1.0.1 · Bêta</span></div>
+      <span class="grp" id="ver">Version 1.0.3 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
+      <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
     </div>
   </div>
 </div>
@@ -792,20 +793,21 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 75; // numéro interne (jamais affiché)
-const APP_PUB = '1.0.1';
+const APP_VER = 77; // numéro interne (jamais affiché)
+const APP_PUB = '1.0.3';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
+const noTrack = () => { try{ return localStorage.getItem('cabine.noTrack') === 'true'; }catch(e){ return false; } };
 function track(ev){
   try{
-    if(!/github\.io$/.test(location.hostname)) return;
+    if(!/github\.io$/.test(location.hostname) || noTrack()) return;
     const gc = window.goatcounter;
     if(gc && gc.count) gc.count({ path: ev, title: ev, event: true }); else if(gcQ.length < 30) gcQ.push(ev);
   }catch(e){}
 }
 try{
-  if(/github\.io$/.test(location.hostname)){
+  if(/github\.io$/.test(location.hostname) && !noTrack()){
     const sc = document.createElement('script'); sc.async = true; sc.src = 'https://gc.zgo.at/count.js';
     sc.dataset.goatcounter = GC_URL;
     sc.onload = () => { setTimeout(() => { while(gcQ.length) track(gcQ.shift()); }, 500); };
@@ -5120,6 +5122,11 @@ function showBeta(){
   });
 }
 setTimeout(showBeta, 300);
+{ const b = $('#tNoTrack'); b.setAttribute('aria-pressed', String(store.get('noTrack', false)));
+  if(store.get('noTrack', false)) b.hidden = false;
+  let taps = 0, tapT = 0;
+  $('#ver').addEventListener('click', () => { const now = Date.now(); taps = now - tapT < 800 ? taps + 1 : 1; tapT = now; if(taps >= 5){ taps = 0; b.hidden = !b.hidden; } });
+  b.onclick = () => { const v = !store.get('noTrack', false); if(!v) store.set('noTrack', false); else track('compteur-coupe'); if(v) store.set('noTrack', true); b.setAttribute('aria-pressed', String(v)); toast(v ? 'Tes visites ne sont plus comptées sur cet appareil.' : 'Tes visites sont de nouveau comptées.'); }; }
 setTimeout(() => { track(isStandalone() ? 'ouverture-appli-installee' : 'ouverture-navigateur'); if(ENV.inApp) track('ouverture-dans-' + String(ENV.inApp).toLowerCase().replace(/[^a-z0-9]+/g, '-')); }, 1500);
 
 
