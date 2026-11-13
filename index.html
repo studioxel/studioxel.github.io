@@ -432,6 +432,12 @@ body:not(.simple) .stepbar{display:none}
 .power p{margin:0;color:var(--muted);line-height:1.4}
 .power .pwb{display:flex;gap:8px;flex-wrap:wrap}
 .power .pwb .sbtn{height:42px;padding:0 14px;font-weight:800}
+.arr{display:flex;flex-direction:column;gap:10px}
+.arrt{display:flex;flex-direction:column;gap:6px}
+.arrt b{font:800 14px var(--display)}
+.arrs{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
+.arrs .sbtn{flex:none;height:40px;padding:0 12px;font-weight:700}
+.arrs .sbtn[aria-pressed=true]{background:var(--accent);color:#1a1405;border-color:var(--accent)}
 .ideas{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .idea{height:auto!important;min-height:64px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;padding:8px 10px!important;text-align:left}
 .idea span{font-size:18px;line-height:1}.idea b{font:800 14px var(--display)}.idea small{font-size:11.5px;color:var(--muted);font-weight:500}
@@ -582,7 +588,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 1.3.2 · Bêta</span></div>
+      <span class="grp" id="ver">Version 1.4 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -879,8 +885,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 92; // numéro interne (jamais affiché)
-const APP_PUB = '1.3.2';
+const APP_VER = 93; // numéro interne (jamais affiché)
+const APP_PUB = '1.4';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -2257,7 +2263,7 @@ const VSTYLES = [
   { n: '🎯 Brute', d: 'Sèche, en avant, sans effets', fx: { low: -1, mid: 3, midF: 3000, high: 2, thr: -20, ratio: 4, makeup: -3, rev: 0, dly: 0, dbl: 0, sat: 1, rad: 0 } },
   { n: '📻 Lo-fi', d: 'Téléphone, grain, petite pièce', fx: { low: 0, mid: 0, midF: 1500, high: 0, thr: -22, ratio: 3, makeup: -2, rev: FXL.rev[0], dly: 0, dbl: 0, sat: 1, rad: 2 } }
 ];
-async function applyVStyle(t, i){
+async function applyVStyle(t, i, quiet){
   const v = VSTYLES[i]; if(!t || !v) return;
   if(isLocked(t)){ lockToast(t); return; }
   track('style-voix');
@@ -2271,7 +2277,7 @@ async function applyVStyle(t, i){
     else if(isTuned(t) && !t.keep) await applyAutotune(t);
   }
   remon(); refreshFx(); scheduleSave();
-  toast(v.n + ' sur « ' + t.name + ' » : ' + v.d.toLowerCase() + '. Tu peux retoucher chaque effet ensuite.');
+  if(!quiet) toast(v.n + ' sur « ' + t.name + ' » : ' + v.d.toLowerCase() + '. Tu peux retoucher chaque effet ensuite.');
 }
 const TFX_NAMES = { rev: 'Reverb', dly: 'Écho', dbl: 'Doubler', at: 'Auto-tune', sat: 'Chaleur', rad: 'Radio', vr: 'Sans voix' };
 const tfxKeys = t => t.preset === 'instru' ? ['vr'] : ['rev', 'dly', 'dbl', 'at', 'sat', 'rad'];
@@ -5033,8 +5039,8 @@ const HELP = {
   vPistes: [
     { t: 'L\'onglet Pistes', b: 'C\'est ta table d\'enregistrement : tes pistes à gauche, la timeline à droite. Je te montre tout ce qu\'il y a ici.' },
     { sel: ['#modeBar'], t: 'Simple ou avancé', b: 'Le bandeau tout en haut : un appui pour passer en mode simple (l\'essentiel) ou avancé (tous les outils). Ça bascule direct.' },
-    { sel: ['#stepBar'], t: 'Les étapes', b: 'En mode simple, tout se fait ici : une étape à la fois (instru, texte, voix, export, partage). Le gros bouton fait l\'action pour toi. Pour tous les outils : « Mode avancé », tout en haut.' },
-    { sel: ['.power'], t: 'Et si tu ajoutais…', b: 'Dès que ta lead est posée : ajoute un refrain ou des backs (la piste est préparée, tu n\'as qu\'à enregistrer), essaie un style de voix ou l\'auto-tune (ça rejoue direct), retouche une phrase, nettoie tes backs, fais un Reel. Rien n\'est bloqué : tous les outils sont aussi en mode avancé.' },
+    { sel: ['#stepBar'], t: 'Les étapes', b: 'En mode simple, tout se fait ici, comme une séance studio : instru, texte, lead, refrain, backs, habillage, master et export. Le gros bouton fait l\'action pour toi. Pour tous les outils : « Mode avancé », tout en haut.' },
+    { sel: ['.power'], t: 'Pour aller plus loin', b: 'Pendant l\'habillage et après : retoucher une phrase au poil, t\'entendre en direct avec tes écouteurs, faire un Reel. Tous les outils sont aussi en mode avancé.' },
     { sel: ['#sessTitle', '#sessState'], t: 'Ta session', b: 'Le nom de ton son et son état. « Sauvegardé » : tout est gardé dans le téléphone, rien à faire.' },
     { sel: ['#zOut', '#zIn'], t: 'Zoom', b: 'Les loupes resserrent ou élargissent la timeline. Zoome pour bosser une phrase, dézoome pour voir tout le morceau.' },
     { sel: ['#plusBtn'], t: 'Le +', b: 'Ajouter une piste, poser un repère (couplet, refrain), lancer une boucle de quelques mesures pour refaire une phrase, renommer ta session, la lier à un projet et retrouver toutes tes sessions.' },
@@ -5357,7 +5363,7 @@ function showBeta(){
 const isSimple = () => store.get('uiMode', 'simple') === 'simple';
 const SIMPLE_TOUR = [
   TOUR[0], TOUR[1],
-  { sel: ['#stepBar'], t: 'Suis les étapes 👇', b: 'Tout se fait ici, une étape à la fois : charge ton instru, écris ton texte, enregistre ta voix, réécoute, exporte. Le gros bouton fait l\'action pour toi. Une fois ta lead posée, « ➕ Et si tu ajoutais… » te propose d\'enrichir ton son : refrain, backs, style de voix, auto-tune, retouches, Reel.' },
+  { sel: ['#stepBar'], t: 'Suis les étapes 👇', b: 'Tout se fait ici, comme une vraie séance studio : instru, texte, lead, refrain, backs, habillage (styles, auto-tune, niveaux), master et export. Le gros bouton fait l\'action pour toi. Pas de refrain ou pas de backs ? Un appui pour passer.' },
   { sel: ['#modeBar'], t: 'Simple ou avancé', b: 'Tout en haut : « Mode simple » montre l\'essentiel, étape par étape. « Mode avancé » sort tous les outils : effets détaillés, Mix, Master, éditeur de prise, projets. Un appui et ça bascule direct, dans les deux sens.' },
   { t: 'À toi de kicker 🎤', b: 'C\'est parti : suis les étapes en haut de l\'écran. — Le Xel' }
 ];
@@ -5394,12 +5400,7 @@ function ideas(){
   const L = leadTake(); if(!L || S.recording || Date.now() < ideaHide) return [];
   const rf = S.tracks.find(t => /refrain/i.test(t.name) && t !== L), bk = trByPreset('back');
   const out = [];
-  if(rf && !rf.buffer) out.push({ id: 'refrain', ic: '🎤', t: 'Un refrain', d: 'sur la piste Refrain' });
-  if(bk && !bk.buffer) out.push({ id: 'back', ic: '🗣️', t: 'Des backs', d: 'pour appuyer tes fins de phrases' });
-  if(!ideaUsed.style || ideaStyles) out.push({ id: 'style', ic: '🎨', t: 'Un style de voix', d: '7 looks en un appui' });
-  if(!(isTuned(L) || L.atOn) && !ideaUsed.tune) out.push({ id: 'tune', ic: '🤖', t: 'De l\'auto-tune', d: 'version « Planant »' });
   if(S.routeInfo?.kind === 'ecouteurs' && !S.mon) out.push({ id: 'mon', ic: '🎧', t: 'T\'entendre en direct', d: 'avec tes écouteurs' });
-  if(bk && bk.buffer && !ideaUsed.gate) out.push({ id: 'gate', ic: '🔇', t: 'Nettoyer tes backs', d: 'souffle et blancs coupés' });
   if(!ideaUsed.edit) out.push({ id: 'edit', ic: '✂️', t: 'Retoucher une phrase', d: 'couper un raté au poil' });
   if(lastMaster && !ideaUsed.reel) out.push({ id: 'reel', ic: '🎬', t: 'Un Reel', d: 'pour Insta, TikTok, Shorts' });
   return out;
@@ -5407,7 +5408,7 @@ function ideas(){
 function ideasHTML(list){
   if(!list.length) return '';
   const L = leadTake();
-  return `<div class="power"><div class="pwtop">➕ Et si tu ajoutais…</div>
+  return `<div class="power"><div class="pwtop">➕ Pour aller plus loin</div>
     <div class="ideas">${list.map(i => `<button class="sbtn idea" data-idea="${i.id}" aria-pressed="${i.id === 'style' && ideaStyles}"><span>${i.ic}</span><b>${i.t}</b><small>${i.d}</small></button>`).join('')}</div>
     ${ideaStyles ? `<p>Touche un style : « ${esc(L ? L.name : '')} » rejoue direct avec.</p><div class="pwb">${VSTYLES.map((v, k) => `<button class="sbtn" data-ivs="${k}">${v.n}</button>`).join('')}</div>` : ''}
     <div class="pwb"><button class="sbtn" data-idea="hide">Masquer pour l\'instant</button></div></div>`;
@@ -5428,54 +5429,108 @@ async function ideaUse(id){
   else if(id === 'reel'){ ideaUsed.reel = true; document.querySelector('.nav [data-view="vPartager"]').click(); setTimeout(() => $('#rsCanvas')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 200); }
   track('idee-' + id);
 }
+/* ---------- Le parcours studio, étape par étape (mode simple) ---------- */
+const roleOf = t => !t ? '' : t.preset === 'instru' ? 'instru' : /refrain/i.test(t.name) ? 'refrain' : (t.preset === 'back' || /^back/i.test(t.name)) ? 'back' : /ambiance/i.test(t.name) ? 'amb' : 'lead';
+const trRole = r => S.tracks.find(t => roleOf(t) === r);
+const STEP_N = { instru: 1, text: 2, lead: 3, refrain: 4, back: 5, arr: 6, export: 7 };
+const DEF_STYLE = { lead: 0, refrain: 4, back: 2 };
+let flow = { sid: null };
+function flowGet(){
+  const id = sess && sess.id;
+  if(flow.sid !== id){ flow = Object.assign({ sid: id, instru: false, text: false, lead: false, refrain: false, back: false, arr: false, arrInit: false, styles: null }, store.get('flow:' + id, {})); flow.sid = id; }
+  return flow;
+}
+function flowSet(k, v){ const f = flowGet(); f[k] = v; if(f.sid) store.set('flow:' + f.sid, Object.fromEntries(Object.entries(f).filter(([x]) => x !== 'sid' && x !== 'styles'))); }
+async function rebalanceAll(){
+  setBusy(true, 'Équilibrage des pistes…');
+  try{ for(const t of S.tracks){ if(isLocked(t) || !t.buffer) continue; t.vol = 0.85; await autoLevel(t); } }catch(e){}
+  setBusy(false); renderTracks();
+}
+/* Habillage studio : niveaux, style de voix par rôle, backs nettoyés */
+async function arrangeAuto(){
+  const f = flowGet(); if(f.arrInit) return; flowSet('arrInit', true);
+  pushUndo('l\'habillage studio');
+  for(const t of vocalTracks()){
+    if(!t.buffer || isLocked(t) || t.keep) continue;
+    const r = roleOf(t);
+    if(r === 'back'){ const g = gateBlancs(t.buffer, 0, t.buffer.length); if(g) setTrackBuf(t, g.buf, t.offset); }
+    if(t.vstyle == null && DEF_STYLE[r] != null) await applyVStyle(t, DEF_STYLE[r], true);
+  }
+  await rebalanceAll(); scheduleSave();
+  toast('🎛️ Ton son est habillé comme en studio : niveaux calés, style sur chaque voix, backs nettoyés. Change ce que tu veux.');
+}
 function updStep(){
   if(!isSimple()) return;
-  if(stepSkip.sid !== (sess && sess.id)) stepSkip = { sid: sess && sess.id, instru: false, text: false };
-  const instru = S.tracks.find(t => t.preset === 'instru'), hasInstru = !!instru?.buffer;
-  const voc = vocalTracks(), hasTake = voc.some(t => t.buffer), lyr = ta.value.trim().length > 0;
-  const exported = !!lastMaster && masterSig === mixSig();
-  let n, st;
+  const f = flowGet();
+  const ins = trRole('instru'), L = trRole('lead'), R = trRole('refrain'), B = trRole('back');
+  const lyr = ta.value.trim().length > 0, exported = !!lastMaster && masterSig === mixSig();
+  let st;
   if(S.recording) st = 'rec';
-  else if(!hasInstru && !stepSkip.instru && !hasTake) { st = 'instru'; n = 1; }
-  else if(!lyr && !stepSkip.text && !hasTake) { st = 'text'; n = 2; }
-  else if(!hasTake || stepRetake) { st = 'voice'; n = 3; }
-  else if(!exported) { st = 'export'; n = 4; }
-  else { st = 'done'; n = 5; }
-  if(st === 'voice' && !S.tracks.some(t => t.arm)){ const f = voc.find(t => !t.buffer) || voc[0]; if(f){ S.tracks.forEach(x => x.arm = false); f.arm = true; renderTracks(); } }
-  const armed = S.tracks.find(t => t.arm);
-  const idl = (st === 'export' || st === 'done') ? ideas() : [];
-  const key = [st, armed && armed.id, voc.map(t => t.name + (t.buffer ? 1 : 0)).join(','), S.playing, idl.map(i => i.id).join(','), ideaStyles].join('|');
+  else if(!ins?.buffer && !f.instru && !L?.buffer) st = 'instru';
+  else if(!lyr && !f.text && !L?.buffer) st = 'text';
+  else if(!f.lead) st = 'lead';
+  else if(R && !f.refrain) st = 'refrain';
+  else if(B && !f.back) st = 'back';
+  else if(!f.arr) st = 'arr';
+  else if(!exported) st = 'export';
+  else st = 'done';
+  const want = { lead: L, refrain: R, back: B }[st];
+  if(want && !want.arm && !S.recording){ S.tracks.forEach(x => x.arm = false); want.arm = true; renderTracks(); }
+  const idl = (st === 'arr' || st === 'export' || st === 'done') ? ideas() : [];
+  const voc = vocalTracks().filter(t => t.buffer);
+  const key = [st, voc.map(t => t.id + ':' + t.vstyle + ':' + (isTuned(t) || t.atOn ? 1 : 0)).join(','), L?.buffer ? 1 : 0, R?.buffer ? 1 : 0, B?.buffer ? 1 : 0, S.playing, idl.map(i => i.id).join(','), M.preset, M.target].join('|');
   if(key === stepKey) return; stepKey = key;
-  const dots = `<div class="stdots">${[1, 2, 3, 4, 5].map(i => `<i class="${i <= (n || 3) ? 'on' : ''}"></i>`).join('')}</div>`;
-  const chips = `<div class="stchips">${voc.map(t => `<button class="sbtn" data-sarm="${t.id}" aria-pressed="${!!t.arm}">${esc(t.name)}${t.buffer ? ' ✓' : ''}</button>`).join('')}</div>`;
-  const adv = '<button class="stadv" data-s="adv">🧰 Plus d\'outils (mode avancé)</button>';
+  const n = STEP_N[st] || 7;
+  const dots = `<div class="stdots">${[1, 2, 3, 4, 5, 6, 7].map(i => `<i class="${i <= n ? 'on' : ''}"></i>`).join('')}</div>`;
+  const head = (t, d) => `${dots}<div class="stn">Étape ${n} sur 7</div><h3>${t}</h3><p>${d}</p>`;
+  const playB = `<button class="sbtn" data-s="play">${S.playing ? '⏸ Pause' : '▶ Écouter'}</button>`;
+  const take = (t, label, d, skip) => t?.buffer
+    ? head(label + ' ✓', 'Écoute, et refais-la si elle ne te plaît pas.') + `<div class="stb"><button class="sbtn primary big" data-s="ok">C'est bon, suite →</button>${playB}<button class="sbtn" data-s="rec">🎤 Refaire</button></div>`
+    : head(label, d) + `<div class="stb"><button class="sbtn primary big" data-s="rec">● Enregistrer ${esc(t ? t.name : '')}</button>${skip ? `<button class="sbtn" data-s="skip">${skip}</button>` : ''}</div>`;
   let h = '';
   if(st === 'rec') h = `<div class="stn">● Enregistrement</div><h3>Ça tourne, kicke 🎤</h3><p>Retouche REC (ou le bouton ici) quand tu as fini.</p><div class="stb"><button class="sbtn primary big" data-s="stop">⏹ Arrêter</button></div>`;
-  else if(st === 'instru') h = `${dots}<div class="stn">Étape 1 sur 5</div><h3>Charge ton instru</h3><p>Le beat sur lequel tu vas kicker (MP3 ou WAV, depuis ton téléphone).</p><div class="stb"><button class="sbtn primary big" data-s="instru">📂 Choisir mon instru</button><button class="sbtn" data-s="noinstru">Je kicke sans instru</button></div>`;
-  else if(st === 'text') h = `${dots}<div class="stn">Étape 2 sur 5</div><h3>Écris ton texte</h3><p>Pas obligé, mais il défilera tout seul pendant que tu enregistres.</p><div class="stb"><button class="sbtn primary big" data-s="write">✍️ Écrire mon texte</button><button class="sbtn" data-s="notext">Passer</button></div>`;
-  else if(st === 'voice') h = `${dots}<div class="stn">Étape 3 sur 5</div><h3>Enregistre ta voix</h3><p>Choisis la piste, puis appuie sur REC. Un décompte part, et tu kickes.</p>${chips}<div class="stb"><button class="sbtn primary big" data-s="rec">● Enregistrer${armed ? ' sur ' + esc(armed.name) : ''}</button>${hasTake ? '<button class="sbtn" data-s="next">C\'est bon, suite →</button>' : ''}</div>`;
-  else if(st === 'export') h = `${dots}<div class="stn">Étape 4 sur 5</div><h3>Réécoute et exporte</h3><p>Ça te va ? Exporte ton son. Sinon, refais ta prise, ou enrichis-le juste en dessous.</p><div class="stb"><button class="sbtn primary big" data-s="export">📤 Exporter mon son</button><button class="sbtn" data-s="play">${S.playing ? '⏸ Pause' : '▶ Réécouter'}</button><button class="sbtn" data-s="retake">🎤 Refaire ma prise</button></div>`;
-  else h = `${dots}<div class="stn">Étape 5 sur 5</div><h3>Ton son est prêt 🔥</h3><p>Envoie-le où tu veux, ou fais-en un Reel dans Partager.</p><div class="stb"><button class="sbtn primary big" data-s="share">📲 Partager mon son</button><button class="sbtn" data-s="reel">🎬 Faire un Reel</button><button class="sbtn" data-s="retake">🎤 Retoucher</button></div>`;
+  else if(st === 'instru') h = head('Charge ton instru', 'Le beat sur lequel tu vas kicker (MP3 ou WAV, depuis ton téléphone).') + `<div class="stb"><button class="sbtn primary big" data-s="instru">📂 Choisir mon instru</button><button class="sbtn" data-s="noinstru">Je kicke sans instru</button></div>`;
+  else if(st === 'text') h = head('Écris ton texte', 'Il défilera tout seul pendant que tu enregistres.') + `<div class="stb"><button class="sbtn primary big" data-s="write">✍️ Écrire mon texte</button><button class="sbtn" data-s="notext">Passer</button></div>`;
+  else if(st === 'lead') h = take(L, 'Pose ta lead', 'Tes couplets, la voix principale. Un décompte part, et tu kickes. Tu peux t\'arrêter et reprendre où tu veux.', null);
+  else if(st === 'refrain') h = take(R, 'Ton refrain', 'Sur sa propre piste : il pourra avoir son style à lui, plus large et plus fort. Place la lecture au début du refrain, puis enregistre.', 'Pas de refrain dans ce son');
+  else if(st === 'back') h = take(B, 'Tes backs', 'Les voix qui appuient tes fins de phrases et tes punchs. Pose-les par-dessus ta lead. Je les nettoie tout seul ensuite.', 'Pas de backs');
+  else if(st === 'arr'){
+    h = head('Habille ton son', 'Comme en studio : chaque voix a son style, les niveaux sont calés, les backs nettoyés. Change ce que tu veux et écoute.');
+    h += `<div class="arr">${voc.map(t => `<div class="arrt"><b>${esc(t.name)}</b><div class="arrs">${VSTYLES.map((v, k) => `<button class="sbtn" data-avs="${t.id}:${k}" aria-pressed="${t.vstyle === k}">${v.n}</button>`).join('')}<button class="sbtn" data-aat="${t.id}" aria-pressed="${isTuned(t) || !!t.atOn}">🤖 Auto-tune</button></div></div>`).join('')}</div>`;
+    h += `<div class="stb"><button class="sbtn primary big" data-s="arrok">C'est bon, suite →</button>${playB}<button class="sbtn" data-s="level">⚖️ Recaler les niveaux</button></div>`;
+  }
+  else if(st === 'export'){
+    h = head('Le master et l\'export', 'La touche finale sur tout le son, puis ton fichier MP3 est prêt.');
+    h += `<div class="arrt"><b>Couleur</b><div class="arrs">${[['naturel', 'Naturel'], ['rap', 'Rap moderne'], ['chaud', 'Chaud']].map(([k, l]) => `<button class="sbtn" data-mst="${k}" aria-pressed="${M.preset === k}">${l}</button>`).join('')}</div></div>`;
+    h += `<div class="arrt"><b>Volume</b><div class="arrs">${[['-14', 'Streaming'], ['-9', 'Fort']].map(([k, l]) => `<button class="sbtn" data-mtg="${k}" aria-pressed="${M.target === +k}">${l}</button>`).join('')}</div></div>`;
+    h += `<div class="stb"><button class="sbtn primary big" data-s="export">📤 Exporter mon son</button>${playB}<button class="sbtn" data-s="back2arr">← Retoucher l'habillage</button></div>`;
+  }
+  else h = `${dots}<div class="stn">C'est fini</div><h3>Ton son est prêt 🔥</h3><p>Envoie-le où tu veux, ou fais-en un Reel.</p><div class="stb"><button class="sbtn primary big" data-s="share">📲 Partager mon son</button><button class="sbtn" data-s="reel">🎬 Faire un Reel</button><button class="sbtn" data-s="back2arr">🎛️ Retoucher</button></div>`;
   stepEl.innerHTML = h + ideasHTML(idl);
+  if(st === 'arr' && !f.arrInit) setTimeout(() => arrangeAuto().then(() => { stepKey = ''; updStep(); }), 50);
 }
 stepEl.addEventListener('click', async e => {
-  const vs = e.target.closest('[data-ivs]'); if(vs){ const L = leadTake(); if(L){ ideaUsed.style = true; await applyVStyle(L, +vs.dataset.ivs); ideaPlay(L); } stepKey = ''; updStep(); return; }
   const ib = e.target.closest('[data-idea]'); if(ib){ await ideaUse(ib.dataset.idea); stepKey = ''; updStep(); return; }
-  const sa = e.target.closest('[data-sarm]'); if(sa){ armTrack(trackById(+sa.dataset.sarm) || S.tracks.find(t => String(t.id) === sa.dataset.sarm)); stepKey = ''; updStep(); return; }
+  const av = e.target.closest('[data-avs]'); if(av){ const [id, k] = av.dataset.avs.split(':'); const t = trackById(id); if(t){ await applyVStyle(t, +k); ideaPlay(t); } stepKey = ''; updStep(); return; }
+  const aa = e.target.closest('[data-aat]'); if(aa){ const t = trackById(aa.dataset.aat); if(t){ if(!(isTuned(t) || t.atOn)) t.at.speed = t.at.speed ?? AT_SP[0]; await toggleAT(t); ideaPlay(t); } stepKey = ''; updStep(); return; }
+  const ms = e.target.closest('[data-mst]'); if(ms){ $(`#mStyle [data-p="${ms.dataset.mst}"]`)?.click(); stepKey = ''; updStep(); return; }
+  const mt = e.target.closest('[data-mtg]'); if(mt){ $(`#mTarget [data-v="${mt.dataset.mtg}"]`)?.click(); stepKey = ''; updStep(); return; }
   const a = e.target.closest('[data-s]')?.dataset.s; if(!a) return;
-  const instru = S.tracks.find(t => t.preset === 'instru');
-  if(a === 'instru'){ if(instru){ importFor = instru; $('#file').click(); } }
-  else if(a === 'noinstru') stepSkip.instru = true;
+  const f = flowGet(), cur = { lead: trRole('lead'), refrain: trRole('refrain'), back: trRole('back') };
+  const curStep = !f.lead ? 'lead' : (cur.refrain && !f.refrain) ? 'refrain' : (cur.back && !f.back) ? 'back' : null;
+  if(a === 'instru'){ const ins = trRole('instru'); if(ins){ importFor = ins; $('#file').click(); } }
+  else if(a === 'noinstru') flowSet('instru', true);
   else if(a === 'write'){ document.querySelector('.nav [data-view="vTexte"]').click(); setTimeout(() => ta.focus(), 150); }
-  else if(a === 'notext') stepSkip.text = true;
-  else if(a === 'rec' || a === 'stop'){ if(a === 'rec' && !S.tracks.some(t => t.arm)) armTrack(vocalTracks().find(t => !t.buffer) || vocalTracks()[0]); stepRetake = false; record(); }
-  else if(a === 'next') stepRetake = false;
-  else if(a === 'retake'){ stepRetake = true; const lt = (typeof leadTake === 'function' && leadTake()) || vocalTracks()[0]; if(lt) armTrack(lt); }
-  else if(a === 'play') $('#bPlay').click();
+  else if(a === 'notext') flowSet('text', true);
+  else if(a === 'rec' || a === 'stop'){ if(a === 'rec' && curStep && cur[curStep]) armTrack(cur[curStep]); record(); }
+  else if(a === 'ok' || a === 'skip'){ if(curStep) flowSet(curStep, true); if(S.playing) pause(); }
+  else if(a === 'arrok'){ flowSet('arr', true); if(S.playing) pause(); }
+  else if(a === 'back2arr'){ flowSet('arr', false); }
+  else if(a === 'level'){ pushUndo('le rééquilibrage'); await rebalanceAll(); toast('Niveaux recalés : voix devant, instru derrière.'); }
+  else if(a === 'play'){ if(!S.playing && curStep && cur[curStep]?.buffer) S.pos = Math.max(0, cur[curStep].offset); $('#bPlay').click(); }
   else if(a === 'export') $('#bMaster').click();
   else if(a === 'share') $('#bShareMp3').click();
-  else if(a === 'reel'){ document.querySelector('.nav [data-view="vPartager"]').click(); }
-  else if(a === 'adv'){ store.set('uiMode', 'adv'); applyMode(); track('mode-adv'); toast('Mode avancé : tous les outils sont là. Retour au simple dans Réglages → Affichage.'); return; }
+  else if(a === 'reel'){ document.querySelector('.nav [data-view="vPartager"]').click(); setTimeout(() => $('#rsCanvas')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 200); }
   stepKey = ''; updStep();
 });
 setInterval(updStep, 500);
