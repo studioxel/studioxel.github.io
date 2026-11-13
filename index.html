@@ -378,6 +378,7 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
 .tchoice .sbtn{height:46px;font-size:15px;font-weight:800}
 .cedit{position:absolute;top:4px;right:4px;width:30px;height:26px;border-radius:6px;border:1px solid var(--line);background:color-mix(in srgb,var(--panel) 85%,transparent);font-size:14px;padding:0;z-index:3}
 .ed{position:fixed;inset:0;z-index:40;background:var(--bg);display:flex;flex-direction:column;gap:10px;padding:max(12px,env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) max(12px,env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px));overflow-y:auto}
+.ed>*{flex:none}
 .edhead{display:flex;align-items:center;gap:10px}
 .edhead b{flex:1;font:800 18px var(--display);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .edhead .sbtn,.edrow .sbtn{height:40px;padding:0 12px;font-size:14px}
@@ -389,6 +390,9 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
 .edtools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .edtools .sbtn{height:46px;font-size:14px;font-weight:700}
 body.ed-open{overflow:hidden}
+body.ed-open .transport{position:fixed;top:env(safe-area-inset-top,0px);left:max(6px,env(safe-area-inset-left,0px));right:max(6px,env(safe-area-inset-right,0px));z-index:42;margin:0}
+body.ed-open .transport #settings{display:none}
+body.ed-open .reclyr{z-index:43}
 body.ed-open .wmark{z-index:41}
 .reclyr{position:fixed;left:max(8px,env(safe-area-inset-left,0px));right:max(8px,env(safe-area-inset-right,0px));bottom:max(8px,env(safe-area-inset-bottom,0px));z-index:16;max-width:640px;margin:0 auto;background:var(--panel);border:1px solid var(--accent);border-radius:14px;box-shadow:0 -10px 40px rgba(0,0,0,.5);display:flex;flex-direction:column;max-height:44vh;transition:opacity .35s,transform .35s}
 .reclyr.out{opacity:0;transform:translateY(20px)}
@@ -522,7 +526,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 1.0.4 · Bêta</span></div>
+      <span class="grp" id="ver">Version 1.1 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -794,8 +798,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 78; // numéro interne (jamais affiché)
-const APP_PUB = '1.0.4';
+const APP_VER = 79; // numéro interne (jamais affiché)
+const APP_PUB = '1.1';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -4520,7 +4524,7 @@ const TOUR = [
   { sel: ['#list .row:nth-child(2) .fxzone'], t: 'Les effets', b: '« ✨ Style » règle tout d\'un coup : Propre, Sombre saturée, Aérienne, Noyée, Refrain qui claque, Brute ou Lo-fi. Ou touche un effet pour l\'allumer, retouche-le pour doser. Reverb pour l\'espace, Écho pour les fins de phrase, Doubler pour épaissir un refrain, Auto-tune pour corriger ou styliser (Naturel, Marqué, Robot, ou le mode Planant 🛸 avec tout le vibe), Chaleur pour du grain, Radio pour une voix filtrée façon téléphone ou lo-fi.\nLes doses changent vraiment le son : la Reverb passe d\'une pièce à une grande salle, l\'Écho d\'un slap court à un grand écho de fin de phrase. Ça se règle même en pleine prise.' },
   { sel: ['#list .row:nth-child(2) [data-act=keep]', '#list .row:nth-child(2) [data-act=up]', '#list .row:nth-child(2) [data-act=down]', '#list .row:nth-child(2) [data-act=dup]', '#list .row:nth-child(2) [data-act=del]'], t: 'Cadenas, ordre, copie, poubelle', b: '🔓 verrouille une prise réussie : plus rien ne peut l\'abîmer par erreur. ↑ et ↓ (à droite du volume) montent ou descendent la piste : range-les dans l\'ordre que tu veux. ⧉ duplique la piste. ✕ la supprime.' },
   { sel: ['#list .row:nth-child(2) .swatch'], t: 'La couleur', b: 'Touche la pastille pour changer la couleur de la piste. Pratique pour t\'y retrouver quand t\'empiles les backs.' },
-  { sel: ['#list .row:nth-child(2) .lane'], t: 'La timeline', b: 'Glisse le doigt pour avancer dans le morceau. Une touche place la lecture. Un appui long sur une phrase la sélectionne : tu peux la supprimer, la déplacer ou l\'envoyer sur une autre piste.\nPour bosser au poil : touche deux fois une prise, ou sa loupe 🔍. Elle s\'ouvre en grand : tu sélectionnes au doigt, tu écoutes en boucle, et tu coupes, montes le son, fais un fondu, répètes un passage ou recales la prise de 10 ms en 10 ms.' },
+  { sel: ['#list .row:nth-child(2) .lane'], t: 'La timeline', b: 'Glisse le doigt pour avancer dans le morceau. Une touche place la lecture. Un appui long sur une phrase la sélectionne : tu peux la supprimer, la déplacer ou l\'envoyer sur une autre piste.\nPour bosser au poil : touche deux fois une prise, ou sa loupe 🔍. Elle s\'ouvre en grand : tu sélectionnes au doigt, tu écoutes en boucle, et tu coupes, montes le son, fais un fondu, répètes un passage, coupes tous les blancs d\'un coup (parfait pour les backs) ou recales la prise de 10 ms en 10 ms. La barre du haut (lecture, pause, REC) reste là.' },
   { sel: ['#zOut', '#zIn'], t: 'Le zoom', b: 'Les loupes zooment et dézooment la timeline. Zoome pour couper une phrase au poil près.' },
   { sel: ['#plusBtn'], t: 'Le bouton +', b: 'Ajoute une piste, pose un repère (couplet, refrain), lance une boucle pour refaire juste une phrase, et retrouve toutes tes sessions. Tout se sauvegarde tout seul.' },
   { sel: ['#bSet'], t: 'Réglages', b: 'Mets ton blaze : il signe tes pistes. Tout est rangé par rubriques : enregistrement (tempo, décompte, métronome), écoute (Auto, Casque ou Haut-parleur) si la pastille d\'écoute se trompe. Dans « Automatique ou manuel », tu choisis ce que je fais tout seul : retour voix, texte pendant la prise, calage du texte, réglage des niveaux. Et si tu veux refaire ton premier son pas à pas : « 🎤 Premier son guidé ».' },
@@ -4556,10 +4560,12 @@ function openEditor(t, a, b){
       <button class="sbtn" data-op="fin">↗ Fondu entrée</button><button class="sbtn" data-op="fout">↘ Fondu sortie</button>
       <button class="sbtn" data-op="rep">🔂 Répéter</button><button class="sbtn" data-op="rev">⏪ À l'envers</button>
       <button class="sbtn" data-op="early">⇠ Plus tôt</button><button class="sbtn" data-op="late">⇢ Plus tard</button>
-      <button class="sbtn" data-op="norm">📏 Niveau max</button>
+      <button class="sbtn" data-op="norm">📏 Niveau max</button><button class="sbtn" data-op="gate">🔇 Couper les blancs</button>
     </div>
     <p class="note" id="edHint">Glisse le doigt sur l'onde pour sélectionner, tire les poignées pour ajuster au poil. Une touche place la lecture. Sans sélection, les outils s'appliquent à toute la prise.</p>`;
+  $('#settings').hidden = true; $('#bSet').setAttribute('aria-expanded', 'false');
   document.body.appendChild(w); ed.el = w; document.body.classList.add('ed-open');
+  edFit(); window.addEventListener('resize', edFit);
   $('#edName').textContent = t.name;
   w.addEventListener('click', edClick);
   $('#edScroll').addEventListener('input', e => { const t2 = edT(); if(!t2) return; const span = ed.v1 - ed.v0, d = t2.buffer.duration; ed.v0 = (d - span) * e.target.value / 1000; ed.v1 = ed.v0 + span; edDraw(); });
@@ -4570,12 +4576,14 @@ function openEditor(t, a, b){
   edDraw();
 }
 const edT = () => ed && trackById(ed.tid);
+/* l'éditeur se cale sous la barre du haut (lecture, pause, REC restent dispo) */
+function edFit(){ if(!ed) return; const tr = document.querySelector('.transport'); const h = tr ? tr.getBoundingClientRect().bottom : 0; ed.el.style.top = Math.max(0, Math.round(h)) + 'px'; ed.el.style.paddingTop = '12px'; }
 function closeEditor(){
   if(!ed) return;
   const t = edT();
   if(S.playing) pause();
   if(t && ed.soloWas !== null){ t.solo = ed.soloWas; applyMix(); }
-  ed.el.remove(); ed = null; document.body.classList.remove('ed-open');
+  ed.el.remove(); ed = null; document.body.classList.remove('ed-open'); window.removeEventListener('resize', edFit);
   renderTracks();
 }
 function edX2T(x){ const cv = $('#edCv'); return ed.v0 + (x / cv.clientWidth) * (ed.v1 - ed.v0); }
@@ -4632,14 +4640,16 @@ function edPlayToggle(){
   if(S.playing){ pause(); edDraw(); return; }
   const from = ed.a != null ? ed.a : ed.cur;
   ed.start = t.offset + from; ed.end = ed.a != null ? t.offset + ed.b : null;
-  S.pos = ed.start; unlockSpeaker(); wake().then(() => play());
+  S.pos = ed.start; unlockSpeaker(); wake().then(() => { if(ed) ed.fromEd = true; play(); });
 }
 function edTick(){
   if(!ed) return;
   const t = edT();
-  if(t && S.playing && ed.end != null && now() >= ed.end){ pause(); S.pos = ed.start; if(ed.loop) play(); }
+  if(!S.playing) ed.fromEd = false;
+  if(t && S.playing && ed.fromEd && ed.end != null && now() >= ed.end){ pause(); S.pos = ed.start; if(ed.loop) play(); }
   if(t && S.playing){ const p = now() - t.offset; if(p > ed.v1 || p < ed.v0){ const span = ed.v1 - ed.v0; ed.v0 = clamp(p - span * 0.1, 0, Math.max(0, t.buffer.duration - span)); ed.v1 = ed.v0 + span; } }
   if(t) edDraw();
+  if(((edTick.n = (edTick.n || 0) + 1) % 30) === 0) edFit();
   $('#edPlay') && ($('#edPlay').textContent = S.playing ? '⏸ Pause' : '▶ Écouter');
   requestAnimationFrame(edTick);
 }
@@ -4685,6 +4695,36 @@ function edDraw(){
   const sc = $('#edScroll'), dd = buf.duration; if(sc && !ed.drag && document.activeElement !== sc) sc.value = dd > span ? Math.round(ed.v0 / (dd - span) * 1000) : 0;
   $('#edInfo').textContent = ed.a != null ? 'Sélection ' + (ed.b - ed.a).toFixed(2) + ' s' : 'Zoom ' + span.toFixed(span < 10 ? 1 : 0) + ' s';
 }
+/* Couper les blancs : met à zéro tout ce qui n'est pas de la voix, sans rien décaler (idéal pour les backs) */
+function gateBlancs(buf, s0, s1){
+  const sr = buf.sampleRate, C = buf.numberOfChannels, W = Math.round(sr * 0.01), nW = Math.floor((s1 - s0) / W);
+  if(nW < 10) return null;
+  const chs = [...Array(C)].map((_, c) => buf.getChannelData(c)), rms = new Float32Array(nW);
+  for(let w = 0; w < nW; w++){ let e = 0; const a = s0 + w * W; for(let i = a; i < a + W; i++){ let v = 0; for(let c = 0; c < C; c++) v += chs[c][i]; v /= C; e += v * v; } rms[w] = Math.sqrt(e / W); }
+  const so = Float32Array.from(rms).sort(), pc = q => so[Math.min(nW - 1, Math.floor(q * nW))];
+  const floor = pc(0.1), pk = pc(0.99);
+  if(pk < 1e-4) return null;
+  const thr = Math.min(pk * 0.25, Math.max(floor * 3.2, pk * 0.05));
+  const on = new Uint8Array(nW);
+  for(let w = 0; w < nW; w++) on[w] = rms[w] > thr ? 1 : 0;
+  /* trous courts bouchés (respirations dans un mot), éclats trop courts enlevés (clics) */
+  const fill = (val, maxLen) => { let w = 0; while(w < nW){ if(on[w] === val){ let e = w; while(e < nW && on[e] === val) e++; if(e - w <= maxLen && w > 0 && e < nW) on.fill(1 - val, w, e); w = e; } else w++; } };
+  fill(0, 18); fill(1, 5);
+  /* marge : 40 ms avant, 150 ms après */
+  const keep = new Uint8Array(nW);
+  for(let w = 0; w < nW; w++) if(on[w]) for(let k = Math.max(0, w - 4); k <= Math.min(nW - 1, w + 15); k++) keep[k] = 1;
+  let parts = 0, cutW = 0; for(let w = 0; w < nW; w++){ if(keep[w] && (w === 0 || !keep[w - 1])) parts++; if(!keep[w]) cutW++; }
+  if(cutW < 5 || parts === 0) return null;
+  /* gain lissé (fondus de 15 ms) */
+  const g = new Float32Array(s1 - s0), F = Math.round(sr * 0.015);
+  for(let w = 0; w < nW; w++) if(keep[w]) g.fill(1, w * W, (w + 1) * W);
+  if(nW * W < g.length && keep[nW - 1]) g.fill(1, nW * W);
+  const sm = new Float32Array(g.length); let acc = 0;
+  for(let i = 0; i < g.length; i++){ acc += g[i] - (i >= F ? g[i - F] : 0); sm[i] = acc / F; }
+  const out = edCopy(buf);
+  for(let c = 0; c < C; c++){ const d = out.getChannelData(c); for(let i = 0; i < g.length; i++){ const k = Math.min(1, sm[Math.min(g.length - 1, i + (F >> 1))] ); d[s0 + i] *= k; } }
+  return { buf: out, parts, cut: cutW * 0.01 };
+}
 function edCopy(b){ const o = ctx.createBuffer(b.numberOfChannels, b.length, b.sampleRate); for(let c = 0; c < b.numberOfChannels; c++) o.copyToChannel(b.getChannelData(c), c); return o; }
 function edOp(op){
   const t = edT(); if(!t?.buffer) return;
@@ -4693,7 +4733,7 @@ function edOp(op){
   const sr = t.buffer.sampleRate, n = t.buffer.length, has = ed.a != null;
   if((op === 'del' || op === 'keep' || op === 'rep') && !has){ toast('Sélectionne d\'abord un passage en glissant le doigt sur l\'onde.'); return; }
   const s0 = has ? Math.round(ed.a * sr) : 0, s1 = has ? Math.round(ed.b * sr) : n, F = Math.round(sr * 0.005);
-  const labels = { del: 'la suppression', keep: 'le rognage', down: 'le volume', up: 'le volume', fin: 'le fondu', fout: 'le fondu', rep: 'la répétition', rev: 'l\'inversion', early: 'le décalage', late: 'le décalage', norm: 'le niveau' };
+  const labels = { del: 'la suppression', keep: 'le rognage', down: 'le volume', up: 'le volume', fin: 'le fondu', fout: 'le fondu', rep: 'la répétition', rev: 'l\'inversion', early: 'le décalage', late: 'le décalage', norm: 'le niveau', gate: 'la coupe des blancs' };
   pushUndo(labels[op]);
   if(op === 'early' || op === 'late'){
     const dt = op === 'early' ? -0.01 : 0.01;
@@ -4702,6 +4742,12 @@ function edOp(op){
     toast('Prise décalée de 10 ms ' + (dt < 0 ? 'plus tôt' : 'plus tard') + '. Touche encore pour affiner.'); return;
   }
   let nb;
+  if(op === 'gate'){
+    const r = gateBlancs(t.buffer, s0, s1);
+    if(!r){ undoStack.pop(); updUndo(); toast('Pas de blanc net à couper sur ce passage.'); return; }
+    setTrackBuf(t, r.buf, t.offset); if(S.playing) restart(); renderTracks(); scheduleSave(); edDraw(); track('couper-blancs');
+    toast('Blancs coupés : ' + r.cut.toFixed(1) + ' s de silence, ' + r.parts + ' passage' + (r.parts > 1 ? 's' : '') + ' gardé' + (r.parts > 1 ? 's' : '') + (has ? '' : ' (toute la prise)') + '. Le calage ne bouge pas. ↶ Annuler pour revenir.'); return;
+  }
   if(op === 'rep'){
     const len = s1 - s0, nn = Math.max(n, s1 + len);
     nb = ctx.createBuffer(t.buffer.numberOfChannels, nn, sr);
@@ -4814,7 +4860,7 @@ const HELP = {
     { sel: ['#list .row:nth-child(2) .fxzone'], t: 'Les effets de la piste', b: 'Reverb (Pièce, Studio, Salle), Écho (Slap, Ping-pong, Grand), Doubler, Auto-tune (Naturel, Marqué, Robot, Planant 🛸), Chaleur et Radio. Touche pour allumer, retouche pour choisir la dose ou couper. Ça s\'entend en direct.' },
     { sel: ['#list .row:nth-child(2) .l3'], t: 'Importer, cadenas, copie, poubelle', b: 'Importer : met un fichier audio sur la piste (remplace ce qu\'il y a). 🔓 verrouille une prise réussie. ⧉ duplique la piste. ✕ la supprime (touche deux fois pour confirmer).' },
     { sel: ['#list .row:nth-child(2) .lane'], t: 'La timeline', b: 'Glisse pour avancer. Une touche place la lecture. Appui long sur une phrase : elle est sélectionnée, et la barre du bas permet de l\'écouter, la supprimer, la copier ou la déplacer sur une autre piste. Deux touches sur une prise, ou sa loupe 🔍 : elle s\'ouvre en grand dans l\'éditeur.' },
-    { t: 'L\'éditeur de prise', b: 'Dans l\'éditeur : tu sélectionnes au doigt et tu ajustes avec les poignées, tu écoutes en boucle ou la piste seule. Outils : supprimer, garder que la sélection, −3/+3 dB, fondus, répéter, à l\'envers, plus tôt/plus tard de 10 ms, niveau max. Sans sélection, ça s\'applique à toute la prise.' }
+    { t: 'L\'éditeur de prise', b: 'Dans l\'éditeur : tu sélectionnes au doigt et tu ajustes avec les poignées, tu écoutes en boucle ou la piste seule. Outils : supprimer, garder que la sélection, −3/+3 dB, fondus, répéter, à l\'envers, plus tôt/plus tard de 10 ms, niveau max, et « Couper les blancs » qui met en silence tout ce qui n\'est pas ta voix sans rien décaler (top pour les backs). Sans sélection, ça s\'applique à toute la prise. La barre du haut reste dispo : lecture, pause, REC.' }
   ],
   vMix: [
     { t: 'L\'onglet Mix', b: 'Ici tu règles chaque piste en détail.' },
