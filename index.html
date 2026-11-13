@@ -443,6 +443,10 @@ body.ed-open .wmark{z-index:41}
 .vsgrid .sbtn[aria-pressed=true]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--raise))}
 .mixfol{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:8px 12px 0}
 .mixfol .note{flex:1 1 180px;margin:0}
+#bRep[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#1a1405}
+.repinfo{order:10;flex-basis:100%;display:flex;gap:8px;align-items:center;padding:6px 8px;border:1px solid var(--accent);border-radius:10px;font:700 13px var(--mono, ui-monospace)}
+.repinfo span{flex:1;text-align:center;color:var(--accent)}
+.repinfo .sbtn{height:34px;min-width:40px;padding:0 8px}
 </style>
 </head>
 <body>
@@ -453,6 +457,8 @@ body.ed-open .wmark{z-index:41}
   <button class="tbtn" id="bHome" title="Retour au début" aria-label="Retour au début"><svg viewBox="0 0 16 16"><path d="M2 2h2v12H2zM14 2v12L5 8z"/></svg></button>
   <button class="tbtn" id="bPlay" title="Lecture / pause" aria-label="Lecture"><svg viewBox="0 0 16 16" id="icoPlay"><path d="M3 2l11 6-11 6z"/></svg></button>
   <button class="tbtn" id="bStop" title="Stop" aria-label="Stop"><svg viewBox="0 0 16 16"><path d="M3 3h10v10H3z"/></svg></button>
+  <div class="repinfo" id="repInfo" hidden><button class="sbtn" data-rep="-1" aria-label="Passage précédent">⏮</button><span></span><button class="sbtn" data-rep="1" aria-label="Passage suivant">⏭</button><button class="sbtn" data-rep="0" aria-label="Arrêter la boucle">✕</button></div>
+  <button class="tbtn" id="bRep" aria-pressed="false" title="Répéter en boucle le passage chanté">🔁</button>
   <button class="tbtn rec" id="bRec" title="Enregistrer sur la piste armée">● REC</button>
   <button class="tbtn" id="bUndo" disabled title="Annuler la dernière action">↶ Annuler</button>
   <button class="tbtn mon" id="bMon" aria-pressed="false" title="T'entendre en direct, même sans enregistrer">🎧 Retour</button>
@@ -499,7 +505,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 70</span></div>
+      <span class="grp" id="ver">Version 71</span></div>
       <p class="note" id="envInfo"></p>
     </div>
   </div>
@@ -763,7 +769,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 70;
+const APP_VER = 71;
 try{ const li = document.querySelector('link[rel="apple-touch-icon"]'); if(li) document.getElementById('wmLogo').src = li.href; }catch(e){}
 const COLORS = ['#6fa8ff','#f2b544','#c58bff','#4fd1b5','#ff8a65','#9be15d','#ff7eb6'];
 const HDR = 216, CEIL = Math.pow(10, -1 / 20);
@@ -1356,6 +1362,7 @@ function releaseMic(force){
 }
 async function record(){
   if(S.recording){ pause(); return; }
+  if(S.rep) setRep(null);
   const t = S.tracks.find(x => x.arm);
   if(!t){ toast('Arme d\'abord une piste avec son bouton R.'); return; }
   ensureCtx();
@@ -1907,6 +1914,59 @@ $('#mixChips').addEventListener('click', e => {
   if(S.mixFollow){ S.mixFollow = false; store.set('mixFollow', false); updFollow(); toast('✋ Tu as choisi la piste toi-même : suivi du chant coupé. Retouche 🎯 pour le remettre.'); }
   renderMix();
 });
+
+/* ---------- 🔁 Répéter en boucle : le passage chanté où tu es (ou la phrase sélectionnée) tourne en boucle ---------- */
+S.rep = null;
+function singRegions(t){
+  const env = envOf(t.buffer); let pk = 0; for(let i = 0; i < env.length; i += 3) if(env[i] > pk) pk = env[i];
+  const th = pk * 0.08, out = []; let a = -1, last = -1;
+  for(let f = 0; f < env.length; f++){
+    if(env[f] > th){ if(a < 0) a = f; last = f; }
+    else if(a >= 0 && f - last > 80){ out.push([a, last]); a = -1; }
+  }
+  if(a >= 0) out.push([a, last]);
+  return out.filter(([x, y]) => y - x > 30).map(([x, y]) => ({ a: Math.max(0, t.offset + x * 0.01 - 0.15), b: t.offset + y * 0.01 + 0.25, t }));
+}
+function singPeriod(p, dir){
+  const cand = [];
+  /* Mix sans suivi : seulement la piste choisie ; sinon toutes les voix */
+  const pref = (!$('#vMix').hidden && !S.mixFollow && selTrack()?.buffer && selTrack().preset !== 'instru') ? [selTrack()] : S.tracks.filter(x => x.buffer && x.preset !== 'instru' && audible(x));
+  pref.forEach(t => cand.push(...singRegions(t)));
+  if(!cand.length) return null;
+  cand.sort((x, y) => x.a - y.a);
+  if(dir > 0) return cand.find(r => r.a > p + 0.3) || cand[0];
+  if(dir < 0) return cand.slice().reverse().find(r => r.a < p - 0.3) || cand[cand.length - 1];
+  return cand.find(r => p >= r.a && p <= r.b) || cand.find(r => r.a > p) || cand[0];
+}
+function setRep(r){
+  S.rep = r;
+  $('#bRep').setAttribute('aria-pressed', String(!!r));
+  updRepInfo();
+  if(!r) return;
+  if(S.playing) pause();
+  S.pos = r.a; unlockSpeaker(); wake().then(() => play());
+}
+function updRepInfo(){
+  const el = $('#repInfo'); if(!el) return;
+  el.hidden = !S.rep;
+  if(S.rep) el.querySelector('span').textContent = '🔁 ' + fmt(S.rep.a, true) + ' → ' + fmt(S.rep.b, true) + (S.rep.t ? ' · ' + S.rep.t.name : '');
+}
+$('#bRep').onclick = () => {
+  if(S.recording) return;
+  if(S.rep){ setRep(null); toast('Boucle arrêtée.'); return; }
+  let r = null;
+  if(bandSel){ r = { a: bandSel.a, b: bandSel.b, t: trackById(bandSel.tid) }; }
+  else r = singPeriod(now(), 0);
+  if(!r){ toast('Pas encore de voix enregistrée à mettre en boucle.'); return; }
+  if(r.t && !$('#vMix').hidden && S.mixFollow){ S.sel = r.t.id; renderMix(); }
+  setRep(r);
+  toast('🔁 En boucle : ' + fmt(r.a, true) + ' → ' + fmt(r.b, true) + '. Règle tes effets pendant que ça tourne. ⏮ ⏭ pour changer de passage.');
+};
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-rep]'); if(!b || !S.rep) return;
+  const r = singPeriod(S.rep.a, +b.dataset.rep); if(r){ if(r.t && S.mixFollow){ S.sel = r.t.id; if(!$('#vMix').hidden) renderMix(); } setRep(r); }
+  if(b.dataset.rep === '0') setRep(null);
+});
 /* Mix : la piste affichée suit la voix qui chante à l'endroit de la lecture */
 S.mixFollow = store.get('mixFollow', true);
 function updFollow(){ const b = $('#mixFollow'); if(b) b.setAttribute('aria-pressed', String(!!S.mixFollow)); }
@@ -1924,7 +1984,8 @@ function vocalAt(p){
 }
 function mixPick(){
   if(!S.mixFollow) return false;
-  const t = vocalAt(now()) || S.tracks.find(x => x.arm && x.buffer) || S.tracks.filter(x => x.preset !== 'instru' && x.buffer).slice(-1)[0];
+  const nx = singPeriod(now(), 0);
+  const t = vocalAt(now()) || nx?.t || S.tracks.find(x => x.arm && x.buffer) || S.tracks.filter(x => x.preset !== 'instru' && x.buffer).slice(-1)[0];
   if(t && t.id !== S.sel){ S.sel = t.id; return true; }
   return false;
 }
@@ -4348,7 +4409,7 @@ const TOUR = [
   { sel: ['#bRec'], t: 'REC', b: 'Piste armée ? Touche REC : 4 bips de décompte et tu kickes. La barre MICRO en haut bouge avec ta voix, ta prise se dessine sur la piste en direct, et ton texte s\'affiche en bas s\'il est écrit (onglet Texte). Retouche REC pour t\'arrêter. Si la piste a déjà une prise, la nouvelle se pose par-dessus à cet endroit (Annuler pour revenir), et tu réentends 1 mesure de ta prise d\'avant pour reprendre le flow pile au bon moment (pré-roulement, réglable). Pour garder les deux, ajoute une piste avec le + ou duplique avec ⧉ : c\'est toi qui décides.' },
   { sel: ['#bMon'], t: 'Retour 🎧', b: 'Allume-le pour t\'entendre en direct avec les effets de la piste armée, auto-tune compris, même sans enregistrer : parfait pour chauffer ta voix. Avec des écouteurs c\'est l\'idéal, et je l\'allume tout seul dès que je les détecte. Sur le haut-parleur ou en Bluetooth, garde le volume raisonnable : si ça siffle, je baisse tout seul.' },
   { sel: ['#routeChip'], t: 'Ton écoute', b: 'Ici je t\'affiche ce que j\'ai détecté : 🎧 tes écouteurs (AirPods…), 🚗 un Bluetooth de voiture ou d\'enceinte, ou 📱 le haut-parleur. Si je me trompe, touche-le et choisis toi-même.' },
-  { sel: ['#bHome', '#bPlay', '#bStop', '#tProg'], t: 'Lecture', b: '▶ lance ou met en pause, ⏹ arrête, ⏮ revient au début. La barre en dessous montre où tu en es dans le son : touche-la ou glisse dessus pour te déplacer, les petits traits sont tes repères. Réécoute ta prise juste après l\'avoir posée, c\'est là que tu sais si elle est bonne.' },
+  { sel: ['#bHome', '#bPlay', '#bStop', '#bRep', '#tProg'], t: 'Lecture', b: '▶ lance ou met en pause, ⏹ arrête, ⏮ revient au début. 🔁 répète en boucle le passage chanté où tu es, parfait pour régler tes effets. La barre en dessous montre où tu en es dans le son : touche-la ou glisse dessus pour te déplacer, les petits traits sont tes repères. Réécoute ta prise juste après l\'avoir posée, c\'est là que tu sais si elle est bonne.' },
   { sel: ['#bUndo'], t: 'Annuler', b: 'Une bêtise ? Annuler revient en arrière, étape par étape : une prise, un effet, une piste supprimée, tout s\'annule.' },
   { sel: ['#list .row:nth-child(2) .l2'], t: 'Volume et pan', b: 'VOL règle le niveau de la piste, PAN la place à gauche ou à droite. Je cale déjà les niveaux tout seul, tu peaufines si besoin. Astuce : le lead au centre, les backs un peu sur les côtés.' },
   { sel: ['#list .row:nth-child(2) .fxzone'], t: 'Les effets', b: '« ✨ Style » règle tout d\'un coup : Propre, Sombre saturée, Aérienne, Noyée, Refrain qui claque, Brute ou Lo-fi. Ou touche un effet pour l\'allumer, retouche-le pour doser. Reverb pour l\'espace, Écho pour les fins de phrase, Doubler pour épaissir un refrain, Auto-tune pour corriger ou styliser (Naturel, Marqué, Robot, ou le mode Planant 🛸 avec tout le vibe), Chaleur pour du grain, Radio pour une voix filtrée façon téléphone ou lo-fi.\nLes doses changent vraiment le son : la Reverb passe d\'une pièce à une grande salle, l\'Écho d\'un slap court à un grand écho de fin de phrase. Ça se règle même en pleine prise.' },
@@ -4651,6 +4712,7 @@ const HELP = {
   ],
   vMix: [
     { t: 'L\'onglet Mix', b: 'Ici tu règles chaque piste en détail.' },
+    { sel: ['#bRep'], t: 'Répéter en boucle', b: 'Le 🔁 en haut met en boucle le passage chanté où tu es (ou la phrase sélectionnée). Il tourne pendant que tu règles tes effets ici. ⏮ ⏭ passent au passage d\'avant ou d\'après, ✕ arrête.' },
     { sel: ['#mixFollow'], t: 'Suit le chant', b: 'Allumé, la piste qui chante à l\'endroit de la lecture s\'affiche toute seule : tu lances ▶ et tu règles la voix que tu entends, sans chercher.' },
     { sel: ['#mixChips'], t: 'Choisir la piste', b: 'Touche une piste pour afficher ses réglages en dessous. Choisir toi-même coupe le suivi du chant.' },
     { sel: ['#bLevel'], t: 'Rééquilibrer', b: 'Remet tous les niveaux d\'aplomb d\'un coup : l\'instru, le lead, les backs et l\'ambiance à leur juste place.' },
@@ -5105,6 +5167,7 @@ function drawLive(){
 function cleanupLive(){ if(S.recording) return; document.querySelectorAll('.row.ghost, .clip.live').forEach(e => e.remove()); }
 function loop(){
   if(S.listenEnd != null){ if(!S.playing || S.recording) S.listenEnd = null; else if(now() >= S.listenEnd){ const a = bandSel ? bandSel.a : S.listenEnd; S.listenEnd = null; pause(); S.pos = a; } }
+  if(S.rep && S.playing && !S.recording && now() >= S.rep.b){ pause(); S.pos = S.rep.a; play(); }
   if(S.loop.on && S.playing){
     const le = loopEnd();
     if(S.recording){ if(recInfo?.punch && now() >= le) pause(); }
@@ -5165,7 +5228,7 @@ function loop(){
     $('#limGr').style.width = Math.min(100, r * 8) + '%';
     $('#limDb').textContent = (r > 0.05 ? '−' : '') + r.toFixed(1) + ' dB';
   }
-  if(!$('#vMix').hidden && S.mixFollow && S.playing && Date.now() - mixFolT > 400){
+  if(!$('#vMix').hidden && S.mixFollow && S.playing && !S.rep && Date.now() - mixFolT > 400){
     mixFolT = Date.now();
     const ae = document.activeElement;
     if(!(ae && ae.closest && ae.closest('#strip') && /INPUT|SELECT/.test(ae.tagName)) && mixPick()) renderMix();
