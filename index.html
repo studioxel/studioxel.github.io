@@ -582,7 +582,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 1.3.1 · Bêta</span></div>
+      <span class="grp" id="ver">Version 1.3.2 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -879,8 +879,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 91; // numéro interne (jamais affiché)
-const APP_PUB = '1.3.1';
+const APP_VER = 92; // numéro interne (jamais affiché)
+const APP_PUB = '1.3.2';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -1421,7 +1421,7 @@ const TUNE_WK = `class SxTune extends AudioWorkletProcessor {
 }
 registerProcessor('sx-tune', SxTune);
 `;
-let tunePromise = null, tuneCtx = null, monTune = null;
+let tunePromise = null, tuneCtx = null, monTune = null, monNotch = [], monNotchIn = null, fbToastAt = 0;
 function loadTune(){
   if(tuneCtx !== ctx){ tuneCtx = ctx; tunePromise = null; }
   if(!tunePromise) tunePromise = ctx.audioWorklet
@@ -1440,8 +1440,13 @@ const liveTuned = tr => !!tr && tr.preset !== 'instru' && (tr.atOn || isTuned(tr
 function attachMon(t){
   if(monSrc || !micSrc) return;
   try{
-    const mg = ctx.createGain(); mg.gain.value = 0.7; micSrc.connect(mg);
-    const tr = t || monTrack(), dest = tr ? tr.chain.hp : bus.masterIn;
+    const mg = ctx.createGain(); mg.gain.value = S.casque ? 0.7 : 0.5; micSrc.connect(mg);
+    const tr = t || monTrack(), dest0 = tr ? tr.chain.hp : bus.masterIn;
+    /* anti-larsen : coupe-graves + 6 filtres coupe-bande, placés tout seuls sur les fréquences qui sifflent */
+    const hpf = ctx.createBiquadFilter(); hpf.type = 'highpass'; hpf.frequency.value = 120;
+    monNotch = []; let last = hpf;
+    for(let i = 0; i < 6; i++){ const n = ctx.createBiquadFilter(); n.type = 'peaking'; n.frequency.value = 1000; n.Q.value = 30; n.gain.value = 0; last.connect(n); last = n; monNotch.push(n); }
+    last.connect(dest0); monNotchIn = hpf; const dest = hpf;
     monSrc = mg; fbCount = 0; fbBin = -1;
     if(liveTuned(tr)){
       loadTune().then(ok => {
@@ -1454,7 +1459,7 @@ function attachMon(t){
   }catch(e){ monSrc = null; }
 }
 function remon(){ if(monSrc){ detachMon(); attachMon(); } }
-function detachMon(){ if(monSrc){ try{ monSrc.disconnect(); }catch(e){} monSrc = null; } if(monTune){ try{ monTune.disconnect(); }catch(e){} monTune = null; } }
+function detachMon(){ if(monNotchIn){ try{ monNotchIn.disconnect(); }catch(e){} monNotch.forEach(n => { try{ n.disconnect(); }catch(e){} }); monNotchIn = null; monNotch = []; } if(monSrc){ try{ monSrc.disconnect(); }catch(e){} monSrc = null; } if(monTune){ try{ monTune.disconnect(); }catch(e){} monTune = null; } }
 function setMonUI(){
   $('#bMon').setAttribute('aria-pressed', String(!!S.mon));
   setRecUI();
@@ -1469,12 +1474,17 @@ async function monOn0(auto){
   try{ await getMic(); }
   catch(e){ toast(e.name === 'NotAllowedError' ? 'Accès au micro refusé : autorise le micro pour avoir le retour voix.' : (e.message || 'Micro introuvable.')); S.mon = false; setMonUI(); return; }
   await detectHeadset(true);
+  if(!S.casque && (S.route !== 'bt' || S.outMode === 'hp')){
+    S.mon = false; setMonUI(); if(!S.recording) releaseMic(true);
+    toast('🔊 Pas de retour voix sur le haut-parleur du téléphone : le micro est collé au haut-parleur, ça siffle à coup sûr. Branche des écouteurs (filaires ou Bluetooth) et rallume-le.');
+    return;
+  }
   if(!(await wake())){ toast('Touche ▶ une fois puis rallume le retour.'); }
   S.mon = true; openMicGraph(); attachMon(); setMonUI();
   const lt = liveTuned(monTrack()) ? ' Auto-tune en direct compris.' : '';
   toast((S.casque ? '🎧 Retour voix allumé : tu t\'entends en direct, avec les effets de ta piste.' + lt
     : S.route === 'bt' ? '🚗 Retour voix allumé sur ton Bluetooth.' + lt + ' Ta voix revient avec un petit décalage, c\'est le Bluetooth. Garde le volume raisonnable.'
-    : '🔊 Retour voix allumé sans casque.' + lt + ' Garde le volume bas, je baisse ou je coupe tout seul si ça siffle.'));
+    : '🔊 Retour voix allumé.' + lt + ' Je supprime tout seul les sifflements.'));
 }
 function monOff(){
   S.mon = false; detachMon(); setMonUI();
@@ -4643,7 +4653,7 @@ const TOUR = [
   { sel: ['#list .row:nth-child(1) [data-act=import]'], t: 'Ton instru', b: 'Touche « Importer » sur la piste Instru et choisis ton beat (MP3 ou WAV). Je trouve tout seul le BPM et la tonalité, et je cale le niveau. C\'est la toute première chose à faire.' },
   { sel: ['#list .row:nth-child(2) .chip'], t: 'R, M, S', b: 'R arme la piste : c\'est là que ta voix va s\'enregistrer. M coupe la piste, S l\'écoute toute seule. De base t\'as Instru, Lead pour tes couplets, Refrain (déjà un peu doublé pour sonner plus large), Back et Ambiance. Arme Lead avant ton premier couplet.' },
   { sel: ['#bRec'], t: 'REC', b: 'Piste armée ? Touche REC : 4 bips de décompte et tu kickes. La barre MICRO en haut bouge avec ta voix, ta prise se dessine sur la piste en direct, et ton texte s\'affiche en bas s\'il est écrit (onglet Texte). Retouche REC pour t\'arrêter. Si la piste a déjà une prise, la nouvelle se pose par-dessus à cet endroit (Annuler pour revenir), et tu réentends 1 mesure de ta prise d\'avant pour reprendre le flow pile au bon moment (pré-roulement, réglable). Pour garder les deux, ajoute une piste avec le + ou duplique avec ⧉ : c\'est toi qui décides.' },
-  { sel: ['#bMon'], t: 'Retour 🎧', b: 'Allume-le pour t\'entendre en direct avec les effets de la piste armée, auto-tune compris, même sans enregistrer : parfait pour chauffer ta voix. Avec des écouteurs c\'est l\'idéal, et je l\'allume tout seul dès que je les détecte. Sur le haut-parleur ou en Bluetooth, garde le volume raisonnable : si ça siffle, je baisse tout seul.' },
+  { sel: ['#bMon'], t: 'Retour 🎧', b: 'Allume-le pour t\'entendre en direct avec les effets de la piste armée, auto-tune compris, même sans enregistrer : parfait pour chauffer ta voix. Avec des écouteurs c\'est l\'idéal, et je l\'allume tout seul dès que je les détecte. Sur le haut-parleur du téléphone, il ne s\'allume pas : le micro est collé au haut-parleur, ça sifflerait à coup sûr. En Bluetooth (voiture, enceinte), si ça siffle, je supprime le sifflement tout seul.' },
   { sel: ['#routeChip'], t: 'Ton écoute', b: 'Ici je t\'affiche ce que j\'ai détecté : 🎧 tes écouteurs (AirPods…), 🚗 un Bluetooth de voiture ou d\'enceinte, ou 📱 le haut-parleur. Si je me trompe, touche-le et choisis toi-même.' },
   { sel: ['#bHome', '#bPlay', '#bStop', '#bRep', '#tProg'], t: 'Lecture', b: '▶ lance ou met en pause, ⏹ arrête, ⏮ revient au début. 🔁 répète en boucle le passage chanté où tu es, parfait pour régler tes effets. La barre en dessous montre où tu en es dans le son : touche-la ou glisse dessus pour te déplacer, les petits traits sont tes repères. Réécoute ta prise juste après l\'avoir posée, c\'est là que tu sais si elle est bonne.' },
   { sel: ['#bUndo'], t: 'Annuler', b: 'Une bêtise ? Annuler revient en arrière, étape par étape : une prise, un effet, une piste supprimée, tout s\'annule.' },
@@ -5701,15 +5711,21 @@ function loop(){
     const sharp = nn && mx > -40 && mx - nb / nn > 28 && mx - sec > 15;
     fbCount = (sharp && Math.abs(pb - fbBin) <= 1) ? fbCount + 1 : Math.max(0, fbCount - 2);
     fbBin = pb;
-    if(fbCount > 35){
+    if(fbCount > 8){
       fbCount = 0;
-      if(monSrc.gain.value > 0.25){
-        monSrc.gain.setTargetAtTime(monSrc.gain.value * 0.5, ctx.currentTime, 0.05);
-        toast('Ça commence à siffler : je baisse le retour voix. Baisse un peu le volume si ça continue.');
+      const f = pb * ctx.sampleRate / micAnalyser.fftSize;
+      const near = monNotch.find(n => n.gain.value < 0 && Math.abs(n.frequency.value - f) / f < 0.04);
+      const free = monNotch.find(n => n.gain.value === 0);
+      if(near) near.gain.value = Math.max(-36, near.gain.value - 8);
+      else if(free){ free.frequency.value = f; free.gain.value = -18; }
+      if(!near && free){ if(Date.now() - fbToastAt > 8000){ fbToastAt = Date.now(); toast('Sifflement supprimé tout seul 👌'); } }
+      else if(monSrc.gain.value > 0.2){
+        monSrc.gain.setTargetAtTime(monSrc.gain.value * 0.6, ctx.currentTime, 0.05);
+        if(Date.now() - fbToastAt > 8000){ fbToastAt = Date.now(); toast('Ça siffle encore : je baisse le retour. Baisse un peu le volume.'); }
       } else {
         try{ monSrc.disconnect(); }catch(e){} monSrc = null;
         S.mon = false; setMonUI();
-        toast('Larsen : retour voix coupé. Baisse le volume ou mets des écouteurs, puis rallume-le dans Réglages.');
+        toast('Larsen : retour voix coupé. Baisse le volume ou mets des écouteurs, puis retouche 🎧 Retour.');
       }
     }
   }
