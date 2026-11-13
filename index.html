@@ -521,8 +521,9 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 1.0 · Bêta</span></div>
+      <span class="grp" id="ver">Version 1.0.1 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
+      <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
     </div>
   </div>
 </div>
@@ -791,8 +792,26 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 74; // numéro interne (jamais affiché)
-const APP_PUB = '1.0'; // numéro public
+const APP_VER = 75; // numéro interne (jamais affiché)
+const APP_PUB = '1.0.1';
+/* Statistiques anonymes (GoatCounter, sans cookies) */
+const GC_URL = 'https://studioxel.goatcounter.com/count';
+const gcQ = [];
+function track(ev){
+  try{
+    if(!/github\.io$/.test(location.hostname)) return;
+    const gc = window.goatcounter;
+    if(gc && gc.count) gc.count({ path: ev, title: ev, event: true }); else if(gcQ.length < 30) gcQ.push(ev);
+  }catch(e){}
+}
+try{
+  if(/github\.io$/.test(location.hostname)){
+    const sc = document.createElement('script'); sc.async = true; sc.src = 'https://gc.zgo.at/count.js';
+    sc.dataset.goatcounter = GC_URL;
+    sc.onload = () => { setTimeout(() => { while(gcQ.length) track(gcQ.shift()); }, 500); };
+    document.head.appendChild(sc);
+  }
+}catch(e){} // numéro public
 try{ const li = document.querySelector('link[rel="apple-touch-icon"]'); if(li) document.getElementById('wmLogo').src = li.href; }catch(e){}
 const COLORS = ['#6fa8ff','#f2b544','#c58bff','#4fd1b5','#ff8a65','#9be15d','#ff7eb6'];
 const HDR = 216, CEIL = Math.pow(10, -1 / 20);
@@ -1356,6 +1375,7 @@ async function monOn(auto){
   try{ await monOn0(auto); } finally{ S.monStarting = false; }
 }
 async function monOn0(auto){
+  if(!auto) track('retour-voix');
   ensureCtx();
   try{ await getMic(); }
   catch(e){ toast(e.name === 'NotAllowedError' ? 'Accès au micro refusé : autorise le micro pour avoir le retour voix.' : (e.message || 'Micro introuvable.')); S.mon = false; setMonUI(); return; }
@@ -1449,7 +1469,7 @@ async function record(){
   };
   rec.start();
   const recStart = await started;
-  S.recording = true; setRecUI(); if(AUTO.lyr) showRecLyrics();
+  S.recording = true; track('enregistrement'); setRecUI(); if(AUTO.lyr) showRecLyrics();
   const beat = 60 / S.bpm;
   let t0 = ctx.currentTime + 0.15;
   const cIn = S.countIn && !usePre;
@@ -2140,6 +2160,7 @@ const VSTYLES = [
 async function applyVStyle(t, i){
   const v = VSTYLES[i]; if(!t || !v) return;
   if(isLocked(t)){ lockToast(t); return; }
+  track('style-voix');
   pushUndo('le style de voix');
   Object.assign(t.fx, v.fx); t.vstyle = i;
   if(t.preset !== 'perso'){ t.preset = 'perso'; }
@@ -2753,6 +2774,7 @@ let dict = null;
 function dictStop(){ if(dict){ const d = dict; dict = null; try{ d.stop(); }catch(e){} } $('#bDict').setAttribute('aria-pressed', 'false'); $('#bDict').textContent = '🎙️ Dicter mon texte'; }
 $('#bDict').onclick = () => {
   if(dict) return dictStop();
+  track('dictee');
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if(!SR){ toast('La dictée n\'est pas dispo sur ce navigateur. Astuce : touche le micro 🎤 du clavier de l\'iPhone dans la zone de texte, ça marche pareil.'); return; }
   if(S.recording){ toast('Arrête d\'abord l\'enregistrement : le micro ne peut pas faire les deux.'); return; }
@@ -3529,7 +3551,7 @@ $('#bMaster').onclick = async () => {
   try{
     const out = await runMaster();
     if(out){
-      lastMaster = out; lastMp3 = null;
+      lastMaster = out; lastMp3 = null; track('export-son');
       try{ toast('Compression en MP3…'); lastMp3 = new File([await toMp3(out)], baseName() + '.mp3', { type: 'audio/mpeg' }); }catch(e){ lastMp3 = null; }
       $('#shareRow').hidden = false;
       $('#bShareMp3').textContent = lastMp3 ? 'Partager (MP3)' : 'Partager (WAV)';
@@ -3925,7 +3947,7 @@ $('#bVideo').onclick = async () => {
     if(reelVid) reelVid.pause();
     if(chunks.length){
       const blob = new Blob(chunks, { type: mr.mimeType || 'video/mp4' });
-      lastVideo = new File([blob], baseName() + '-reel.' + ((mr.mimeType || '').includes('mp4') ? 'mp4' : 'webm'), { type: blob.type });
+      track('video-reel'); lastVideo = new File([blob], baseName() + '-reel.' + ((mr.mimeType || '').includes('mp4') ? 'mp4' : 'webm'), { type: blob.type });
       $('#bShareVideo').hidden = false; $('#netBox').hidden = false; renderNets();
       toast('🎉 Ton Reel est prêt : touche « Partager la vidéo ».');
     } else toast('Reel annulé.');
@@ -3958,7 +3980,7 @@ function renderNets(){
 $('#netList').innerHTML = NETS.map(n => `<button class="net" data-net="${n.k}"><span>${n.i}</span>${n.n}</button>`).join('');
 $('#netList').addEventListener('click', e => {
   const b = e.target.closest('[data-net]'); if(!b || !lastVideo) return;
-  const n = NETS.find(x => x.k === b.dataset.net), cap = capFor(n);
+  const n = NETS.find(x => x.k === b.dataset.net), cap = capFor(n); track('partage-' + n.k);
   copyText(cap);
   shareFiles([lastVideo], cap);
   /* une vidéo n'est jamais cliquable sur les réseaux : on donne l'astuce pour que le lien le soit */
@@ -4029,7 +4051,7 @@ function openAvis(){
       const btn = $('#avSend'); btn.disabled = true; btn.textContent = 'Envoi…';
       fetch('https://api.web3forms.com/submit', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({ access_key: AVIS_KEY, subject: subj, from_name: 'StudioXel · ' + (who || 'kickeur'), message: body }) })
-        .then(r => r.json()).then(j => { if(!j.success) throw 0; close(); toast('Bien reçu, merci kickeur 🙏'); })
+        .then(r => r.json()).then(j => { if(!j.success) throw 0; track('avis-envoye'); close(); toast('Bien reçu, merci kickeur 🙏'); })
         .catch(() => { btn.disabled = false; btn.textContent = 'Envoyer au Xel'; viaMail(); });
     }
   });
@@ -4739,6 +4761,7 @@ function startTour(force, steps){
 }
 function endTour(){
   if(!tourEl) return;
+  if(TSTEPS === TOUR) track(tourI >= TSTEPS.length - 1 ? 'tuto-termine' : 'tuto-quitte-etape-' + (tourI + 1));
   if(TSTEPS === TOUR) store.set('tourOff', !!$('#tOff')?.checked);
   window.removeEventListener('resize', placeStep); window.removeEventListener('scroll', placeStep);
   const wasMain = TSTEPS === TOUR;
@@ -4865,7 +4888,7 @@ const GUIDE = [
 ];
 let gI = -1, gEl = null, gTimer = null, gDone = false;
 function startGuide(){
-  if(gEl) return;
+  if(gEl) return; track('guide-premier-son');
   if(tourEl) endTour();
   document.querySelector('.nav [data-view="vPistes"]').click();
   try{ closePlus(); }catch(e){}
@@ -4936,7 +4959,7 @@ function gPlace(){
 }
 /* ---------- Sauvegarde complète : un fichier avec tous tes sons, à ranger dans iCloud / Fichiers / Drive ---------- */
 async function makeBackup(){
-  if(busy) return; setBusy(true, 'Préparation de ta sauvegarde…');
+  if(busy) return; track('sauvegarde'); setBusy(true, 'Préparation de ta sauvegarde…');
   try{
     clearTimeout(saveTimer); if(sessReady && S.tracks.some(t => t.buffer)) await saveSession();
     const sessions = await dbDo('sessions', 'readonly', st => st.getAll()) || [];
@@ -4992,7 +5015,7 @@ function bkDest(file, n, mo){
   });
 }
 async function restoreBackup(f){
-  if(!f) return;
+  if(!f) return; track('restauration');
   if(busy) return; setBusy(true, 'Lecture de ta sauvegarde…');
   try{
     const hd = new Uint8Array(await f.slice(0, 8).arrayBuffer());
@@ -5097,6 +5120,7 @@ function showBeta(){
   });
 }
 setTimeout(showBeta, 300);
+setTimeout(() => { track(isStandalone() ? 'ouverture-appli-installee' : 'ouverture-navigateur'); if(ENV.inApp) track('ouverture-dans-' + String(ENV.inApp).toLowerCase().replace(/[^a-z0-9]+/g, '-')); }, 1500);
 
 
 try{ if('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {}); }catch(e){}
