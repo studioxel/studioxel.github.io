@@ -409,6 +409,13 @@ body.ed-open .wmark{z-index:41}
 #bDict[aria-pressed=true]{background:var(--rec);border-color:var(--rec);color:#fff}
 .dictbar .note{flex:1 1 200px}
 .qhelp{flex:none;width:30px;height:30px;border-radius:50%;border:1px solid var(--accent);background:transparent;color:var(--accent);font:800 15px var(--display);padding:0;line-height:1}
+.secbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line)}
+.secbar .sbtn{height:34px;font-size:13px;font-weight:700}
+.tstart{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);font-size:14px}
+.tstart .sbtn{height:36px;font-size:13px}
+.tstart .note{flex-basis:100%;margin:0}
+.pl.virt .t{opacity:.45;font-style:italic}
+.rlcd{font:700 13px var(--mono, ui-monospace);color:var(--accent);margin-right:auto}
 </style>
 </head>
 <body>
@@ -446,7 +453,7 @@ body.ed-open .wmark{z-index:41}
     <button class="toggle" id="bTour">📖 Revoir le tuto</button>
     <button class="toggle" id="bAvis">💬 Donner mon avis</button>
     <button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-    <span class="grp" id="ver">Version 60</span>
+    <span class="grp" id="ver">Version 61</span>
     <span class="grp" id="latInfo" title="Le retard du téléphone est mesuré et corrigé tout seul à chaque prise">Calage auto</span>
   </div>
 </div>
@@ -657,6 +664,9 @@ body.ed-open .wmark{z-index:41}
     <button class="qhelp" data-help="vTexte" aria-label="Aide de cet onglet">?</button>
   </div>
   <div id="viewW">
+    <div class="secbar" role="group" aria-label="Ajouter une section"><span class="note">Ajouter :</span>
+      <button class="sbtn" data-sec="Intro">Intro</button><button class="sbtn" data-sec="Couplet">Couplet</button><button class="sbtn" data-sec="Pré-refrain">Pré-refrain</button><button class="sbtn" data-sec="Refrain">Refrain</button><button class="sbtn" data-sec="Pont">Pont</button><button class="sbtn" data-sec="Outro">Outro</button>
+    </div>
     <textarea id="lyrics" placeholder="[Couplet 1]
 Tes lignes ici.
 
@@ -668,6 +678,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
     <div class="dictbar"><button class="sbtn" id="bDict" aria-pressed="false">🎙️ Dicter mon texte</button><span class="note" id="dictInfo">Dis tes lignes a cappella, elles s'écrivent toutes seules. Brouillon à relire : le rap, ça piège la dictée.</span></div>
   </div>
   <div id="viewP" hidden>
+    <div class="tstart"><span>Les paroles commencent à <b id="tsVal">0:00</b></span><button class="sbtn" id="tsHere">📍 Ici (tête de lecture)</button><button class="sbtn" id="tsMinus" aria-label="1 mesure plus tôt">− 1 mesure</button><button class="sbtn" id="tsPlus" aria-label="1 mesure plus tard">+ 1 mesure</button>
+      <p class="note">Avant ta première prise, le texte défile une ligne par mesure à partir de là. Si tu poses des repères (+ → Repère) qui portent le nom d'une section, par exemple « Refrain », cette section démarre pile sur son repère.</p></div>
     <div class="prompt" id="prompt"></div>
     <div class="pbar">
       <button class="sbtn" id="tap">Caler la ligne suivante</button>
@@ -675,6 +687,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
       <button class="sbtn" id="syncTake">🎙️ Caler sur ma prise</button>
       <button class="sbtn" id="syncTempo">🎵 Caler sur le tempo</button>
     </div>
+
   </div>
 </section>
 
@@ -690,7 +703,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 </section>
 
 <div class="help">
-  StudioXel · version 60.
+  StudioXel · version 61.
   Touche la pastille de couleur à gauche du nom d'une piste pour changer sa couleur.
   🔓 sur une piste verrouille une prise réussie : plus de réenregistrement, de coupe ni de déplacement par erreur.
   Glisse le doigt pour avancer dans la timeline. Touche une prise pour placer la lecture. Appui long : la phrase est sélectionnée pour la supprimer, la déplacer ou la copier. ⧉ duplique une piste.
@@ -711,7 +724,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 60;
+const APP_VER = 61;
 try{ const li = document.querySelector('link[rel="apple-touch-icon"]'); if(li) document.getElementById('wmLogo').src = li.href; }catch(e){}
 const COLORS = ['#6fa8ff','#f2b544','#c58bff','#4fd1b5','#ff8a65','#9be15d','#ff7eb6'];
 const HDR = 216, CEIL = Math.pow(10, -1 / 20);
@@ -2482,7 +2495,29 @@ function lstat(){
   const total = ta.value.split('\n').filter(l => l.trim() && !isHead(l)).length;
   $('#lstat').textContent = `Ligne ${idx + 1} · ≈ ${n} syllabe${n > 1 ? 's' : ''} · ${total} ligne${total > 1 ? 's' : ''} écrite${total > 1 ? 's' : ''}`;
 }
-ta.addEventListener('input', () => { store.set('lyrics', ta.value); lstat(); });
+ta.addEventListener('input', () => { store.set('lyrics', ta.value); lstat(); scheduleSave(); });
+
+/* ---------- Sections du texte : Intro, Couplet, Pré-refrain, Refrain, Pont, Outro ---------- */
+document.querySelector('.secbar').addEventListener('click', e => {
+  const b = e.target.closest('[data-sec]'); if(!b) return;
+  const kind = b.dataset.sec, lines = ta.value.split('\n');
+  const heads = lines.filter(isHead).map(l => l.trim().slice(1, -1).trim());
+  let name = kind;
+  if(kind === 'Couplet') name = 'Couplet ' + (heads.filter(h => /^couplet/i.test(h)).length + 1);
+  /* un refrain qui revient : je recopie le premier, tu modifies si besoin */
+  let body = '';
+  if(kind === 'Refrain' || kind === 'Pré-refrain'){
+    const i0 = lines.findIndex(l => isHead(l) && l.trim().slice(1, -1).trim().toLowerCase() === kind.toLowerCase());
+    if(i0 >= 0){ const out = []; for(let k = i0 + 1; k < lines.length && !isHead(lines[k]); k++) out.push(lines[k]); while(out.length && !out[out.length - 1].trim()) out.pop(); body = out.join('\n'); }
+  }
+  const pos = ta.selectionStart ?? ta.value.length, before = ta.value.slice(0, pos), after = ta.value.slice(pos);
+  const pre = before && !before.endsWith('\n\n') ? (before.endsWith('\n') ? '\n' : '\n\n') : '';
+  const ins = pre + '[' + name + ']\n' + (body ? body + '\n' : '');
+  ta.value = before + ins + after;
+  const caret = (before + ins).length; ta.focus(); ta.setSelectionRange(caret, caret);
+  store.set('lyrics', ta.value); lstat(); scheduleSave();
+  toast(body ? '[' + name + '] ajouté, avec le texte du premier recopié. Modifie-le si besoin.' : '[' + name + '] ajouté : écris tes lignes en dessous.');
+});
 /* Dictée : la voix devient du texte (reconnaissance vocale de l'iPhone / du navigateur) */
 let dict = null;
 function dictStop(){ if(dict){ const d = dict; dict = null; try{ d.stop(); }catch(e){} } $('#bDict').setAttribute('aria-pressed', 'false'); $('#bDict').textContent = '🎙️ Dicter mon texte'; }
@@ -2513,14 +2548,15 @@ $('#bDict').onclick = () => {
 function renderPrompt(){
   const lines = ta.value.split('\n'), box = $('#prompt');
   if(!lines.some(l => l.trim() && !isHead(l))){ box.innerHTML = '<div class="hint">Écris ton texte dans l\'onglet Écrire. Ici, lance la lecture et appuie sur « Caler la ligne suivante » au début de chaque ligne : le prompteur suivra ensuite tout seul.</div>'; return; }
+  const VS = Object.keys(syncs).length ? {} : (AUTO.sync ? virtualSyncs() : {});
   box.innerHTML = lines.map((l, i) => {
     if(!l.trim()) return '';
     if(isHead(l)) return `<div class="ph">${esc(l.trim().slice(1, -1))}</div>`;
-    const t = syncs[i];
-    return `<div class="pl" data-i="${i}"><span class="t">${t != null ? fmt(t) : '–'}</span><span>${esc(l)}</span><span class="s">${syl(l)}</span></div>`;
+    const t = syncs[i] ?? VS[i];
+    return `<div class="pl${syncs[i] == null && VS[i] != null ? ' virt' : ''}" data-i="${i}"><span class="t">${t != null ? fmt(t) : '–'}</span><span>${esc(l)}</span><span class="s">${syl(l)}</span></div>`;
   }).join('');
 }
-$('#prompt').addEventListener('click', e => { const r = e.target.closest('.pl'); if(!r) return; const t = syncs[r.dataset.i]; if(t != null) seek(Math.max(0, t - 0.5)); });
+$('#prompt').addEventListener('click', e => { const r = e.target.closest('.pl'); if(!r) return; const t = activeSyncs()[r.dataset.i]; if(t != null) seek(Math.max(0, t - 0.5)); });
 function tapSync(){
   if(!S.playing){ toast('Lance la lecture, puis cale chaque ligne au moment où elle démarre.'); return; }
   const lines = ta.value.split('\n'), done = Object.keys(syncs).map(Number), last = done.length ? Math.max(...done) : -1;
@@ -2530,6 +2566,30 @@ function tapSync(){
 }
 $('#tap').onclick = tapSync;
 $('#unsync').onclick = () => { syncs = {}; syncsAuto = true; store.set('syncsAuto', true); store.set('syncs', syncs); renderPrompt(); toast('Calage effacé. Il se refera tout seul à ta prochaine prise.'); };
+
+/* Début des paroles : l'intro de l'instru ne fait pas défiler le texte */
+function updTextStart(){ const v = $('#tsVal'); if(v) v.textContent = fmt(S.textStart || 0, true); }
+function setTextStart(t){
+  S.textStart = Math.max(0, t); updTextStart(); scheduleSave();
+  if(syncsAuto && !store.get('syncsTid', null)){ syncs = {}; store.set('syncs', syncs); }
+  if(!$('#viewP').hidden) renderPrompt();
+}
+$('#tsHere').onclick = () => { setTextStart(now()); toast('📍 Les paroles commencent à ' + fmt(S.textStart, true) + '.'); };
+$('#tsMinus').onclick = () => setTextStart((S.textStart || 0) - 4 * 60 / S.bpm);
+$('#tsPlus').onclick = () => setTextStart((S.textStart || 0) + 4 * 60 / S.bpm);
+const normSec = x => x.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '');
+/* Calage « virtuel » quand rien n'est calé : une ligne par mesure à partir du début des paroles, chaque section sur son repère s'il existe */
+function virtualSyncs(){
+  const lines = ta.value.split('\n'), bar = 4 * 60 / S.bpm, m = {};
+  let cur = S.textStart || 0;
+  lines.forEach((l, i) => {
+    if(!l.trim()) return;
+    if(isHead(l)){ const mk = S.markers.find(x => normSec(x.name) === normSec(l.trim().slice(1, -1))); if(mk) cur = Math.max(cur, mk.t); return; }
+    m[i] = cur; cur += bar;
+  });
+  return m;
+}
+const activeSyncs = () => Object.keys(syncs).length ? syncs : (AUTO.sync ? virtualSyncs() : {});
 /* ---------- Calage automatique du texte ---------- */
 /* Sur une prise : on repère les respirations de ta voix et on y place le début de chaque ligne, en suivant le nombre de syllabes */
 function alignLyrics(buf, offset){
@@ -2576,11 +2636,9 @@ function autoSyncFrom(t, quiet){
   return true;
 }
 /* Sur le tempo : une ligne par mesure, à partir d'où tu es */
-function syncToTempo(from){
-  const lines = ta.value.split('\n'), bar = 4 * 60 / S.bpm; let k = 0; const m = {};
-  lines.forEach((l, i) => { if(l.trim() && !isHead(l)){ m[i] = from + k * bar; k++; } });
-  if(!k) return false;
-  syncs = m; syncsAuto = true; store.set('syncs', syncs); store.set('syncsAuto', true); store.set('syncsTid', null); renderPrompt(); return true;
+function syncToTempo(){
+  const m = virtualSyncs(); if(!Object.keys(m).length) return false;
+  syncs = m; syncsAuto = true; store.set('syncs', syncs); store.set('syncsAuto', true); store.set('syncsTid', null); renderPrompt(); scheduleSave(); return true;
 }
 $('#syncTake').onclick = () => {
   if(!ta.value.trim()){ toast('Écris d\'abord ton texte dans l\'onglet Écrire.'); return; }
@@ -2590,9 +2648,7 @@ $('#syncTake').onclick = () => {
 };
 $('#syncTempo').onclick = () => {
   if(!ta.value.trim()){ toast('Écris d\'abord ton texte dans l\'onglet Écrire.'); return; }
-  const mk = S.markers.slice().sort((a, b) => a.t - b.t)[0];
-  const from = mk && S.pos < 0.05 ? mk.t : S.pos;
-  if(syncToTempo(from)) toast('🎵 Texte calé sur le tempo : une ligne par mesure à partir de ' + fmt(from, true) + '. Une prise le recalera sur ta voix.');
+  if(syncToTempo()) toast('🎵 Texte calé sur le tempo : une ligne par mesure à partir de ' + fmt(S.textStart || 0, true) + (S.markers.length ? ', chaque section sur son repère' : '') + '. Une prise le recalera sur ta voix.');
 };
 let curLine = null;
 /* ---------- Pendant la prise : le texte s'affiche tout seul (ou on propose de l'écrire) ---------- */
@@ -2603,7 +2659,7 @@ function showRecLyrics(){
   const has = lines.some(l => l.trim() && !isHead(l));
   rlEl = document.createElement('div'); rlEl.className = 'reclyr' + (has ? '' : ' ask');
   if(has){
-    rlEl.innerHTML = `<div class="rlhead"><b>📝 Ton texte</b><button class="sbtn" data-rl="minus" aria-label="Texte plus petit">A−</button><button class="sbtn" data-rl="plus" aria-label="Texte plus grand">A+</button><button class="sbtn" data-rl="close" aria-label="Masquer le texte">✕</button></div>
+    rlEl.innerHTML = `<div class="rlhead"><b>📝 Ton texte</b><span class="rlcd"></span><button class="sbtn" data-rl="minus" aria-label="Texte plus petit">A−</button><button class="sbtn" data-rl="plus" aria-label="Texte plus grand">A+</button><button class="sbtn" data-rl="close" aria-label="Masquer le texte">✕</button></div>
       <div class="rlbody" style="font-size:${rlSize}px">${lines.map((l, i) => !l.trim() ? '<div class="rlsp"></div>' : isHead(l) ? `<div class="rlh">${esc(l.trim().slice(1, -1))}</div>` : `<div class="rll" data-i="${i}">${esc(l)}</div>`).join('')}</div>`;
   } else {
     if(rlNoAsk || gEl){ rlEl = null; return; }
@@ -2627,14 +2683,12 @@ function hideRecLyrics(now){
 }
 function updRecLyr(){
   if(!rlEl || rlEl.classList.contains('ask')) return;
-  const p = now();
-  let best = null, bt = -1;
-  for(const k in syncs){ if(syncs[k] <= p + 0.05 && syncs[k] > bt){ bt = syncs[k]; best = k; } }
-  /* pas encore de calage : une ligne par mesure à partir du début de la prise */
-  if(AUTO.sync && !Object.keys(syncs).length && S.recording && recInfo && p >= recInfo.pos){
-    const ls = [...rlEl.querySelectorAll('.rll')], n = Math.floor((p - recInfo.pos) / (4 * 60 / S.bpm));
-    if(ls[n]) best = ls[n].dataset.i;
-  }
+  const p = now(), AS = activeSyncs();
+  let best = null, bt = -1, first = Infinity;
+  for(const k in AS){ if(AS[k] < first) first = AS[k]; if(AS[k] <= p + 0.05 && AS[k] > bt){ bt = AS[k]; best = k; } }
+  /* compte à rebours tant que l'intro joue */
+  const cd = rlEl.querySelector('.rlcd');
+  if(cd){ const left = first - p; cd.textContent = isFinite(first) && left > 0.3 ? 'Ça commence dans ' + Math.ceil(left) + ' s' : ''; }
   let key = best;
   if(best == null && S.markers.length){ let mk = null; S.markers.forEach(m => { if(m.t <= p + 0.05 && (!mk || m.t > mk.t)) mk = m; }); key = mk ? 'mk:' + mk.name : null; }
   if(key === rlCur) return; rlCur = key;
@@ -2647,6 +2701,15 @@ function updRecLyr(){
 
 function updatePrompt(){
   if($('#vTexte').hidden || $('#viewP').hidden) return;
+  const AS = activeSyncs();
+  if(Object.keys(AS).length && !Object.keys(syncs).length){
+    const p = now(); let best = null, bt = -1;
+    for(const k in AS){ if(AS[k] <= p + 0.05 && AS[k] > bt){ bt = AS[k]; best = k; } }
+    if(best === curLine) return; curLine = best;
+    document.querySelectorAll('.pl.cur').forEach(x => x.classList.remove('cur'));
+    if(best != null){ const el = document.querySelector(`.pl[data-i="${best}"]`); if(el){ el.classList.add('cur'); el.scrollIntoView({ block:'center', behavior:'smooth' }); } }
+    return;
+  }
   if(!Object.keys(syncs).length && S.markers.length){
     const pp = now(); let mk = null;
     S.markers.forEach(m => { if(m.t <= pp + 0.05 && (!mk || m.t > mk.t)) mk = m; });
@@ -2865,6 +2928,7 @@ async function saveSession(){
     }
     const rec = { id: sess.id, name: sess.name, link: sess.link || '', created: sess.created || Date.now(), updated: Date.now(),
       bpm: S.bpm, instruKey: S.instruKey || null, markers: S.markers, loopBars: S.loop.bars, dur: trackEnd(),
+      lyrics: ta.value, syncs, syncsAuto, syncsTid: store.get('syncsTid', null), textStart: S.textStart || 0,
       M: { preset: M.preset, low: M.low, high: M.high, glue: M.glue, target: M.target }, tracks };
     await dbDo('sessions', 'readwrite', st => st.put(JSON.parse(JSON.stringify(rec))));
     const i = sessIndex.findIndex(x => x.id === rec.id), lite = { id: rec.id, name: rec.name, link: rec.link, updated: rec.updated, dur: rec.dur };
@@ -2898,6 +2962,10 @@ async function loadSession(id){
   }
   S.bpm = rec.bpm || S.bpm; $('#bpm').value = S.bpm; bus.setBpm(S.bpm);
   S.instruKey = rec.instruKey || null; S.markers = rec.markers || []; S.loop = { on: false, bars: rec.loopBars || 4, start: 0 };
+  /* chaque son a son propre texte et son propre calage */
+  if(rec.lyrics != null){ ta.value = rec.lyrics; syncs = rec.syncs || {}; syncsAuto = rec.syncsAuto ?? true; store.set('syncsTid', rec.syncsTid ?? null); }
+  S.textStart = rec.textStart || 0;
+  store.set('lyrics', ta.value); store.set('syncs', syncs); store.set('syncsAuto', syncsAuto); lstat(); if(!$('#viewP').hidden) renderPrompt(); updTextStart();
   Object.assign(M, rec.M || {}); mpre.set();
   sess = { id: rec.id, name: rec.name, link: rec.link, created: rec.created }; store.set('sessId', rec.id);
   S.pos = 0; S.sel = null; applyMix();
@@ -2925,6 +2993,7 @@ async function newSession(){
   [['Instru', 'instru'], ['Lead', 'lead'], ['Refrain', 'lead'], ['Back', 'back'], ['Ambiance', 'ambiance']].forEach(([n, p]) => addTrack(n, p));
   defaultRefrain();
   S.markers = []; S.loop.on = false; S.instruKey = null; S.pos = 0; S.sel = null;
+  ta.value = ''; syncs = {}; syncsAuto = true; S.textStart = 0; store.set('lyrics', ''); store.set('syncs', {}); store.set('syncsAuto', true); store.set('syncsTid', null); lstat(); updTextStart();
   sess = { id: null, name: '', link: '', created: 0 }; store.set('sessId', null);
   sessReady = true;
   renderTracks(); renderMix(); renderSessBar(); renderLoopUI(); setSessState('Nouvelle session');
@@ -4507,10 +4576,11 @@ const HELP = {
   vTexte: [
     { t: 'L\'onglet Texte', b: 'Tes lyrics, et le prompteur qui les fait défiler pendant que tu kickes.' },
     { sel: ['#tabW', '#tabP'], t: 'Écrire / Prompteur', b: 'Écrire pour taper ton texte. Prompteur pour le voir défiler en grand.' },
-    { sel: ['#lyrics'], t: 'Ton texte', b: 'Mets les titres entre crochets, par exemple [Couplet 1] ou [Refrain] : ils deviennent des sections. Tout est sauvegardé tout seul.' },
+    { sel: ['#lyrics'], t: 'Ton texte', b: 'Chaque son a son propre texte, sauvegardé avec la session. Les titres entre crochets, par exemple [Couplet 1] ou [Refrain], deviennent des sections.' },
+    { sel: ['.secbar'], t: 'Les sections', b: 'Ajoute Intro, Couplet (numéroté tout seul), Pré-refrain, Refrain, Pont ou Outro là où est ton curseur. Un deuxième Refrain recopie le premier, tu modifies si besoin.' },
     { sel: ['#lstat'], t: 'Les syllabes', b: 'Le nombre de syllabes de la ligne où tu es, pour équilibrer tes rimes et ton flow.' },
     { sel: ['#bDict'], t: 'Dicter', b: 'Dis tes lignes a cappella, elles s\'écrivent toutes seules, une par pause. Relis : le rap piège la dictée.' },
-    { t: 'Le prompteur', b: 'Le texte se cale tout seul : sur le tempo pendant ta première prise, puis sur ta voix une fois la prise posée. Tu peux aussi caler à la main (« Caler la ligne suivante » au début de chaque ligne pendant la lecture), ou forcer « Caler sur ma prise » / « Caler sur le tempo ». Pendant REC, ton texte s\'affiche en bas tout seul.' }
+    { t: 'Le prompteur', b: 'Règle « Les paroles commencent à » (📍 Ici, ou ± 1 mesure) pour que l\'intro de l\'instru ne fasse pas défiler le texte. Pose des repères au nom de tes sections (+ → Repère) : chaque section démarre pile dessus. Ensuite le texte se cale tout seul : sur le tempo pendant ta première prise, puis sur ta voix une fois la prise posée. Tu peux aussi caler à la main (« Caler la ligne suivante » au début de chaque ligne pendant la lecture), ou forcer « Caler sur ma prise » / « Caler sur le tempo ». Pendant REC, ton texte s\'affiche en bas tout seul.' }
   ],
   vProjets: [
     { t: 'L\'onglet Projets', b: 'Pour préparer un single, un EP ou un album.' },
