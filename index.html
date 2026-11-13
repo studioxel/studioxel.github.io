@@ -345,6 +345,7 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
 .rscustom{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 10px;align-items:center;font-size:12px;color:var(--muted)}
 .rscustom input{width:100%;accent-color:var(--accent)}
 .rsgo{height:52px!important;font-size:17px!important;padding:0 22px!important}
+.beta .wpanel{gap:12px}.beta .btag{align-self:flex-start;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:3px 10px}.beta p{margin:0;line-height:1.5}.beta .bfoot{font-size:12px;opacity:.6;text-align:center}
 .tour{position:fixed;inset:0;z-index:50}
 .tspot{position:fixed;border-radius:12px;border:2px solid var(--accent);box-shadow:0 0 0 9999px rgba(5,6,10,.78);pointer-events:none;transition:left .25s,top .25s,width .25s,height .25s}
 .tspot.none{left:50%!important;top:40%!important;width:0!important;height:0!important;border:0}
@@ -520,7 +521,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 73</span></div>
+      <span class="grp" id="ver">Version 1.0 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
     </div>
   </div>
@@ -790,7 +791,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 73;
+const APP_VER = 74; // numéro interne (jamais affiché)
+const APP_PUB = '1.0'; // numéro public
 try{ const li = document.querySelector('link[rel="apple-touch-icon"]'); if(li) document.getElementById('wmLogo').src = li.href; }catch(e){}
 const COLORS = ['#6fa8ff','#f2b544','#c58bff','#4fd1b5','#ff8a65','#9be15d','#ff7eb6'];
 const HDR = 216, CEIL = Math.pow(10, -1 / 20);
@@ -3987,7 +3989,7 @@ const AVIS_KEY = 'b08748dc-8d8a-4bbd-9280-33e33a267b2d'; /* clé Web3Forms : avi
 function openAvis(){
   const st = { note: 0, kind: '' };
   const w = document.createElement('div');
-  w.className = 'welcome'; w.setAttribute('role', 'dialog'); w.setAttribute('aria-label', 'Donner mon avis');
+  w.className = 'welcome'; w.setAttribute('role', 'dialog'); w.setAttribute('aria-label', 'Donner mon avis'); w.style.zIndex = 56;
   w.innerHTML = `<div class="wpanel">
     <h2>Ton avis, kickeur 🎤</h2>
     <div class="wsub">Ta note</div>
@@ -4019,7 +4021,7 @@ function openAvis(){
         'Type : ' + (st.kind ? st.kind.slice(st.kind.indexOf(' ') + 1) : '—'),
         'Blaze : ' + (who || '—'),
         '', txt || '(pas de message)', '',
-        '— StudioXel v' + APP_VER + ' · ' + envLine()
+        '— StudioXel v' + APP_PUB + ' (#' + APP_VER + ') · ' + envLine()
       ].join('\n');
       const subj = 'Avis StudioXel' + (st.kind ? ' · ' + st.kind.slice(st.kind.indexOf(' ') + 1) : '') + (st.note ? ' · ' + st.note + '/5' : '');
       const viaMail = () => { location.href = 'mailto:' + AVIS_MAIL + '?subject=' + encodeURIComponent(subj) + '&body=' + encodeURIComponent(body); close(); toast('Appuie sur Envoyer dans ton mail 🙏'); };
@@ -5072,6 +5074,30 @@ function inAppWarn(){
   });
 }
 setTimeout(inAppWarn, 600);
+/* Panneau bêta : à la première ouverture puis à chaque nouvelle version */
+function showBeta(){
+  if(store.get('betaSeen', 0) === APP_VER) return;
+  const w = document.createElement('div'); w.className = 'welcome beta'; w.style.zIndex = 55;
+  w.setAttribute('role', 'dialog'); w.setAttribute('aria-label', 'Version bêta');
+  w.innerHTML = `<div class="wpanel">
+    <span class="btag">Version bêta</span>
+    <h2>Bienvenue sur StudioXel</h2>
+    <p>L'application est actuellement en phase de test. De nouvelles fonctionnalités arrivent régulièrement, et certains éléments peuvent encore évoluer ou présenter des imperfections.</p>
+    <p>Tes retours sont précieux pour l'améliorer : un bug, une suggestion, une idée de fonctionnalité, tout est utile. Chaque avis est lu.</p>
+    <p>Conseil : sauvegarde régulièrement tes sessions (Réglages → Ta sauvegarde).</p>
+    <button class="wbig" data-b="go">Commencer</button>
+    <button class="sbtn" data-b="avis">💬 Donner mon avis</button>
+    <div class="bfoot">Version ${APP_PUB} · Bêta</div>
+  </div>`;
+  document.body.appendChild(w);
+  w.addEventListener('click', e => {
+    const b = e.target.closest('[data-b]')?.dataset.b; if(!b) return;
+    store.set('betaSeen', APP_VER); w.remove();
+    if(b === 'avis') openAvis();
+  });
+}
+setTimeout(showBeta, 300);
+
 
 try{ if('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {}); }catch(e){}
 let instEvt = null;
