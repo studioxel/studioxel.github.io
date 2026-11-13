@@ -62,7 +62,7 @@ button{cursor:pointer}
 .meter{width:70px;height:8px;border-radius:4px;background:var(--raise);overflow:hidden;border:1px solid var(--line)}
 #micGrp.clip .meter{border-color:var(--rec)}
 #micGrp .meter{width:90px;height:10px}
-.clip.live{border-color:var(--rec)!important;background:color-mix(in srgb,var(--rec) 12%,transparent);pointer-events:none;z-index:2}
+.clip.live{border-color:var(--rec)!important;background:transparent;background:color-mix(in srgb,var(--rec) 12%,transparent);pointer-events:none;z-index:2}
 .lane:has(.clip.live) .empty{display:none}
 .clip.live span{color:var(--rec)!important;font-weight:800}
 .row.ghost .hdr{display:flex;flex-direction:column;gap:6px;justify-content:center}
@@ -249,14 +249,14 @@ details.adv[open] summary{color:var(--accent)}
 .mkrow:empty{display:none}
 .mk{height:28px;padding:0 10px;border-radius:14px;border:1px solid var(--accent);background:transparent;color:var(--accent);font-size:12px;font-weight:700}
 .mkx{height:28px;width:28px;border-radius:14px;border:1px solid var(--line);background:transparent;color:var(--muted);font-size:12px;padding:0}
-.loopband{position:absolute;top:0;bottom:0;background:color-mix(in srgb,var(--accent) 14%,transparent);border-left:2px solid var(--accent);border-right:2px solid var(--accent);z-index:2;pointer-events:none}
+.loopband{position:absolute;top:0;bottom:0;background:transparent;background:color-mix(in srgb,var(--accent) 14%,transparent);border-left:2px solid var(--accent);border-right:2px solid var(--accent);z-index:2;pointer-events:none}
 .fxlab{font-weight:700;min-width:150px}
 .stepper{display:flex;align-items:center;gap:6px}
 .stepper button{height:34px;min-width:44px;border-radius:17px;border:1px solid var(--line);background:var(--bg);font-weight:700}
 .stepper output{min-width:90px;text-align:center;font:500 14px var(--mono)}
 .pl.sec-cur,.ph.sec-cur{background:var(--raise);color:var(--fg)}
 .lockb{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:4px}
-.row.locked .hdr{background:color-mix(in srgb,var(--panel) 85%,var(--muted))}
+.row.locked .hdr{background:var(--panel);background:color-mix(in srgb,var(--panel) 85%,var(--muted))}
 .row.locked .clip{cursor:default;opacity:.85}
 fieldset.lk{border:0;margin:0;padding:0;min-width:0}
 fieldset.lk[disabled]{opacity:.55}
@@ -292,7 +292,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .plusmenu .sessbar{padding:0;border:0}
 .plusmenu .sesslist{padding:0;border:0}
 .zoom[aria-pressed=true]{background:var(--accent);color:#1a1405;border-color:var(--accent)}
-.selband{position:absolute;z-index:5;background:color-mix(in srgb,var(--accent) 28%,transparent);border:2px solid var(--accent);border-radius:6px;touch-action:none;cursor:grab;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.selband{position:absolute;z-index:5;background:transparent;background:color-mix(in srgb,var(--accent) 28%,transparent);border:2px solid var(--accent);border-radius:6px;touch-action:none;cursor:grab;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .hdl{position:absolute;top:50%;width:30px;height:56px;margin-top:-28px;border-radius:15px;background:var(--accent);box-shadow:0 2px 8px rgba(0,0,0,.5);touch-action:none;cursor:ew-resize;display:flex;align-items:center;justify-content:center;color:#1a1405;font:800 14px/1 var(--mono)}
 .hdl.l{left:-16px}
 .hdl.r{right:-16px}
@@ -326,7 +326,7 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
 .avrow{display:flex;gap:6px;flex-wrap:wrap}
 .avrow button{flex:1 1 0;min-width:44px;height:48px;border-radius:10px;border:1px solid var(--line);background:var(--raise);font-size:22px}
 .avrow.kind button{font-size:14px;font-weight:700}
-.avrow button[aria-pressed=true]{border:2px solid var(--accent);background:color-mix(in srgb,var(--accent) 16%,var(--raise))}
+.avrow button[aria-pressed=true]{border:2px solid var(--accent);background:var(--raise);background:color-mix(in srgb,var(--accent) 16%,var(--raise))}
 .avmail{font-size:12px;color:var(--muted);word-break:break-all;user-select:all}
 .reelpick{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
 .reelpick .note{flex:1 1 180px;margin:0}
@@ -345,7 +345,7 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
 .rsgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .rscard{min-height:64px;border-radius:12px;border:1px solid var(--line);background:var(--raise);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-weight:700;font-size:13px;padding:6px}
 .rscard span{font-size:24px;line-height:1}
-.rscard[aria-pressed=true]{border:2px solid var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--raise))}
+.rscard[aria-pressed=true]{border:2px solid var(--accent);background:var(--raise);background:color-mix(in srgb,var(--accent) 14%,var(--raise))}
 .rsscroll{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
 .rsfilt{flex:none;width:76px;border:2px solid transparent;border-radius:10px;background:transparent;padding:2px;display:flex;flex-direction:column;gap:4px;align-items:center;font-size:11px;font-weight:700;color:var(--muted)}
 .rsfilt canvas{width:68px;height:121px;border-radius:8px;background:#000;display:block}
@@ -358,7 +358,7 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
 .tour{position:fixed;inset:0;z-index:50}
 .tspot{position:fixed;border-radius:12px;border:2px solid var(--accent);box-shadow:0 0 0 9999px rgba(5,6,10,.78);pointer-events:none;transition:left .25s,top .25s,width .25s,height .25s}
 .tspot.none{left:50%!important;top:40%!important;width:0!important;height:0!important;border:0}
-.tbub{position:fixed;left:12px;right:12px;margin:0 auto;max-width:380px;background:var(--panel);border:1px solid var(--accent);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:8px;box-shadow:0 18px 50px rgba(0,0,0,.6);transition:top .25s;max-height:calc(100dvh - 24px);overflow-y:auto;-webkit-overflow-scrolling:touch}
+.tbub{position:fixed;left:12px;right:12px;margin:0 auto;max-width:380px;background:var(--panel);border:1px solid var(--accent);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:8px;box-shadow:0 18px 50px rgba(0,0,0,.6);transition:top .25s;max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);overflow-y:auto;-webkit-overflow-scrolling:touch}
 .tbub .tw{display:flex;align-items:center;gap:8px;font:800 12px var(--display);color:var(--accent);letter-spacing:.08em;text-transform:uppercase}
 .tbub .tw img{width:28px;height:28px;border-radius:8px}
 .tbub h3{margin:0;font:800 19px/1.2 var(--display)}
@@ -381,10 +381,10 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
 .tour.guide .tbub{pointer-events:auto}
 .tour.guide .tspot{animation:gpulse 1.6s ease-in-out infinite}
 .tour.guide.light .tspot{box-shadow:0 0 0 9999px rgba(5,6,10,.35)}
-@keyframes gpulse{50%{border-color:#fff;outline:3px solid color-mix(in srgb,var(--accent) 40%,transparent)}}
+@keyframes gpulse{50%{border-color:#fff;outline:3px solid var(--accent);outline:3px solid color-mix(in srgb,var(--accent) 40%,transparent)}}
 .tchoice{display:flex;flex-direction:column;gap:8px}
 .tchoice .sbtn{height:46px;font-size:15px;font-weight:800}
-.cedit{position:absolute;top:4px;right:4px;width:30px;height:26px;border-radius:6px;border:1px solid var(--line);background:color-mix(in srgb,var(--panel) 85%,transparent);font-size:14px;padding:0;z-index:3}
+.cedit{position:absolute;top:4px;right:4px;width:30px;height:26px;border-radius:6px;border:1px solid var(--line);background:transparent;background:color-mix(in srgb,var(--panel) 85%,transparent);font-size:14px;padding:0;z-index:3}
 .ed{position:fixed;inset:0;z-index:40;background:var(--bg);display:flex;flex-direction:column;gap:10px;padding:max(12px,env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) max(12px,env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px));overflow-y:auto}
 .ed>*{flex:none}
 .edhead{display:flex;align-items:center;gap:10px}
@@ -406,13 +406,13 @@ body.simple .nav [data-view=vMix],body.simple .nav [data-view=vMaster],body.simp
 body.simple .row .l2,body.simple .row .fxzone,body.simple .row .swatch,body.simple .row .chip.mute,body.simple .row .chip.solo,body.simple .row .l3 .keep,body.simple .row .l3 [data-act=dup],body.simple .row .l3 .del,body.simple .row .lockb{display:none}
 body.simple .row:not([data-preset=instru]) .l3{display:none}
 body.simple .lane{min-height:92px}
-body.simple #routeChip,body.simple #bRep,body.simple #bMon,body.simple #zOut,body.simple #zIn,body.simple #loopPill{display:none}
+body.simple #bRep,body.simple #zOut,body.simple #zIn,body.simple #loopPill{display:none}
 body.simple .adv{display:none!important}
 body.simple #viewP .pbar,body.simple #viewP .tsman,body.simple #tsMinus,body.simple #tsPlus{display:none}
 .modebar{display:flex;gap:4px;padding:4px;margin-bottom:10px;background:var(--panel);border:2px solid var(--accent);border-radius:14px}
 .modebar button{flex:1 1 0;min-width:0;height:48px;border:0;border-radius:10px;background:transparent;color:var(--muted);font:800 15px var(--display);letter-spacing:.02em;cursor:pointer}
 .modebar button[aria-pressed=true]{background:var(--accent);color:#1a1405}
-.stepbar{display:flex;flex-direction:column;gap:10px;padding:14px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--accent) 8%,var(--panel))}
+.stepbar{display:flex;flex-direction:column;gap:10px;padding:14px;border-bottom:1px solid var(--line);background:var(--panel);background:color-mix(in srgb,var(--accent) 8%,var(--panel))}
 .stepbar .stn{font:800 12px var(--display);letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
 .stepbar h3{margin:0;font:800 20px var(--display)}
 .stepbar p{margin:0;color:var(--muted);line-height:1.4}
@@ -424,6 +424,19 @@ body.simple #viewP .pbar,body.simple #viewP .tsman,body.simple #tsMinus,body.sim
 .stepbar .stdots{display:flex;gap:6px}.stepbar .stdots i{flex:1;height:4px;border-radius:2px;background:var(--line)}.stepbar .stdots i.on{background:var(--accent)}
 .stepbar .stadv{align-self:flex-start;background:none;border:0;color:var(--muted);text-decoration:underline;padding:2px 0;font-size:13px}
 body:not(.simple) .stepbar{display:none}
+.power{display:flex;flex-direction:column;gap:8px;padding:12px;border:2px dashed var(--accent);border-radius:14px;background:var(--bg);animation:pwIn .45s ease-out}
+@keyframes pwIn{0%{transform:scale(.92);opacity:0}70%{transform:scale(1.02);opacity:1}100%{transform:scale(1)}}
+.power .pwtop{display:flex;align-items:center;gap:8px;font:800 12px var(--display);letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.power .pwtop span{margin-left:auto;color:var(--muted);letter-spacing:0;text-transform:none;font-weight:600}
+.power b{font:800 17px var(--display)}
+.power p{margin:0;color:var(--muted);line-height:1.4}
+.power .pwb{display:flex;gap:8px;flex-wrap:wrap}
+.power .pwb .sbtn{height:42px;padding:0 14px;font-weight:800}
+.ideas{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.idea{height:auto!important;min-height:64px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;padding:8px 10px!important;text-align:left}
+.idea span{font-size:18px;line-height:1}.idea b{font:800 14px var(--display)}.idea small{font-size:11.5px;color:var(--muted);font-weight:500}
+.idea[aria-pressed=true]{border-color:var(--accent)}
+@media (prefers-reduced-motion:reduce){.power{animation:none}}
 body.ed-open .transport{position:fixed;top:env(safe-area-inset-top,0px);left:max(6px,env(safe-area-inset-left,0px));right:max(6px,env(safe-area-inset-right,0px));z-index:42;margin:0}
 body.ed-open .transport #settings{display:none}
 body.ed-open .reclyr{z-index:43}
@@ -435,7 +448,7 @@ body.ed-open .wmark{z-index:41}
 .rlhead .sbtn{height:32px;min-width:38px;padding:0 8px;font-weight:800}
 .rlbody{overflow-y:auto;padding:10px 14px 16px;line-height:1.35;-webkit-overflow-scrolling:touch}
 .rll{padding:3px 6px;border-radius:6px;color:var(--fg);transition:background .2s,color .2s}
-.rll.cur{background:color-mix(in srgb,var(--accent) 22%,transparent);color:#fff;font-weight:700}
+.rll.cur{background:transparent;background:color-mix(in srgb,var(--accent) 22%,transparent);color:#fff;font-weight:700}
 .rlh{font:800 .6em var(--display);letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-top:10px}
 .rlh.cur{text-decoration:underline}
 .rlsp{height:.5em}
@@ -483,7 +496,7 @@ body.ed-open .wmark{z-index:41}
 .vsgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .vsgrid .sbtn{height:auto;min-height:54px;display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 10px;text-align:left}
 .vsgrid .sbtn b{font-size:14px}.vsgrid .sbtn span{font-size:11px;color:var(--muted)}
-.vsgrid .sbtn[aria-pressed=true]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--raise))}
+.vsgrid .sbtn[aria-pressed=true]{border-color:var(--accent);background:var(--raise);background:color-mix(in srgb,var(--accent) 14%,var(--raise))}
 .mixfol{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:8px 12px 0}
 .mixfol .note{flex:1 1 180px;margin:0}
 #bRep[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#1a1405}
@@ -498,9 +511,9 @@ body.ed-open .wmark{z-index:41}
 .zrow{display:flex;align-items:center;gap:6px}
 .zl{width:62px;flex:none;font:700 11px var(--display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .zlane{position:relative;flex:1;height:30px;border-radius:6px;background:var(--bg);border:1px solid var(--line)}
-.zb{position:absolute;top:3px;bottom:3px;border-radius:4px;border:1px solid var(--c);background:color-mix(in srgb,var(--c) 25%,transparent);padding:0;min-width:8px}
+.zb{position:absolute;top:3px;bottom:3px;border-radius:4px;border:1px solid var(--c);background:transparent;background:color-mix(in srgb,var(--c) 25%,transparent);padding:0;min-width:8px}
 .zb.on{background:var(--c);box-shadow:0 0 0 2px var(--accent)}
-.zsel{position:absolute;top:0;bottom:0;border:2px solid var(--accent);border-radius:6px;background:color-mix(in srgb,var(--accent) 12%,transparent);pointer-events:none}
+.zsel{position:absolute;top:0;bottom:0;border:2px solid var(--accent);border-radius:6px;background:transparent;background:color-mix(in srgb,var(--accent) 12%,transparent);pointer-events:none}
 .zh{position:absolute;top:50%;width:26px;height:40px;margin-top:-20px;border-radius:8px;background:var(--accent);pointer-events:auto;touch-action:none;box-shadow:0 2px 6px rgba(0,0,0,.5)}
 .zh[data-h=a]{left:-14px}.zh[data-h=b]{right:-14px}
 .zph{position:absolute;top:0;bottom:0;width:2px;background:var(--rec);pointer-events:none}
@@ -569,7 +582,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 1.2.4 · Bêta</span></div>
+      <span class="grp" id="ver">Version 1.3.1 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -844,12 +857,30 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 <div class="toast" id="toast" role="status"></div>
 
 <script>
+/* Navigateur trop ancien : message clair au lieu d'un écran cassé (ce bloc est écrit à l'ancienne exprès) */
+(function(){
+  var ok = true;
+  try{ eval('var a = {}; a?.b ?? 1; (() => 1)();'); }catch(e){ ok = false; }
+  if(!(window.AudioContext || window.webkitAudioContext) || !window.indexedDB || !window.Promise || !window.fetch) ok = false;
+  if(ok) return;
+  var ua = navigator.userAgent, ios = /iPhone|iPad|iPod/.test(ua);
+  document.addEventListener('DOMContentLoaded', function(){
+    var d = document.createElement('div');
+    d.setAttribute('style', 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:999;background:#0b0d12;color:#e7eaf0;font:16px/1.5 system-ui,sans-serif;padding:24px;display:flex;flex-direction:column;justify-content:center;gap:12px');
+    d.innerHTML = '<b style="font-size:22px;color:#f2b544">Ton navigateur est trop ancien pour StudioXel</b>' +
+      '<span>' + (ios ? 'Mets ton iPhone à jour (Réglages → Général → Mise à jour logicielle), puis rouvre StudioXel dans Safari.' : 'Mets à jour Chrome (Play Store), puis rouvre StudioXel dans Chrome.') + '</span>' +
+      '<span style="color:#9aa3b2">studioxel.github.io</span>';
+    document.body.appendChild(d);
+  });
+})();
+</script>
+<script>
 (() => {
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 88; // numéro interne (jamais affiché)
-const APP_PUB = '1.2.4';
+const APP_VER = 91; // numéro interne (jamais affiché)
+const APP_PUB = '1.3.1';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -1204,6 +1235,7 @@ function now(){ return S.playing ? Math.max(0, playStartPos + (ctx.currentTime -
 
 /* ---------- Transport ---------- */
 function play(at){
+  if(!mic && !S.recording){ audioSessionPlay(); unlockSpeaker(); }
   ensureCtx();
   if(S.playing) return;
   playStartCtx = at ?? ctx.currentTime + 0.05;
@@ -1457,7 +1489,7 @@ function releaseMic(force){
   if(micSink){ try{ micSink.disconnect(); }catch(e){} micSink = null; }
   if(mic){ mic.getTracks().forEach(tr => tr.stop()); }
   mic = null; micAnalyser = null;
-  setTimeout(() => ensureCtx(), 300);
+  setTimeout(() => { if(S.playing) ensureCtx(); }, 300);
   $('#meter').style.width = '0%';
 }
 async function record(){
@@ -1481,6 +1513,7 @@ async function record(){
   recLive = []; recQuietWarn = false;
   if(silentEl) try{ silentEl.pause(); }catch(e){}
   const chunks = [];
+  if(!window.MediaRecorder){ releaseMic(true); toast('Ce navigateur ne sait pas enregistrer : mets à jour ton téléphone (iOS 14.3 ou plus) ou ouvre StudioXel dans Chrome / Safari.'); return; }
   rec = new MediaRecorder(mic);
   rec.ondataavailable = e => { if(e.data.size) chunks.push(e.data); };
   const started = new Promise(r => rec.onstart = () => r(ctx.currentTime));
@@ -4991,6 +5024,7 @@ const HELP = {
     { t: 'L\'onglet Pistes', b: 'C\'est ta table d\'enregistrement : tes pistes à gauche, la timeline à droite. Je te montre tout ce qu\'il y a ici.' },
     { sel: ['#modeBar'], t: 'Simple ou avancé', b: 'Le bandeau tout en haut : un appui pour passer en mode simple (l\'essentiel) ou avancé (tous les outils). Ça bascule direct.' },
     { sel: ['#stepBar'], t: 'Les étapes', b: 'En mode simple, tout se fait ici : une étape à la fois (instru, texte, voix, export, partage). Le gros bouton fait l\'action pour toi. Pour tous les outils : « Mode avancé », tout en haut.' },
+    { sel: ['.power'], t: 'Et si tu ajoutais…', b: 'Dès que ta lead est posée : ajoute un refrain ou des backs (la piste est préparée, tu n\'as qu\'à enregistrer), essaie un style de voix ou l\'auto-tune (ça rejoue direct), retouche une phrase, nettoie tes backs, fais un Reel. Rien n\'est bloqué : tous les outils sont aussi en mode avancé.' },
     { sel: ['#sessTitle', '#sessState'], t: 'Ta session', b: 'Le nom de ton son et son état. « Sauvegardé » : tout est gardé dans le téléphone, rien à faire.' },
     { sel: ['#zOut', '#zIn'], t: 'Zoom', b: 'Les loupes resserrent ou élargissent la timeline. Zoome pour bosser une phrase, dézoome pour voir tout le morceau.' },
     { sel: ['#plusBtn'], t: 'Le +', b: 'Ajouter une piste, poser un repère (couplet, refrain), lancer une boucle de quelques mesures pour refaire une phrase, renommer ta session, la lier à un projet et retrouver toutes tes sessions.' },
@@ -5313,7 +5347,7 @@ function showBeta(){
 const isSimple = () => store.get('uiMode', 'simple') === 'simple';
 const SIMPLE_TOUR = [
   TOUR[0], TOUR[1],
-  { sel: ['#stepBar'], t: 'Suis les étapes 👇', b: 'Tout se fait ici, une étape à la fois : charge ton instru, écris ton texte, enregistre ta voix, réécoute, exporte. Le gros bouton fait l\'action pour toi.' },
+  { sel: ['#stepBar'], t: 'Suis les étapes 👇', b: 'Tout se fait ici, une étape à la fois : charge ton instru, écris ton texte, enregistre ta voix, réécoute, exporte. Le gros bouton fait l\'action pour toi. Une fois ta lead posée, « ➕ Et si tu ajoutais… » te propose d\'enrichir ton son : refrain, backs, style de voix, auto-tune, retouches, Reel.' },
   { sel: ['#modeBar'], t: 'Simple ou avancé', b: 'Tout en haut : « Mode simple » montre l\'essentiel, étape par étape. « Mode avancé » sort tous les outils : effets détaillés, Mix, Master, éditeur de prise, projets. Un appui et ça bascule direct, dans les deux sens.' },
   { t: 'À toi de kicker 🎤', b: 'C\'est parti : suis les étapes en haut de l\'écran. — Le Xel' }
 ];
@@ -5341,6 +5375,49 @@ $('#vPistes .cardhead').after(stepEl);
 let stepKey = '', stepSkip = { sid: null, instru: false, text: false }, stepRetake = false;
 const vocalTracks = () => S.tracks.filter(t => t.preset !== 'instru');
 function armTrack(t){ if(!t || S.recording) return; S.tracks.forEach(x => x.arm = false); t.arm = true; renderTracks(); try{ if(monSrc){ detachMon(); attachMon(); } }catch(e){} }
+/* ---------- Après la lead : on propose d'enrichir le son, sans rien bloquer ---------- */
+const trByPreset = pr => S.tracks.find(t => t.preset === pr);
+const leadTake = () => S.tracks.find(t => t.preset === 'lead' && t.buffer) || vocalTracks().find(t => t.buffer);
+let ideaSess = null, ideaUsed = {}, ideaStyles = false, ideaHide = 0;
+function ideas(){
+  if(ideaSess !== (sess && sess.id)){ ideaSess = sess && sess.id; ideaUsed = {}; ideaStyles = false; }
+  const L = leadTake(); if(!L || S.recording || Date.now() < ideaHide) return [];
+  const rf = S.tracks.find(t => /refrain/i.test(t.name) && t !== L), bk = trByPreset('back');
+  const out = [];
+  if(rf && !rf.buffer) out.push({ id: 'refrain', ic: '🎤', t: 'Un refrain', d: 'sur la piste Refrain' });
+  if(bk && !bk.buffer) out.push({ id: 'back', ic: '🗣️', t: 'Des backs', d: 'pour appuyer tes fins de phrases' });
+  if(!ideaUsed.style || ideaStyles) out.push({ id: 'style', ic: '🎨', t: 'Un style de voix', d: '7 looks en un appui' });
+  if(!(isTuned(L) || L.atOn) && !ideaUsed.tune) out.push({ id: 'tune', ic: '🤖', t: 'De l\'auto-tune', d: 'version « Planant »' });
+  if(S.routeInfo?.kind === 'ecouteurs' && !S.mon) out.push({ id: 'mon', ic: '🎧', t: 'T\'entendre en direct', d: 'avec tes écouteurs' });
+  if(bk && bk.buffer && !ideaUsed.gate) out.push({ id: 'gate', ic: '🔇', t: 'Nettoyer tes backs', d: 'souffle et blancs coupés' });
+  if(!ideaUsed.edit) out.push({ id: 'edit', ic: '✂️', t: 'Retoucher une phrase', d: 'couper un raté au poil' });
+  if(lastMaster && !ideaUsed.reel) out.push({ id: 'reel', ic: '🎬', t: 'Un Reel', d: 'pour Insta, TikTok, Shorts' });
+  return out;
+}
+function ideasHTML(list){
+  if(!list.length) return '';
+  const L = leadTake();
+  return `<div class="power"><div class="pwtop">➕ Et si tu ajoutais…</div>
+    <div class="ideas">${list.map(i => `<button class="sbtn idea" data-idea="${i.id}" aria-pressed="${i.id === 'style' && ideaStyles}"><span>${i.ic}</span><b>${i.t}</b><small>${i.d}</small></button>`).join('')}</div>
+    ${ideaStyles ? `<p>Touche un style : « ${esc(L ? L.name : '')} » rejoue direct avec.</p><div class="pwb">${VSTYLES.map((v, k) => `<button class="sbtn" data-ivs="${k}">${v.n}</button>`).join('')}</div>` : ''}
+    <div class="pwb"><button class="sbtn" data-idea="hide">Masquer pour l\'instant</button></div></div>`;
+}
+function ideaPlay(t){ if(!t) return; if(S.playing) pause(); S.pos = Math.max(0, t.offset); if(!mic) audioSessionPlay(); unlockSpeaker(); wake().then(() => play()); }
+async function ideaUse(id){
+  const L = leadTake();
+  if(id === 'hide'){ ideaHide = Date.now() + 15 * 60000; return; }
+  if(id === 'refrain' || id === 'back'){
+    const t = id === 'back' ? trByPreset('back') : S.tracks.find(x => /refrain/i.test(x.name) && x !== L);
+    if(t){ armTrack(t); stepRetake = true; toast(id === 'back' ? '🗣️ Piste Back prête : appuie sur Enregistrer et pose tes backs par-dessus.' : '🎤 Piste Refrain prête : appuie sur Enregistrer.'); }
+  }
+  else if(id === 'style') ideaStyles = !ideaStyles;
+  else if(id === 'tune' && L){ ideaUsed.tune = true; L.at.speed = -10; await toggleAT(L); ideaPlay(L); }
+  else if(id === 'mon'){ S.monUserOff = false; await monOn(); }
+  else if(id === 'gate'){ const t = trByPreset('back'); ideaUsed.gate = true; if(t?.buffer){ const r = gateBlancs(t.buffer, 0, t.buffer.length); if(r){ pushUndo('la coupe des blancs'); setTrackBuf(t, r.buf, t.offset); renderTracks(); scheduleSave(); toast('🔇 ' + r.cut.toFixed(1) + ' s de blancs coupés sur tes backs. ↶ Annuler pour revenir.'); ideaPlay(t); } else toast('Tes backs sont déjà propres 👌'); } }
+  else if(id === 'edit' && L){ ideaUsed.edit = true; openEditor(L); }
+  else if(id === 'reel'){ ideaUsed.reel = true; document.querySelector('.nav [data-view="vPartager"]').click(); setTimeout(() => $('#rsCanvas')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 200); }
+  track('idee-' + id);
+}
 function updStep(){
   if(!isSimple()) return;
   if(stepSkip.sid !== (sess && sess.id)) stepSkip = { sid: sess && sess.id, instru: false, text: false };
@@ -5356,7 +5433,8 @@ function updStep(){
   else { st = 'done'; n = 5; }
   if(st === 'voice' && !S.tracks.some(t => t.arm)){ const f = voc.find(t => !t.buffer) || voc[0]; if(f){ S.tracks.forEach(x => x.arm = false); f.arm = true; renderTracks(); } }
   const armed = S.tracks.find(t => t.arm);
-  const key = [st, armed && armed.id, voc.map(t => t.name + (t.buffer ? 1 : 0)).join(','), S.playing].join('|');
+  const idl = (st === 'export' || st === 'done') ? ideas() : [];
+  const key = [st, armed && armed.id, voc.map(t => t.name + (t.buffer ? 1 : 0)).join(','), S.playing, idl.map(i => i.id).join(','), ideaStyles].join('|');
   if(key === stepKey) return; stepKey = key;
   const dots = `<div class="stdots">${[1, 2, 3, 4, 5].map(i => `<i class="${i <= (n || 3) ? 'on' : ''}"></i>`).join('')}</div>`;
   const chips = `<div class="stchips">${voc.map(t => `<button class="sbtn" data-sarm="${t.id}" aria-pressed="${!!t.arm}">${esc(t.name)}${t.buffer ? ' ✓' : ''}</button>`).join('')}</div>`;
@@ -5366,11 +5444,13 @@ function updStep(){
   else if(st === 'instru') h = `${dots}<div class="stn">Étape 1 sur 5</div><h3>Charge ton instru</h3><p>Le beat sur lequel tu vas kicker (MP3 ou WAV, depuis ton téléphone).</p><div class="stb"><button class="sbtn primary big" data-s="instru">📂 Choisir mon instru</button><button class="sbtn" data-s="noinstru">Je kicke sans instru</button></div>`;
   else if(st === 'text') h = `${dots}<div class="stn">Étape 2 sur 5</div><h3>Écris ton texte</h3><p>Pas obligé, mais il défilera tout seul pendant que tu enregistres.</p><div class="stb"><button class="sbtn primary big" data-s="write">✍️ Écrire mon texte</button><button class="sbtn" data-s="notext">Passer</button></div>`;
   else if(st === 'voice') h = `${dots}<div class="stn">Étape 3 sur 5</div><h3>Enregistre ta voix</h3><p>Choisis la piste, puis appuie sur REC. Un décompte part, et tu kickes.</p>${chips}<div class="stb"><button class="sbtn primary big" data-s="rec">● Enregistrer${armed ? ' sur ' + esc(armed.name) : ''}</button>${hasTake ? '<button class="sbtn" data-s="next">C\'est bon, suite →</button>' : ''}</div>`;
-  else if(st === 'export') h = `${dots}<div class="stn">Étape 4 sur 5</div><h3>Réécoute et exporte</h3><p>Ça te va ? Exporte ton son. Sinon, refais une prise ou ajoute une voix (refrain, backs).</p><div class="stb"><button class="sbtn primary big" data-s="export">📤 Exporter mon son</button><button class="sbtn" data-s="play">${S.playing ? '⏸ Pause' : '▶ Réécouter'}</button><button class="sbtn" data-s="retake">🎤 Refaire / ajouter une voix</button></div>`;
+  else if(st === 'export') h = `${dots}<div class="stn">Étape 4 sur 5</div><h3>Réécoute et exporte</h3><p>Ça te va ? Exporte ton son. Sinon, refais ta prise, ou enrichis-le juste en dessous.</p><div class="stb"><button class="sbtn primary big" data-s="export">📤 Exporter mon son</button><button class="sbtn" data-s="play">${S.playing ? '⏸ Pause' : '▶ Réécouter'}</button><button class="sbtn" data-s="retake">🎤 Refaire ma prise</button></div>`;
   else h = `${dots}<div class="stn">Étape 5 sur 5</div><h3>Ton son est prêt 🔥</h3><p>Envoie-le où tu veux, ou fais-en un Reel dans Partager.</p><div class="stb"><button class="sbtn primary big" data-s="share">📲 Partager mon son</button><button class="sbtn" data-s="reel">🎬 Faire un Reel</button><button class="sbtn" data-s="retake">🎤 Retoucher</button></div>`;
-  stepEl.innerHTML = h;
+  stepEl.innerHTML = h + ideasHTML(idl);
 }
 stepEl.addEventListener('click', async e => {
+  const vs = e.target.closest('[data-ivs]'); if(vs){ const L = leadTake(); if(L){ ideaUsed.style = true; await applyVStyle(L, +vs.dataset.ivs); ideaPlay(L); } stepKey = ''; updStep(); return; }
+  const ib = e.target.closest('[data-idea]'); if(ib){ await ideaUse(ib.dataset.idea); stepKey = ''; updStep(); return; }
   const sa = e.target.closest('[data-sarm]'); if(sa){ armTrack(trackById(+sa.dataset.sarm) || S.tracks.find(t => String(t.id) === sa.dataset.sarm)); stepKey = ''; updStep(); return; }
   const a = e.target.closest('[data-s]')?.dataset.s; if(!a) return;
   const instru = S.tracks.find(t => t.preset === 'instru');
@@ -5380,7 +5460,7 @@ stepEl.addEventListener('click', async e => {
   else if(a === 'notext') stepSkip.text = true;
   else if(a === 'rec' || a === 'stop'){ if(a === 'rec' && !S.tracks.some(t => t.arm)) armTrack(vocalTracks().find(t => !t.buffer) || vocalTracks()[0]); stepRetake = false; record(); }
   else if(a === 'next') stepRetake = false;
-  else if(a === 'retake'){ stepRetake = true; const nx = vocalTracks().find(t => !t.buffer); if(nx) armTrack(nx); }
+  else if(a === 'retake'){ stepRetake = true; const lt = (typeof leadTake === 'function' && leadTake()) || vocalTracks()[0]; if(lt) armTrack(lt); }
   else if(a === 'play') $('#bPlay').click();
   else if(a === 'export') $('#bMaster').click();
   else if(a === 'share') $('#bShareMp3').click();
@@ -5673,13 +5753,27 @@ async function askMicEarly(){
   catch(e){ /* refusé ou pas encore autorisé : on réessaie au premier toucher */ }
 }
 /* Le micro n'est plus ouvert au lancement : il s'ouvre au premier REC seulement */
-const firstTouch = () => { audioSessionPlay(); unlockSpeaker(); ensureCtx(); };
+/* Le son de l'appli ne prend la main que pendant lecture, enregistrement ou retour voix.
+   Le reste du temps (appli ouverte au repos, ou en arrière-plan) : ta musique d'ailleurs continue. */
+const firstTouch = () => {};
+const audioActive = () => !!(S.playing || S.recording || S.mon || S.reelRec || (typeof rsPlaying !== 'undefined' && rsPlaying) || (rec && rec.state === 'recording'));
+let audioLastActive = 0, audioIdle = false;
+function audioRest(){
+  try{ if(silentEl && !silentEl.paused) silentEl.pause(); }catch(e){}
+  try{ if(navigator.audioSession) navigator.audioSession.type = 'ambient'; }catch(e){}
+  try{ if(ctx.state === 'running') ctx.suspend().catch(() => {}); }catch(e){}
+  audioIdle = true;
+}
+try{ if(navigator.audioSession) navigator.audioSession.type = 'ambient'; }catch(e){}
+setInterval(() => {
+  if(audioActive()){ audioLastActive = Date.now(); audioIdle = false; return; }
+  if(!audioIdle && Date.now() - audioLastActive > 1500) audioRest();
+}, 500);
 /* Micro coupé dès qu'on n'enregistre plus : appli en arrière-plan ou fermée */
-document.addEventListener('visibilitychange', () => { if(document.hidden){ if(S.recording) pause(); else releaseMic(true); } });
+document.addEventListener('visibilitychange', () => { if(document.hidden){ if(S.recording || S.playing) pause(); releaseMic(true); setTimeout(audioRest, 50); } });
 window.addEventListener('pagehide', () => releaseMic(true));
 setInterval(() => { if(mic && !S.mon && !S.recording && !(rec && rec.state === 'recording')) releaseMic(); }, 3000);
 document.addEventListener('pointerdown', firstTouch, { once: true });
-['touchend', 'click'].forEach(ev => document.addEventListener(ev, () => { if(ctx.state !== 'running') ctx.resume().catch(() => {}); }, { passive: true }));
 ctx.onstatechange = () => { if(ctx.state !== 'running' && (S.playing || S.recording)) ctx.resume().catch(() => {}); };
 })();
 </script>
