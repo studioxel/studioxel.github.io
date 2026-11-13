@@ -529,7 +529,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 1.1.1 · Bêta</span></div>
+      <span class="grp" id="ver">Version 1.1.2 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -666,6 +666,7 @@ body.ed-open .wmark{z-index:41}
     <div class="sec">Mon son</div>
     <p class="note">Le master (style et volume réglés dans l'onglet Master) est appliqué automatiquement.</p>
     <div class="btns"><button class="sbtn primary" id="bMaster">Exporter mon son</button></div>
+    <p class="note stale" id="staleNote" hidden>⚠️ Tu as touché à ton son depuis le dernier export (Mix, effets, pistes…). Touche « Exporter mon son » pour avoir la version à jour.</p>
     <div class="btns" id="shareRow" hidden>
       <button class="sbtn primary" id="bShareMp3">Partager (MP3)</button>
       <button class="sbtn" id="bSaveWav">Enregistrer en WAV</button>
@@ -801,8 +802,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 80; // numéro interne (jamais affiché)
-const APP_PUB = '1.1.1';
+const APP_VER = 81; // numéro interne (jamais affiché)
+const APP_PUB = '1.1.2';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -3519,6 +3520,17 @@ $('#strip').addEventListener('click', async e => {
 
 /* ---------- Export léger, partage, vidéo, pistes séparées ---------- */
 let lastMaster = null, lastMp3 = null, lastVideo = null, lastStems = null, lameP = null;
+/* Empreinte du son : si tu touches au Mix après un export, l'ancien fichier n'est plus proposé */
+const bufIds = new WeakMap(); let bufSeq = 0;
+const bid = b => b ? (bufIds.get(b) || (bufIds.set(b, ++bufSeq), bufSeq)) : 0;
+const mixSig = () => { try{ return JSON.stringify([S.tracks.map(t => [t.id, bid(t.buffer), t.offset, t.vol, t.pan, !!t.mute, !!t.solo, t.trim, t.vr, t.fx, t.preset]), M.low, M.high, M.glue, M.target, M.preset, M.bypass, S.bpm]); }catch(e){ return String(Math.random()); } };
+let masterSig = '', stemsSig = '';
+function checkStale(){
+  const sig = mixSig();
+  if(lastMaster && sig !== masterSig){ lastMaster = null; lastMp3 = null; $('#shareRow').hidden = true; $('#staleNote').hidden = false; }
+  if(lastStems && sig !== stemsSig){ lastStems = null; $('#bShareStems').hidden = true; $('#staleNote').hidden = false; }
+}
+setInterval(() => { if(!$('#vPartager').hidden) checkStale(); }, 1000);
 function loadLame(){
   if(window.lamejs) return Promise.resolve();
   if(!lameP) lameP = new Promise((res, rej) => {
@@ -3561,7 +3573,7 @@ $('#bMaster').onclick = async () => {
   try{
     const out = await runMaster();
     if(out){
-      lastMaster = out; lastMp3 = null; track('export-son');
+      lastMaster = out; lastMp3 = null; masterSig = mixSig(); $('#staleNote').hidden = true; track('export-son');
       try{ toast('Compression en MP3…'); lastMp3 = new File([await toMp3(out)], baseName() + '.mp3', { type: 'audio/mpeg' }); }catch(e){ lastMp3 = null; }
       $('#shareRow').hidden = false;
       $('#bShareMp3').textContent = lastMp3 ? 'Partager (MP3)' : 'Partager (WAV)';
@@ -3570,8 +3582,8 @@ $('#bMaster').onclick = async () => {
   }catch(e){ toast('Export impossible : ' + e.message); }
   setBusy(false);
 };
-$('#bShareMp3').onclick = () => { if(!lastMaster) return; shareFiles([lastMp3 || new File([wav(lastMaster)], baseName() + '.wav', { type: 'audio/wav' })]); };
-$('#bSaveWav').onclick = () => { if(lastMaster) download(lastMaster, baseName() + '-master.wav', 'Fichier WAV enregistré.'); };
+$('#bShareMp3').onclick = () => { checkStale(); if(!lastMaster){ toast('Ton son a changé : touche « Exporter mon son » pour la version à jour.'); return; } shareFiles([lastMp3 || new File([wav(lastMaster)], baseName() + '.wav', { type: 'audio/wav' })]); };
+$('#bSaveWav').onclick = () => { checkStale(); if(lastMaster) download(lastMaster, baseName() + '-master.wav', 'Fichier WAV enregistré.'); };
 
 function coverSource(){
   if(sess.link){ const p = projects.find(x => x.id === sess.link.split(':')[0]); if(p?.cover){ const im = new Image(); im.src = p.cover; return { img: im, title: p.title, artist: p.artist }; } }
@@ -3912,8 +3924,9 @@ $('#bVideo').onclick = async () => {
   const ov = $('#reelRec');
   try{
     ensureCtx(); unlockSpeaker();
+    checkStale();
     const out = lastMaster || await runMaster(); if(!out){ setBusy(false); return; }
-    lastMaster = out;
+    if(lastMaster !== out){ lastMaster = out; masterSig = mixSig(); }
     const win = reelWindow(), start = Math.min(win.start, Math.max(0, out.duration - 1)), dur = Math.min(win.dur, out.duration - start);
     const eng = await reelEngine();
     const cv = document.createElement('canvas'); cv.width = eng.W; cv.height = eng.H; const g = cv.getContext('2d');
@@ -4087,12 +4100,12 @@ $('#bStems').onclick = async () => {
       files.push(new File([wav(r)], (i + 1) + '-' + safeName(t.name) + '.wav', { type: 'audio/wav' }));
       toast('Piste ' + (i + 1) + ' / ' + tr.length + ' prête.'); await tick();
     }
-    lastStems = files; $('#bShareStems').hidden = false;
+    lastStems = files; stemsSig = mixSig(); $('#bShareStems').hidden = false;
     toast(files.length + ' pistes prêtes, toutes calées au même départ : touche « Partager les pistes ».');
   }catch(e){ toast('Export impossible : ' + e.message); }
   setBusy(false);
 };
-$('#bShareStems').onclick = () => { if(lastStems) shareFiles(lastStems); };
+$('#bShareStems').onclick = () => { checkStale(); if(lastStems) shareFiles(lastStems); else toast('Tes pistes ont changé : touche « Préparer les pistes séparées » à nouveau.'); };
 
 /* ---------- Travail à plusieurs : passe-session avec pistes verrouillées ---------- */
 const ME = (() => {
