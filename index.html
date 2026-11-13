@@ -254,6 +254,7 @@ fieldset.lk{border:0;margin:0;padding:0;min-width:0}
 fieldset.lk[disabled]{opacity:.55}
 .lknote{color:var(--accent)!important}
 .transport{position:sticky;top:env(safe-area-inset-top,0px);z-index:15;box-shadow:0 8px 18px rgba(0,0,0,.35)}
+.transport:has(#settings:not([hidden])),.transport.setopen{position:relative;top:auto}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:16;background:var(--bg)}
 .fxzone{display:flex;flex-direction:column;gap:5px}
 .fxchips{display:flex;flex-wrap:wrap;gap:5px}
@@ -521,7 +522,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 1.0.3 · Bêta</span></div>
+      <span class="grp" id="ver">Version 1.0.4 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -793,8 +794,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 77; // numéro interne (jamais affiché)
-const APP_PUB = '1.0.3';
+const APP_VER = 78; // numéro interne (jamais affiché)
+const APP_PUB = '1.0.4';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -5229,6 +5230,8 @@ $('#bStop').onclick = () => { const was = S.playing; pause(); if(!was) S.pos = 0
 $('#bHome').onclick = () => seek(0);
 $('#bReload').onclick = () => { location.replace(location.pathname + '?v=' + Date.now()); };
 $('#bSet').onclick = () => { const st = $('#settings'); st.hidden = !st.hidden; $('#bSet').setAttribute('aria-expanded', !st.hidden); };
+/* Réglages ouverts : la barre du haut arrête de rester collée, sinon le défilement bloque */
+try{ const st = $('#settings'), tr = st.closest('.transport'); new MutationObserver(() => tr.classList.toggle('setopen', !st.hidden)).observe(st, { attributes: true, attributeFilter: ['hidden'] }); }catch(e){}
 $('#bRec').onclick = record;
 $('#bpm').value = S.bpm;
 $('#bpm').onchange = e => {
