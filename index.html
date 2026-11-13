@@ -447,6 +447,21 @@ body.ed-open .wmark{z-index:41}
 .repinfo{order:10;flex-basis:100%;display:flex;gap:8px;align-items:center;padding:6px 8px;border:1px solid var(--accent);border-radius:10px;font:700 13px var(--mono, ui-monospace)}
 .repinfo span{flex:1;text-align:center;color:var(--accent)}
 .repinfo .sbtn{height:34px;min-width:40px;padding:0 8px}
+.zone{margin:10px 12px 0;padding:10px;border:1px solid var(--line);border-radius:12px;display:flex;flex-direction:column;gap:8px;background:var(--raise)}
+.zhead{display:flex;align-items:center;gap:6px}.zhead b{font:800 13px var(--display);letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.zhead .sbtn{height:32px}
+.zbar{position:relative;display:flex;flex-direction:column;gap:4px;padding:4px 0}
+.zrows{display:flex;flex-direction:column;gap:5px}
+.zrow{display:flex;align-items:center;gap:6px}
+.zl{width:62px;flex:none;font:700 11px var(--display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.zlane{position:relative;flex:1;height:30px;border-radius:6px;background:var(--bg);border:1px solid var(--line)}
+.zb{position:absolute;top:3px;bottom:3px;border-radius:4px;border:1px solid var(--c);background:color-mix(in srgb,var(--c) 25%,transparent);padding:0;min-width:8px}
+.zb.on{background:var(--c);box-shadow:0 0 0 2px var(--accent)}
+.zsel{position:absolute;top:0;bottom:0;border:2px solid var(--accent);border-radius:6px;background:color-mix(in srgb,var(--accent) 12%,transparent);pointer-events:none}
+.zh{position:absolute;top:50%;width:26px;height:40px;margin-top:-20px;border-radius:8px;background:var(--accent);pointer-events:auto;touch-action:none;box-shadow:0 2px 6px rgba(0,0,0,.5)}
+.zh[data-h=a]{left:-14px}.zh[data-h=b]{right:-14px}
+.zph{position:absolute;top:0;bottom:0;width:2px;background:var(--rec);pointer-events:none}
+#zPlay{height:44px;font-size:15px;font-weight:800}
 </style>
 </head>
 <body>
@@ -505,7 +520,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 71</span></div>
+      <span class="grp" id="ver">Version 73</span></div>
       <p class="note" id="envInfo"></p>
     </div>
   </div>
@@ -586,6 +601,12 @@ body.ed-open .wmark{z-index:41}
 <section class="card view" id="vMix" aria-label="Mixage" hidden>
   <div class="cardhead"><h2>Mixage</h2><span class="spacer"></span><button class="sbtn" id="bLevel">Rééquilibrer les niveaux</button><button class="qhelp" data-help="vMix" aria-label="Aide de cet onglet">?</button></div>
   <div class="pad">
+    <div class="zone" id="zone">
+      <div class="zhead"><b>Zone à écouter en boucle</b><span class="spacer"></span><button class="sbtn" id="zAll">Tout le son</button><button class="sbtn" id="zClear" aria-label="Effacer la zone">✕</button></div>
+      <div class="zbar" id="zBar"><div class="zrows" id="zRows"></div><div class="zsel" id="zSel" hidden><i class="zh" data-h="a"></i><i class="zh" data-h="b"></i></div><div class="zph" id="zPh"></div></div>
+      <p class="note" id="zInfo">Touche les passages à écouter, autant que tu veux : la zone va du premier au dernier. Tire les poignées jaunes pour ajuster au poil.</p>
+      <button class="sbtn primary" id="zPlay">🔁 Écouter la zone en boucle</button>
+    </div>
     <div class="mixfol"><button class="toggle" id="mixFollow" aria-pressed="true">🎯 Suit le chant</button><span class="note">La piste qui chante est choisie toute seule pendant la lecture.</span></div>
     <div class="chips" id="mixChips"></div>
     <div id="strip" class="pad" style="padding:0"></div>
@@ -769,7 +790,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 71;
+const APP_VER = 73;
 try{ const li = document.querySelector('link[rel="apple-touch-icon"]'); if(li) document.getElementById('wmLogo').src = li.href; }catch(e){}
 const COLORS = ['#6fa8ff','#f2b544','#c58bff','#4fd1b5','#ff8a65','#9be15d','#ff7eb6'];
 const HDR = 216, CEIL = Math.pow(10, -1 / 20);
@@ -1867,6 +1888,7 @@ function fxRowHTML(t, k, label, hint){
   </div>`;
 }
 function renderMix(){
+  try{ renderZone(); }catch(e){}
   const cur = selTrack(); S.sel = cur?.id ?? null;
   $('#mixChips').innerHTML = S.tracks.map(t =>
     `<button class="tchip" data-id="${t.id}" aria-pressed="${t === cur}"><i style="background:${t.color}"></i>${esc(t.name)}</button>`).join('');
@@ -1941,6 +1963,7 @@ function singPeriod(p, dir){
 function setRep(r){
   S.rep = r;
   $('#bRep').setAttribute('aria-pressed', String(!!r));
+  const zp = $('#zPlay'); if(zp) zp.textContent = r && S.zone && r.a === S.zone.a && r.b === S.zone.b ? '⏹ Arrêter la boucle' : '🔁 Écouter la zone en boucle';
   updRepInfo();
   if(!r) return;
   if(S.playing) pause();
@@ -1955,7 +1978,8 @@ $('#bRep').onclick = () => {
   if(S.recording) return;
   if(S.rep){ setRep(null); toast('Boucle arrêtée.'); return; }
   let r = null;
-  if(bandSel){ r = { a: bandSel.a, b: bandSel.b, t: trackById(bandSel.tid) }; }
+  if(!$('#vMix').hidden && S.zone){ r = { ...S.zone, t: null }; }
+  else if(bandSel){ r = { a: bandSel.a, b: bandSel.b, t: trackById(bandSel.tid) }; }
   else r = singPeriod(now(), 0);
   if(!r){ toast('Pas encore de voix enregistrée à mettre en boucle.'); return; }
   if(r.t && !$('#vMix').hidden && S.mixFollow){ S.sel = r.t.id; renderMix(); }
@@ -1967,6 +1991,60 @@ document.addEventListener('click', e => {
   const r = singPeriod(S.rep.a, +b.dataset.rep); if(r){ if(r.t && S.mixFollow){ S.sel = r.t.id; if(!$('#vMix').hidden) renderMix(); } setRep(r); }
   if(b.dataset.rep === '0') setRep(null);
 });
+
+/* ---------- Mix : zone d'écoute libre (plusieurs passages, ou poignées) ---------- */
+S.zone = null; const zPick = new Set();
+function zTracks(){ return S.tracks.filter(t => t.buffer && t.preset !== 'instru'); }
+function zTot(){ return Math.max(trackEnd(), 1); }
+function renderZone(){
+  const rows = $('#zRows'); if(!rows) return;
+  const tot = zTot(), ts = zTracks();
+  if(!ts.length){ rows.innerHTML = '<p class="note" style="margin:8px">Enregistre d\'abord une voix : ses passages apparaîtront ici.</p>'; $('#zSel').hidden = true; return; }
+  rows.innerHTML = ts.map(t => `<div class="zrow"><span class="zl" style="color:${t.color}">${esc(t.name)}</span><div class="zlane">${singRegions(t).map((r, i) => {
+    const k = t.id + ':' + i;
+    return `<button class="zb${zPick.has(k) ? ' on' : ''}" data-zk="${k}" data-a="${r.a}" data-b="${r.b}" style="left:${r.a / tot * 100}%;width:${Math.max(1.5, (r.b - r.a) / tot * 100)}%;--c:${t.color}" aria-pressed="${zPick.has(k)}" aria-label="${esc(t.name)} ${fmt(r.a, true)} à ${fmt(r.b, true)}"></button>`;
+  }).join('')}</div></div>`).join('');
+  drawZone();
+}
+function drawZone(){
+  const sel = $('#zSel'), tot = zTot(); if(!sel) return;
+  if(!S.zone){ sel.hidden = true; $('#zInfo').textContent = 'Touche les passages à écouter, autant que tu veux : la zone va du premier au dernier. Tire les poignées jaunes pour ajuster au poil.'; return; }
+  sel.hidden = false;
+  const lane = $('#zRows .zlane'), off = lane ? lane.offsetLeft : 0, W = lane ? lane.clientWidth : $('#zBar').clientWidth;
+  sel.style.left = (off + S.zone.a / tot * W) + 'px'; sel.style.width = Math.max(6, (S.zone.b - S.zone.a) / tot * W) + 'px';
+  $('#zInfo').textContent = 'Zone : ' + fmt(S.zone.a, true) + ' → ' + fmt(S.zone.b, true) + ' (' + Math.round(S.zone.b - S.zone.a) + ' s). Touche d\'autres passages pour l\'agrandir.';
+}
+function zFromPick(){
+  let a = Infinity, b = -Infinity;
+  document.querySelectorAll('#zRows .zb.on').forEach(x => { a = Math.min(a, +x.dataset.a); b = Math.max(b, +x.dataset.b); });
+  S.zone = isFinite(a) ? { a, b } : null;
+}
+$('#zBar').addEventListener('click', e => {
+  const z = e.target.closest('.zb'); if(!z) return;
+  const k = z.dataset.zk; if(zPick.has(k)) zPick.delete(k); else zPick.add(k);
+  z.classList.toggle('on'); z.setAttribute('aria-pressed', String(zPick.has(k)));
+  zFromPick(); drawZone();
+  if(S.rep && S.zone) setRep({ ...S.zone, t: null });
+});
+(() => {
+  let drag = null;
+  $('#zSel').addEventListener('pointerdown', e => { const h = e.target.closest('.zh'); if(!h) return; drag = h.dataset.h; e.target.setPointerCapture(e.pointerId); e.preventDefault(); });
+  $('#zSel').addEventListener('pointermove', e => {
+    if(!drag || !S.zone) return;
+    const lane = $('#zRows .zlane'), r = lane.getBoundingClientRect(), tm = clamp((e.clientX - r.left) / r.width, 0, 1) * zTot();
+    if(drag === 'a') S.zone.a = Math.min(tm, S.zone.b - 0.2); else S.zone.b = Math.max(tm, S.zone.a + 0.2);
+    drawZone();
+  });
+  const end = () => { if(drag){ drag = null; if(S.rep && S.zone) setRep({ ...S.zone, t: null }); } };
+  $('#zSel').addEventListener('pointerup', end); $('#zSel').addEventListener('pointercancel', end);
+})();
+$('#zAll').onclick = () => { zPick.clear(); S.zone = { a: 0, b: trackEnd() }; renderZone(); if(S.rep) setRep({ ...S.zone, t: null }); };
+$('#zClear').onclick = () => { zPick.clear(); S.zone = null; renderZone(); if(S.rep) setRep(null); };
+$('#zPlay').onclick = () => {
+  if(!S.zone){ toast('Touche d\'abord un ou plusieurs passages, ou « Tout le son ».'); return; }
+  if(S.rep && S.rep.a === S.zone.a && S.rep.b === S.zone.b){ setRep(null); return; }
+  setRep({ ...S.zone, t: null }); toast('🔁 Zone en boucle : règle tes effets pendant que ça tourne.');
+};
 /* Mix : la piste affichée suit la voix qui chante à l'endroit de la lecture */
 S.mixFollow = store.get('mixFollow', true);
 function updFollow(){ const b = $('#mixFollow'); if(b) b.setAttribute('aria-pressed', String(!!S.mixFollow)); }
@@ -4419,7 +4497,7 @@ const TOUR = [
   { sel: ['#zOut', '#zIn'], t: 'Le zoom', b: 'Les loupes zooment et dézooment la timeline. Zoome pour couper une phrase au poil près.' },
   { sel: ['#plusBtn'], t: 'Le bouton +', b: 'Ajoute une piste, pose un repère (couplet, refrain), lance une boucle pour refaire juste une phrase, et retrouve toutes tes sessions. Tout se sauvegarde tout seul.' },
   { sel: ['#bSet'], t: 'Réglages', b: 'Mets ton blaze : il signe tes pistes. Tout est rangé par rubriques : enregistrement (tempo, décompte, métronome), écoute (Auto, Casque ou Haut-parleur) si la pastille d\'écoute se trompe. Dans « Automatique ou manuel », tu choisis ce que je fais tout seul : retour voix, texte pendant la prise, calage du texte, réglage des niveaux. Et si tu veux refaire ton premier son pas à pas : « 🎤 Premier son guidé ».' },
-  { sel: ['.nav [data-view=vMix]'], t: 'Mix', b: 'Les effets de chaque piste en grand, plus l\'égaliseur et la compression pour ceux qui veulent aller loin. « Rééquilibrer » remet les niveaux d\'aplomb.' },
+  { sel: ['.nav [data-view=vMix]'], t: 'Mix', b: 'Ici tu peaufines ta voix. En haut, la zone à écouter : touche un ou plusieurs passages chantés (ou tire les poignées) et lance-les en boucle pendant que tu règles. « 🎯 Suit le chant » affiche tout seul la piste qui chante. Ensuite : les styles de voix en un appui, les effets en grand, l\'égaliseur et la compression pour aller loin. « Rééquilibrer » remet les niveaux d\'aplomb.' },
   { sel: ['.nav [data-view=vMaster]'], t: 'Master', b: 'La touche finale de ta maquette : un style et un volume (Streaming ou Fort). Ton son sort propre et fort, sans jamais saturer.' },
   { sel: ['.nav [data-view=vTexte]'], t: 'Texte', b: 'Écris tes lyrics ici, ou touche « 🎙️ Dicter mon texte » et dis-les : ils s\'écrivent tout seuls (relis, la dictée se trompe sur le rap). Le prompteur les fait défiler pendant que tu kickes. Je cale le texte tout seul : sur le tempo pendant ta première prise, puis pile sur ta voix une fois la prise posée. Tu peux toujours caler à la main. Le calage sort aussi en sous-titres dans tes Reels.' },
   { sel: ['.nav [data-view=vProjets]'], t: 'Projets', b: 'Prépare ton single, ton EP ou ton album : pochette, tracklist, et où en est chaque titre.' },
@@ -4712,6 +4790,7 @@ const HELP = {
   ],
   vMix: [
     { t: 'L\'onglet Mix', b: 'Ici tu règles chaque piste en détail.' },
+    { sel: ['#zone'], t: 'Zone à écouter', b: 'Tous tes passages chantés, piste par piste. Touche ceux que tu veux (autant que tu veux) : la zone va du premier au dernier. Tire les poignées jaunes pour ajuster, « Tout le son » pour tout prendre, puis « Écouter la zone en boucle ». Ça tourne pendant que tu règles tes effets.' },
     { sel: ['#bRep'], t: 'Répéter en boucle', b: 'Le 🔁 en haut met en boucle le passage chanté où tu es (ou la phrase sélectionnée). Il tourne pendant que tu règles tes effets ici. ⏮ ⏭ passent au passage d\'avant ou d\'après, ✕ arrête.' },
     { sel: ['#mixFollow'], t: 'Suit le chant', b: 'Allumé, la piste qui chante à l\'endroit de la lecture s\'affiche toute seule : tu lances ▶ et tu règles la voix que tu entends, sans chercher.' },
     { sel: ['#mixChips'], t: 'Choisir la piste', b: 'Touche une piste pour afficher ses réglages en dessous. Choisir toi-même coupe le suivi du chant.' },
@@ -5228,6 +5307,7 @@ function loop(){
     $('#limGr').style.width = Math.min(100, r * 8) + '%';
     $('#limDb').textContent = (r > 0.05 ? '−' : '') + r.toFixed(1) + ' dB';
   }
+  if(!$('#vMix').hidden){ const zp = $('#zPh'), lane = $('#zRows .zlane'); if(zp && lane){ zp.style.left = (lane.offsetLeft + clamp(p / zTot(), 0, 1) * lane.clientWidth) + 'px'; } }
   if(!$('#vMix').hidden && S.mixFollow && S.playing && !S.rep && Date.now() - mixFolT > 400){
     mixFolT = Date.now();
     const ae = document.activeElement;
