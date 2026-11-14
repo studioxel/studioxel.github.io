@@ -618,7 +618,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 1.8.7 · Bêta</span></div>
+      <span class="grp" id="ver">Version 1.8.8 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -695,7 +695,7 @@ body.ed-open .wmark{z-index:41}
       <div class="playhead" id="playhead"></div>
     </div>
   </div>
-  <input type="file" id="file" accept="audio/*" hidden>
+  <input type="file" id="file" accept="audio/*,.mp3,.m4a,.wav,.aac,.aif,.aiff,.caf,.flac,.ogg,.opus,.mp4,.m4v,.mov" hidden>
 </section>
 
 <!-- MIXAGE -->
@@ -1062,8 +1062,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 126; // numéro interne (jamais affiché)
-const APP_PUB = '1.8.7';
+const APP_VER = 127; // numéro interne (jamais affiché)
+const APP_PUB = '1.8.8';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
