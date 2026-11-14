@@ -614,7 +614,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 1.7.3 · Bêta</span></div>
+      <span class="grp" id="ver">Version 1.7.4 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -918,8 +918,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 108; // numéro interne (jamais affiché)
-const APP_PUB = '1.7.3';
+const APP_VER = 109; // numéro interne (jamais affiché)
+const APP_PUB = '1.7.4';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -1929,7 +1929,7 @@ list.addEventListener('click', e => {
     toast(t.keep ? '🔒 Prise de « ' + t.name + ' » verrouillée : plus de réenregistrement, de coupe ni de déplacement possible.' : '🔓 Prise de « ' + t.name + ' » déverrouillée.');
     return;
   }
-  if(act === 'arm'){ if(S.recording) return; const v = !t.arm; S.tracks.forEach(x => x.arm = false); t.arm = v; renderTracks(); if(monSrc){ detachMon(); attachMon(); } }
+  if(act === 'arm'){ if(S.recording) return; const v = !t.arm; S.tracks.forEach(x => x.arm = false); t.arm = v; renderTracks(); if(monSrc){ detachMon(); attachMon(); } if(v) armJump(t); }
   if(act === 'mute' || act === 'solo') pushUndo(act === 'mute' ? 'le muet' : 'le solo');
   if(act === 'mute'){ t.mute = !t.mute; el.setAttribute('aria-pressed', t.mute); applyMix(); }
   if(act === 'solo'){ t.solo = !t.solo; el.setAttribute('aria-pressed', t.solo); applyMix(); }
@@ -4032,6 +4032,19 @@ function partAt(pos){
   return { sec, next, dst: sec.kind === 'refrain' ? R : L };
 }
 setInterval(() => { if(S.recording && recInfo && recInfo.autoEnd && now() >= recInfo.autoEnd){ recInfo.autoEnd = null; record(); } }, 40);
+/* Tu gères toi-même : quand tu armes une piste, la lecture et le prompteur se placent sur la partie qui va avec */
+function armJump(t){
+  if(guided() || S.playing) return;
+  const r = roleOf(t); if(r !== 'lead' && r !== 'refrain' && r !== 'back') return;
+  const secs = (S.secs || []).filter(x => x.kind === 'couplet' || x.kind === 'refrain');
+  const kind = r === 'refrain' ? 'refrain' : 'couplet';
+  const has = sc => t.buffer && sc.t >= t.offset - 0.05 && sc.t < t.offset + t.buffer.duration && (() => { const sr = t.buffer.sampleRate, d = t.buffer.getChannelData(0), a = Math.max(0, Math.round((sc.t - t.offset + 0.5) * sr)), b = Math.min(d.length, a + sr * 2); let m = 0; for(let i = a; i < b; i += 64) m = Math.max(m, Math.abs(d[i])); return m > 0.01; })();
+  const list = secs.filter(x => x.kind === kind), sec = list.find(x => !has(x)) || list[0];
+  const tt = sec ? sec.t : (r === 'refrain' ? null : (S.textStart || 0));
+  if(tt == null) return;
+  seek(tt);
+  toast('« ' + t.name + ' » armée · lecture et prompteur sur ' + (sec ? sec.name : 'le début du texte') + ' (' + fmt(tt, true) + '). REC quand tu veux.');
+}
 function punchMerge(tr, nb, pos, end){
   const base = tr.buffer, sr = base.sampleRate, bo = tr.offset;
   const segLen = Math.max(1, Math.min(nb.length, Math.round((end - pos) * sr)));
