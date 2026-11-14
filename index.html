@@ -624,7 +624,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 1.9.7 · Bêta</span></div>
+      <span class="grp" id="ver">Version 1.9.8 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -1068,8 +1068,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 136; // numéro interne (jamais affiché)
-const APP_PUB = '1.9.7';
+const APP_VER = 137; // numéro interne (jamais affiché)
+const APP_PUB = '1.9.8';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -1130,7 +1130,7 @@ const LAT_DEF = { speaker: 120, wired: 110, bt: 260 };
 const S0 = 1;
 const S = {
   tracks: [], pps: 40, pos: 0, playing: false, recording: false, sel: null,
-  bpm: store.get('bpm', 90), casque: false, outMode: store.get('outMode', 'auto'), headset: false, markers: [], loop: { on: false, bars: 4, start: 0 }, latMap: store.get('latMap', {}), latDev: store.get('latDev', {}), mon: false, metro: false, countIn: store.get('countIn', true), lat: store.get('lat', 120)
+  bpm: store.get('bpm', 90), casque: false, outMode: store.get('outMode', 'auto'), headset: false, markers: [], loop: { on: false, bars: 4, start: 0 }, latMap: store.get('latMap', {}), latDev: store.get('latDev2', {}), mon: false, metro: false, countIn: store.get('countIn', true), lat: store.get('lat', 120)
 };
 const M = Object.assign({ preset:'rap', low:2.5, high:2, glue:45, target:-14, bypass:false, gain:0 }, store.get('master', {}));
 M.bypass = false;
@@ -1785,7 +1785,7 @@ async function record(){
       const raw = await ctx.decodeAudioData(await blob.arrayBuffer());
       let meas = (!S.casque && !recEC) ? (measureLatency(raw, recInfo) ?? (recInfo.b != null ? detectClickLatency(raw, recInfo) : null)) : null;
       if(meas != null && (meas < 30 || meas > 500)) meas = null;
-      if(meas != null){ S.latMap[recInfo.route] = meas; store.set('latMap', S.latMap); if(!calDone(recInfo.dev)){ S.latDev[recInfo.dev] = meas; store.set('latDev', S.latDev); } }
+      if(meas != null){ S.latMap[recInfo.route] = meas; store.set('latMap', S.latMap); if(!calDone(recInfo.dev)){ S.latDev[recInfo.dev] = meas; store.set('latDev2', S.latDev); } }
       const latMs = latFor(recInfo.route, recInfo.dev); showLat();
       const trim = Math.max(0, (recInfo.t0 - recInfo.recStart) + latMs / 1000);
       const from = Math.floor(trim * raw.sampleRate), len = raw.length - from;
@@ -1919,7 +1919,11 @@ function calDetect(raw, recStart, times){
     if(mx < floor * 4) continue;
     const th = Math.max(mx * 0.3, floor * 3);
     let k = 0; while(k < w && env[k] < th) k++;
-    res.push((k - a0) / sr * 1000);
+    /* on ne prend pas le tout début du son mais le moment où il « tombe » (le pic de la syllabe) :
+       c'est ce point-là que ton oreille pose sur le temps, en calage comme quand tu rappes */
+    const k1 = Math.min(w, k + Math.round(0.15 * sr)); let pk = 0; for(let j = k; j < k1; j++) if(env[j] > pk) pk = env[j];
+    let kc = k; while(kc < k1 && env[kc] < pk * 0.7) kc++;
+    res.push((kc - a0) / sr * 1000);
   }
   if(res.length < 3) return { ms: null, n: res.length };
   res.sort((x, y) => x - y);
@@ -1998,7 +2002,7 @@ async function calibrateLat(){
       toast('🎯 J\'ai capté ' + R.n + ' « TA » sur 10. ' + (R.n <= 2 ? 'Le micro ne t\'entend presque pas : parle plus fort, plus près du micro.' : 'Ils n\'étaient pas assez réguliers : vise pile la ligne.') + ' On recommence.');
     } else {
       ms = Math.max(0, Math.round(ms)); calFails = 0;
-      S.latDev[key] = ms; store.set('latDev', S.latDev); showLat(); ok = true; calDev = key;
+      S.latDev[key] = ms; store.set('latDev2', S.latDev); showLat(); ok = true; calDev = key;
       track((rough ? 'latence-approx-' : 'latence-reglee-') + routeKey());
       toast(rough ? '🎯 Réglage approximatif gardé (' + ms + ' ms). Tu pourras le refaire au calme dans Réglages.' : '🎯 Timing réglé : ' + ms + ' ms. C\'est retenu pour ce matériel.');
     }
