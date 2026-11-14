@@ -614,7 +614,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 1.7.5 · Bêta</span></div>
+      <span class="grp" id="ver">Version 1.7.6 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -918,8 +918,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 110; // numéro interne (jamais affiché)
-const APP_PUB = '1.7.5';
+const APP_VER = 111; // numéro interne (jamais affiché)
+const APP_PUB = '1.7.6';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -1929,7 +1929,7 @@ list.addEventListener('click', e => {
     toast(t.keep ? '🔒 Prise de « ' + t.name + ' » verrouillée : plus de réenregistrement, de coupe ni de déplacement possible.' : '🔓 Prise de « ' + t.name + ' » déverrouillée.');
     return;
   }
-  if(act === 'arm'){ if(S.recording) return; const v = !t.arm; S.tracks.forEach(x => x.arm = false); t.arm = v; renderTracks(); if(monSrc){ detachMon(); attachMon(); } if(v) armJump(t); }
+  if(act === 'arm'){ if(S.recording) return; const v = true; /* toucher R arme toujours cette piste (on ne désarme pas par erreur) */ S.tracks.forEach(x => x.arm = false); t.arm = v; renderTracks(); if(monSrc){ detachMon(); attachMon(); } if(v) armJump(t); }
   if(act === 'mute' || act === 'solo') pushUndo(act === 'mute' ? 'le muet' : 'le solo');
   if(act === 'mute'){ t.mute = !t.mute; el.setAttribute('aria-pressed', t.mute); applyMix(); }
   if(act === 'solo'){ t.solo = !t.solo; el.setAttribute('aria-pressed', t.solo); applyMix(); }
@@ -3546,7 +3546,7 @@ function updRecLyr(){
   let el = null;
   if(best != null) el = rlEl.querySelector(`.rll[data-i="${best}"]`);
   else if(key){ el = [...rlEl.querySelectorAll('.rlh')].find(x => x.textContent.trim().toLowerCase() === key.slice(3).toLowerCase()); }
-  if(el){ el.classList.add('cur'); const body = rlEl.querySelector('.rlbody'); body.scrollTo({ top: el.offsetTop - body.clientHeight * 0.3, behavior: 'smooth' }); }
+  if(el){ el.classList.add('cur'); const body = rlEl.querySelector('.rlbody'), top = el.offsetTop - body.clientHeight * 0.3; body.scrollTo({ top, behavior: Math.abs(body.scrollTop - top) > 260 ? 'auto' : 'smooth' }); }
 }
 
 function updatePrompt(){
@@ -4027,9 +4027,15 @@ function partAt(pos){
   if(recMode() !== 'parts' || !guided()) return null;
   const secs = (S.secs || []).filter(x => x.kind === 'couplet' || x.kind === 'refrain'); if(!secs.length) return null;
   const L = trRole('lead'), R = trRole('refrain'); if(!L || !R) return null;
-  let i = secs.findIndex(x => pos >= x.t - 0.05 && pos < x.end - 0.5); if(i < 0) i = secs.findIndex(x => x.t >= pos - 0.05); if(i < 0) return null;
+  const armed = S.tracks.find(x => x.arm), ar = roleOf(armed);
+  const want = ar === 'refrain' ? 'refrain' : (ar === 'lead' || ar === 'back') ? 'couplet' : null;
+  const ok = x => !want || x.kind === want;
+  let i = secs.findIndex(x => ok(x) && pos >= x.t - 0.05 && pos < x.end - 0.5);
+  if(i < 0) i = secs.findIndex(x => ok(x) && x.t >= pos - 0.05);
+  if(i < 0) i = secs.findIndex(x => ok(x));
+  if(i < 0) return null;
   const sec = secs[i], next = secs[i + 1] || null;
-  return { sec, next, dst: sec.kind === 'refrain' ? R : L };
+  return { sec, next, dst: (armed && want === sec.kind) ? armed : (sec.kind === 'refrain' ? R : L) };
 }
 setInterval(() => { if(S.recording && recInfo && recInfo.autoEnd && now() >= recInfo.autoEnd){ recInfo.autoEnd = null; record(); } }, 40);
 /* Tu gères toi-même : quand tu armes une piste, la lecture et le prompteur se placent sur la partie qui va avec */
@@ -5915,7 +5921,7 @@ function syncGuide(){ guideEl.querySelectorAll('[data-g]').forEach(b => b.setAtt
 guideEl.addEventListener('click', e => { const b = e.target.closest('[data-g]'); if(!b) return; store.set('guide', b.dataset.g); syncGuide(); stepKey = ''; updStep(); track('pistes-' + b.dataset.g); if(b.dataset.g === 'manual'){ const at = S.tracks.find(x => x.arm); if(at) setTimeout(() => armJump(at), 2500); }
   toast(b.dataset.g === 'auto' ? '🧭 Je t\'accompagne : étapes, bonne piste armée toute seule, prises rangées.' : '✋ À toi de jouer : touche le R de la piste où tu veux enregistrer, puis REC. Je ne range rien tout seul.'); });
 syncGuide();
-let stepKey = '', stepSkip = { sid: null, instru: false, text: false }, stepRetake = false;
+let stepArmed = null, stepKey = '', stepSkip = { sid: null, instru: false, text: false }, stepRetake = false;
 const vocalTracks = () => S.tracks.filter(t => t.preset !== 'instru');
 function armTrack(t){ if(!t || S.recording) return; S.tracks.forEach(x => x.arm = false); t.arm = true; renderTracks(); try{ if(monSrc){ detachMon(); attachMon(); } }catch(e){} }
 /* ---------- Après la lead : on propose d'enrichir le son, sans rien bloquer ---------- */
@@ -6003,7 +6009,7 @@ function updStep(){
   else if(!exported) st = 'export';
   else st = 'done';
   const want = { lead: L, refrain: R, back: B }[st];
-  if(want && !want.arm && !S.recording && !S.markers.some(m => m.auto)){ S.tracks.forEach(x => x.arm = false); want.arm = true; renderTracks(); }
+  if(st !== stepArmed){ stepArmed = st; if(want && !want.arm && !S.recording && !S.markers.some(m => m.auto)){ S.tracks.forEach(x => x.arm = false); want.arm = true; renderTracks(); } }
   const idl = (st === 'arr' || st === 'export' || st === 'done') ? ideas() : [];
   const voc = vocalTracks().filter(t => t.buffer);
   const key = [st, voc.map(t => t.id + ':' + t.vstyle + ':' + (isTuned(t) || t.atOn ? 1 : 0)).join(','), L?.buffer ? 1 : 0, R?.buffer ? 1 : 0, B?.buffer ? 1 : 0, S.playing, idl.map(i => i.id).join(','), M.preset, M.target, S.textStart, recMode(), S.markers.some(m => m.auto)].join('|');
