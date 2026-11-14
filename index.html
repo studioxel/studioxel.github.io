@@ -321,7 +321,7 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
 .wpanel{width:100%;max-width:440px;max-height:100%;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:10px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
 .wpanel h2{margin:0 0 6px;font:800 22px/1.2 var(--display)}
 .wbig{height:60px;border-radius:12px;border:0;background:var(--accent);color:#1a1405;font:800 19px var(--display)}
-.callane{position:relative;height:96px;margin:14px 0 6px;border-radius:12px;background:var(--raise);overflow:hidden}.callane .calhit{position:absolute;top:8px;bottom:8px;left:22%;width:4px;margin-left:-2px;border-radius:2px;background:var(--accent);opacity:.55;box-shadow:0 0 0 0 var(--accent);transition:opacity .05s,box-shadow .05s}.callane .calhit.on{opacity:1;box-shadow:0 0 18px 6px var(--accent)}.callane .caldot{position:absolute;top:34px;left:0;width:28px;height:28px;border-radius:50%;background:var(--accent);will-change:transform}.callane .caldot.lead{background:var(--muted)}.callane .caldot.on{box-shadow:0 0 14px 4px var(--accent)}
+.callane{position:relative;height:96px;margin:14px 0 6px;border-radius:12px;background:var(--raise);overflow:hidden}.callane .calhit{position:absolute;top:8px;bottom:8px;left:22%;width:4px;margin-left:-2px;border-radius:2px;background:var(--accent);opacity:.55;box-shadow:0 0 0 0 var(--accent);transition:opacity .05s,box-shadow .05s}.callane .calhit.on{opacity:1;box-shadow:0 0 18px 6px var(--accent)}.callane .caldot{position:absolute;top:34px;left:0;width:28px;height:28px;border-radius:50%;background:var(--accent);will-change:transform}.callane .caldot.lead{background:var(--muted)}.callane.ear .caldot,.callane.ear .calhit{opacity:0!important;transition:opacity .4s}.callane .caldot.on{box-shadow:0 0 14px 4px var(--accent)}
 .calbeat{position:relative;width:200px;height:200px;margin:8px auto}.calbeat .ring{position:absolute;inset:0;border:5px solid var(--accent);border-radius:50%;will-change:transform}.calbeat .dot{position:absolute;inset:55px;border-radius:50%;background:var(--accent);opacity:.22;transition:opacity .06s}.calbeat .dot.hit{opacity:1}.calcnt{text-align:center;font:800 22px var(--display);margin:0}
 .wsub{margin-top:8px;font:700 11px var(--display);text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
 .witem{text-align:left;background:var(--raise);border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:3px}
@@ -624,7 +624,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 1.9.8 · Bêta</span></div>
+      <span class="grp" id="ver">Version 1.9.9 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -1068,8 +1068,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 137; // numéro interne (jamais affiché)
-const APP_PUB = '1.9.8';
+const APP_VER = 138; // numéro interne (jamais affiché)
+const APP_PUB = '1.9.9';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -1130,7 +1130,7 @@ const LAT_DEF = { speaker: 120, wired: 110, bt: 260 };
 const S0 = 1;
 const S = {
   tracks: [], pps: 40, pos: 0, playing: false, recording: false, sel: null,
-  bpm: store.get('bpm', 90), casque: false, outMode: store.get('outMode', 'auto'), headset: false, markers: [], loop: { on: false, bars: 4, start: 0 }, latMap: store.get('latMap', {}), latDev: store.get('latDev2', {}), mon: false, metro: false, countIn: store.get('countIn', true), lat: store.get('lat', 120)
+  bpm: store.get('bpm', 90), casque: false, outMode: store.get('outMode', 'auto'), headset: false, markers: [], loop: { on: false, bars: 4, start: 0 }, latMap: store.get('latMap', {}), latDev: store.get('latDev3', {}), mon: false, metro: false, countIn: store.get('countIn', true), lat: store.get('lat', 120)
 };
 const M = Object.assign({ preset:'rap', low:2.5, high:2, glue:45, target:-14, bypass:false, gain:0 }, store.get('master', {}));
 M.bypass = false;
@@ -1785,7 +1785,7 @@ async function record(){
       const raw = await ctx.decodeAudioData(await blob.arrayBuffer());
       let meas = (!S.casque && !recEC) ? (measureLatency(raw, recInfo) ?? (recInfo.b != null ? detectClickLatency(raw, recInfo) : null)) : null;
       if(meas != null && (meas < 30 || meas > 500)) meas = null;
-      if(meas != null){ S.latMap[recInfo.route] = meas; store.set('latMap', S.latMap); if(!calDone(recInfo.dev)){ S.latDev[recInfo.dev] = meas; store.set('latDev2', S.latDev); } }
+      if(meas != null){ S.latMap[recInfo.route] = meas; store.set('latMap', S.latMap); if(!calDone(recInfo.dev)){ S.latDev[recInfo.dev] = meas; store.set('latDev3', S.latDev); } }
       const latMs = latFor(recInfo.route, recInfo.dev); showLat();
       const trim = Math.max(0, (recInfo.t0 - recInfo.recStart) + latMs / 1000);
       const from = Math.floor(trim * raw.sampleRate), len = raw.length - from;
@@ -1961,10 +1961,13 @@ async function calibrateLat(){
     /* le son met « ol » secondes à arriver dans tes oreilles (le Bluetooth beaucoup plus) : on joue chaque clic en avance d'autant,
        pour que tu l'entendes pile quand le point touche la ligne */
     const olr = ctx.outputLatency || 0, ol = (olr > 0.005 ? olr : routeKey() === 'bt' ? 0.17 : 0.02) + (ctx.baseLatency || 0);
-    const gap = 1.0, N = 14, V0 = ctx.currentTime + 1.6 + ol, times = [];
-    for(let i = 0; i < N; i++){ const ct = V0 + i * gap - ol; click(ct, true); if(i >= 4) times.push(ct); }
+    /* 8 temps avec les points pour prendre le rythme, puis les points disparaissent et on mesure 10 temps à l'oreille seulement :
+       c'est ce que tu entends qui compte (en Bluetooth, l'image ne peut pas être parfaitement calée sur le son) */
+    const gap = 1.0, NV = 8, N = NV + 10, V0 = ctx.currentTime + 1.6 + ol, times = [];
+    for(let i = 0; i < N; i++){ const ct = V0 + i * gap - ol; click(ct, true); if(i >= NV) times.push(ct); }
     const dots = [];
-    for(let i = 0; i < N; i++){ const d = document.createElement('b'); d.className = 'caldot' + (i < 4 ? ' lead' : ''); lane.appendChild(d); dots.push(d); }
+    for(let i = 0; i < NV; i++){ const d = document.createElement('b'); d.className = 'caldot' + (i < 4 ? ' lead' : ''); lane.appendChild(d); dots.push(d); }
+    const h2 = ov.querySelector('h2');
     const W = lane.clientWidth || 300, HX = Math.round(W * 0.22), SPX = (W - HX) / (2.6 * gap);
     let anim = true, lastTxt = '';
     (function frame(){
@@ -1980,7 +1983,8 @@ async function calibrateLat(){
       });
       hit.classList.toggle('on', flash);
       const k = Math.ceil((tnow - V0) / gap - 0.5);
-      const txt = k < 4 ? 'Prends le rythme… ' + Math.min(4, Math.max(1, k + 1)) : k >= N ? '✓' : 'TA ! ' + (k - 3) + ' / 10';
+      if(k >= NV && !lane.classList.contains('ear')){ lane.classList.add('ear'); h2.textContent = '👂 Continue à l\'oreille : «\u00a0TA\u00a0» sur chaque clic'; }
+      const txt = k < NV ? 'Prends le rythme… ' + Math.min(NV, Math.max(1, k + 1)) : k >= N ? '✓' : 'TA ! ' + (k - NV + 1) + ' / 10';
       if(txt !== lastTxt){ lastTxt = txt; cnt.textContent = txt; }
       requestAnimationFrame(frame);
     })();
@@ -1999,10 +2003,10 @@ async function calibrateLat(){
     }
     if(ms == null){
       track('latence-ratee-' + routeKey() + '-n' + R.n + '-ol' + Math.round(ol * 1000));
-      toast('🎯 J\'ai capté ' + R.n + ' « TA » sur 10. ' + (R.n <= 2 ? 'Le micro ne t\'entend presque pas : parle plus fort, plus près du micro.' : 'Ils n\'étaient pas assez réguliers : vise pile la ligne.') + ' On recommence.');
+      toast('🎯 J\'ai capté ' + R.n + ' « TA » sur 10. ' + (R.n <= 2 ? 'Le micro ne t\'entend presque pas : parle plus fort, plus près du micro.' : 'Ils n\'étaient pas assez réguliers : garde bien le rythme des clics.') + ' On recommence.');
     } else {
       ms = Math.max(0, Math.round(ms)); calFails = 0;
-      S.latDev[key] = ms; store.set('latDev2', S.latDev); showLat(); ok = true; calDev = key;
+      S.latDev[key] = ms; store.set('latDev3', S.latDev); showLat(); ok = true; calDev = key;
       track((rough ? 'latence-approx-' : 'latence-reglee-') + routeKey());
       toast(rough ? '🎯 Réglage approximatif gardé (' + ms + ' ms). Tu pourras le refaire au calme dans Réglages.' : '🎯 Timing réglé : ' + ms + ' ms. C\'est retenu pour ce matériel.');
     }
@@ -2019,7 +2023,7 @@ function calAsk(changed, retry){
     w.innerHTML = `<div class="wpanel">
       <h2>${changed ? '🎯 Nouveau matériel détecté : on refait le timing' : '🎯 On règle le timing'}</h2>
       ${retry ? '<p class="note"><b>On recommence : dis « TA » bien fort, pile sur chaque clic.</b></p>' : ''}
-      <p class="note">Pour ce matériel (${esc(devName())}) : des points arrivent vers une ligne : dis « TA » pile quand chacun la touche (tu entends un clic au même moment). Les 4 gris servent à prendre le rythme. 16 secondes, et tes prises tomberont dans les temps.</p>
+      <p class="note">Pour ce matériel (${esc(devName())}) : dis « TA » sur chaque clic. Des points te donnent d'abord le rythme, puis ils disparaissent : continue à l'oreille, c'est là qu'on mesure. 20 secondes, et tes prises tomberont dans les temps.</p>
       <button class="wbig" data-c="go">🎯 Go</button>
     </div>`;
     document.body.appendChild(w);
