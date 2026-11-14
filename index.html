@@ -614,7 +614,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 1.7.9 · Bêta</span></div>
+      <span class="grp" id="ver">Version 1.7.10 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -918,8 +918,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 114; // numéro interne (jamais affiché)
-const APP_PUB = '1.7.9';
+const APP_VER = 115; // numéro interne (jamais affiché)
+const APP_PUB = '1.7.10';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -1576,7 +1576,7 @@ async function record(){
   if(S.loop.on) S.pos = S.loop.start;
   /* pré-roulement : on réentend sa prise d'avant 1 ou 2 mesures, puis l'enregistrement démarre pile à l'endroit voulu */
   const preBars = store.get('preroll', 1), punchAt = S.pos;
-  const usePre = preBars > 0 && punchAt > 0.05 && (!!t.buffer || !!part);
+  const usePre = preBars > 0 && punchAt > 0.05;
   if(usePre) S.pos = Math.max(0, punchAt - preBars * 4 * 60 / S.bpm);
   if(!(await wake())){ releaseMic(true); toast('L\'iPhone a coupé le son en branchant le micro. Touche ▶ une fois, puis relance REC.'); return; }
   openMicGraph();
@@ -1594,7 +1594,7 @@ async function record(){
     try{
       const blob = new Blob(chunks, { type: rec.mimeType });
       const raw = await ctx.decodeAudioData(await blob.arrayBuffer());
-      const meas = (!S.casque && recInfo.b != null) ? detectClickLatency(raw, recInfo) : null;
+      const meas = !S.casque ? (measureLatency(raw, recInfo) ?? (recInfo.b != null ? detectClickLatency(raw, recInfo) : null)) : null;
       if(meas != null){ S.latMap[recInfo.route] = meas; store.set('latMap', S.latMap); }
       const latMs = latFor(recInfo.route); showLat();
       const trim = Math.max(0, (recInfo.t0 - recInfo.recStart) + latMs / 1000);
@@ -1660,6 +1660,31 @@ function latFor(r){
   return Math.max(LAT_DEF[r], api);
 }
 function showLat(){ const el = $('#latInfo'); if(el) el.textContent = 'Calage auto · ' + latFor(routeKey()) + ' ms'; }
+/* Sans casque, le micro entend l'instru qui sort des enceintes (téléphone, voiture) : on compare les deux pour mesurer le vrai retard */
+function measureLatency(raw, info){
+  try{
+    const ins = trRole('instru'); if(!ins?.buffer || info.playFrom == null) return null;
+    const hop = 0.005, sr = raw.sampleRate, n = Math.min(Math.floor(Math.min(raw.duration, 12) / hop), 2400); if(n < 300) return null;
+    /* attaques (montées d'énergie), centrées et normalisées */
+    const flux = (get, len) => { const e = new Float32Array(len); for(let k = 0; k < len; k++) e[k] = Math.sqrt(get(k)); const o = new Float32Array(len); for(let k = 1; k < len; k++) o[k] = Math.max(0, e[k] - e[k - 1]); let m = 0; for(const v of o) m += v; m /= len; let sd = 0; for(let k = 0; k < len; k++){ o[k] -= m; sd += o[k] * o[k]; } sd = Math.sqrt(sd / len) || 1; for(let k = 0; k < len; k++) o[k] /= sd; return o; };
+    /* on écoute surtout la batterie : les graves (kick) et les aigus (charley), là où la voix gêne le moins */
+    const bands = (d, rate, i0, len) => { const aL = Math.exp(-2 * Math.PI * 150 / rate), aH = Math.exp(-2 * Math.PI * 4000 / rate); let l = 0, h = 0, eL = 0, eH = 0; for(let i = i0 - 200; i < i0 + len; i++){ const v = i >= 0 && i < d.length ? d[i] : 0; l = l * aL + v * (1 - aL); h = h * aH + v * (1 - aH); if(i >= i0){ eL += l * l; const hv = v - h; eH += hv * hv; } } return [eL / len, eH / len]; };
+    const rd = raw.getChannelData(0), H = Math.round(hop * sr);
+    const ib = ins.buffer, isr = ib.sampleRate, idd = ib.getChannelData(0), IH = Math.round(hop * isr);
+    const base = info.playFrom - ins.offset + (info.recStart - info.t0), maxL = Math.round(0.7 / hop), m = n + maxL;
+    const rB = [], iB = [];
+    for(let k = 0; k < n; k++) rB.push(bands(rd, sr, k * H, H));
+    for(let k = 0; k < m; k++){ const x = base + (k - maxL) * hop; iB.push(bands(idd, isr, Math.round(x * isr), IH)); }
+    const rOn = flux(k => rB[k][0], n), rOn2 = flux(k => rB[k][1], n), iOn = flux(k => iB[k][0], m), iOn2 = flux(k => iB[k][1], m);
+    for(let k = 0; k < n; k++) rOn[k] = (rOn[k] + rOn2[k]) / 2;
+    for(let k = 0; k < m; k++) iOn[k] = (iOn[k] + iOn2[k]) / 2;
+    let best = -1, bv = -Infinity; const C = new Float32Array(maxL + 1);
+    for(let L = 0; L <= maxL; L++){ let c = 0; for(let k = 0; k < n; k++) c += rOn[k] * iOn[k + maxL - L]; c /= n; C[L] = c; if(c > bv){ bv = c; best = L; } }
+    let sec = -Infinity; for(let L = 0; L <= maxL; L++) if(Math.abs(L - best) > 8 && C[L] > sec) sec = C[L];
+    if(!(bv > 0.08 && bv > sec * 1.8)) return null;
+    return Math.round(best * hop * 1000) + 5;
+  }catch(e){ return null; }
+}
 /* Sans casque, les 4 bips du décompte passent par le haut-parleur et reviennent dans le micro : on mesure le vrai retard */
 function detectClickLatency(raw, info){
   const sr = raw.sampleRate, d = raw.getChannelData(0), w = Math.round(0.6 * sr), res = [];
