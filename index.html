@@ -617,7 +617,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 1.8 · Bêta</span></div>
+      <span class="grp" id="ver">Version 1.8.1 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -1055,8 +1055,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 119; // numéro interne (jamais affiché)
-const APP_PUB = '1.8';
+const APP_VER = 120; // numéro interne (jamais affiché)
+const APP_PUB = '1.8.1';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -1705,6 +1705,16 @@ async function record(){
   const part = partAt(S.pos);
   if(part){ t = part.dst; S.tracks.forEach(x => x.arm = false); t.arm = true; if(S.pos < part.sec.t - 0.05 || S.pos > part.sec.end - 0.5) S.pos = part.sec.t; renderTracks(); }
   if(!t){ toast('Arme d\'abord une piste avec son bouton R.'); return; }
+  /* accompagné, lecture restée au tout début : on part sur la première partie (ou le début du texte), pas sur l'intro */
+  if(!part && guided() && S.pos < 0.05 && !S.loop.on){
+    const r = roleOf(t);
+    if(r === 'lead' || r === 'refrain'){
+      const secs = userSecs().slice().sort((x, y) => x.t - y.t), want = r === 'refrain' ? 'refrain' : 'couplet';
+      const sec = recMode() === 'onego' ? secs[0] : (secs.find(x => x.kind === want) || secs[0]);
+      const to = sec ? sec.t : (S.textStart || 0);
+      if(to > 0.05) S.pos = to;
+    }
+  }
   ensureCtx();
   await detectHeadset(true);
   try{ await getMic(); }
@@ -4215,7 +4225,7 @@ function partAt(pos){
 setInterval(() => { if(S.recording && recInfo && recInfo.autoEnd && now() >= recInfo.autoEnd){ recInfo.autoEnd = null; record(); } }, 40);
 /* Tu gères toi-même : quand tu armes une piste, la lecture et le prompteur se placent sur la partie qui va avec */
 function armJump(t){
-  if(guided() || S.playing) return;
+  if(S.playing) return;
   const r = roleOf(t); if(r !== 'lead' && r !== 'refrain') return; /* Back et Ambiance : on enregistre là où est la lecture */
   const kind = r === 'refrain' ? 'refrain' : 'couplet';
   const list = userSecs().filter(x => x.kind === kind).sort((x, y) => x.t - y.t);
