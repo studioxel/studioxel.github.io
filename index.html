@@ -416,6 +416,7 @@ body.simple #viewP .pbar,body.simple #viewP .tsman,body.simple #tsMinus,body.sim
 .modebar{display:flex;gap:4px;padding:4px;margin-bottom:10px;background:var(--panel);border:2px solid var(--accent);border-radius:14px}
 .modebar button{flex:1 1 0;min-width:0;height:48px;border:0;border-radius:10px;background:transparent;color:var(--muted);font:800 15px var(--display);letter-spacing:.02em;cursor:pointer}
 .modebar button[aria-pressed=true]{background:var(--accent);color:#1a1405}
+.guidebar{display:flex;gap:4px;padding:6px 10px;border-bottom:1px solid var(--line)}.guidebar button{flex:1 1 0;min-width:0;height:40px;border:1px solid var(--line);border-radius:10px;background:var(--raise);color:var(--muted);font:700 14px var(--display)}.guidebar button[aria-pressed=true]{background:var(--accent);color:#1a1405;border-color:var(--accent)}
 .stepbar{display:flex;flex-direction:column;gap:10px;padding:14px;border-bottom:1px solid var(--line);background:var(--panel);background:color-mix(in srgb,var(--accent) 8%,var(--panel))}
 .stepbar .stn{font:800 12px var(--display);letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
 .stepbar h3{margin:0;font:800 20px var(--display)}
@@ -613,7 +614,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 1.7.2 · Bêta</span></div>
+      <span class="grp" id="ver">Version 1.7.3 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -917,8 +918,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 107; // numéro interne (jamais affiché)
-const APP_PUB = '1.7.2';
+const APP_VER = 108; // numéro interne (jamais affiché)
+const APP_PUB = '1.7.3';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -1631,7 +1632,7 @@ async function record(){
       }
       else if(moved) toast(moved);
       else toast(recInfo.punch ? 'Phrase remplacée dans la boucle.' : punched ? 'Prise posée sur « ' + tr.name + ' », à la place de ce qui était dessous. Annuler pour revenir.' : 'Prise gardée sur « ' + tr.name + ' » · niveau calé sur l\'instru.');
-      scheduleSave();
+      saveNow();
     }catch(e){ toast('Impossible de lire la prise : ' + e.message); }
   };
   rec.start();
@@ -2352,7 +2353,7 @@ function tapClick(e){
     if(S.playing) pause();
     const n = tap.marks.filter(m => !m.gap).length;
     if(n) toast('👌 ' + n + ' parties calées sur le début des mesures.' + (tap.heads.length ? '' : ' Astuce : écris tes sections dans Écrire ([Couplet 1], [Refrain]…) pour que chaque partie de ton texte suive son repère.'));
-    tap = null; tapShow();
+    tap = null; tapShow(); saveNow();
   }
 }
 function pickSug(o){
@@ -3751,6 +3752,8 @@ function unpackBuf(o){
 }
 function setSessState(t){ const el = $('#sessState'); if(el) el.textContent = t; }
 function defaultSessName(){ const d = new Date(); return 'Session du ' + d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }) + ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }); }
+/* sauvegarde tout de suite (fin d'étape, prise gardée, appli quittée) */
+function saveNow(){ if(!sessReady) return; clearTimeout(saveTimer); saveSession().catch(() => {}); }
 function scheduleSave(){
   if(!sessReady) return;
   clearTimeout(saveTimer); saveTimer = setTimeout(saveSession, 1500);
@@ -3989,6 +3992,7 @@ $('#loopBars').addEventListener('click', e => { const b = e.target.closest('butt
 /* La nouvelle phrase remplace le passage de la boucle dans la prise en cours, avec un fondu de 10 ms et le même niveau */
 /* Tes parties sont calées : une prise faite d'un coup est rangée toute seule, couplets sur Lead, refrains sur Refrain */
 async function splitByParts(tr, take, pos){
+  if(!guided()) return '';
   const role = roleOf(tr); if(role !== 'lead' && role !== 'refrain') return '';
   const secs = (S.secs || []).filter(x => x.kind === 'couplet' || x.kind === 'refrain'); if(!secs.length) return '';
   const L = trRole('lead'), R = trRole('refrain'); if(!L || !R) return '';
@@ -4017,9 +4021,10 @@ async function splitByParts(tr, take, pos){
   return '🎛️ Prise rangée toute seule : ' + [toL ? toL + ' couplet' + (toL > 1 ? 's' : '') + ' sur « ' + L.name + ' »' : '', toR ? toR + ' refrain' + (toR > 1 ? 's' : '') + ' sur « ' + R.name + ' »' : ''].filter(Boolean).join(', ') + '. Annuler pour revenir.';
 }
 const recMode = () => store.get('recMode', 'onego');
+const guided = () => store.get('guide', 'auto') === 'auto';
 /* la partie à enregistrer en mode « partie par partie » : celle où est la lecture, sinon la suivante */
 function partAt(pos){
-  if(recMode() !== 'parts') return null;
+  if(recMode() !== 'parts' || !guided()) return null;
   const secs = (S.secs || []).filter(x => x.kind === 'couplet' || x.kind === 'refrain'); if(!secs.length) return null;
   const L = trRole('lead'), R = trRole('refrain'); if(!L || !R) return null;
   let i = secs.findIndex(x => pos >= x.t - 0.05 && pos < x.end - 0.5); if(i < 0) i = secs.findIndex(x => x.t >= pos - 0.05); if(i < 0) return null;
@@ -5538,6 +5543,7 @@ const HELP = {
   vPistes: [
     { t: 'L\'onglet Pistes', b: 'C\'est ta table d\'enregistrement : tes pistes à gauche, la timeline à droite. Je te montre tout ce qu\'il y a ici.' },
     { sel: ['#modeBar'], t: 'Simple ou avancé', b: 'Le bandeau tout en haut : un appui pour passer en mode simple (l\'essentiel) ou avancé (tous les outils). Ça bascule direct.' },
+    { sel: ['#guideBar'], t: 'Accompagné ou manuel', b: '🧭 Je t\'accompagne : les étapes s\'affichent, la bonne piste s\'arme toute seule et tes prises sont rangées (couplets sur Lead, refrains sur Refrain). ✋ Je gère moi-même : tu touches le R de la piste que tu veux, tu enregistres où tu veux, je ne touche à rien.' },
     { sel: ['#stepBar'], t: 'Les étapes', b: 'En mode simple, tout se fait ici, comme une séance studio : instru, texte, lead, refrain, backs, habillage, master et export. Le gros bouton fait l\'action pour toi. Pour tous les outils : « Mode avancé », tout en haut.' },
     { sel: ['.power'], t: 'Pour aller plus loin', b: 'Pendant l\'habillage et après : retoucher une phrase au poil, t\'entendre en direct avec tes écouteurs, faire un Reel. Tous les outils sont aussi en mode avancé.' },
     { sel: ['#sessTitle', '#sessState'], t: 'Ta session', b: 'Le nom de ton son et son état. « Sauvegardé » : tout est gardé dans le téléphone, rien à faire.' },
@@ -5887,6 +5893,14 @@ document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => {
 });
 const stepEl = document.createElement('div'); stepEl.className = 'stepbar'; stepEl.id = 'stepBar';
 $('#vPistes .cardhead').after(stepEl);
+/* tes pistes : je t'accompagne (étapes, piste armée toute seule, prises rangées) ou tu gères toi-même */
+const guideEl = document.createElement('div'); guideEl.className = 'guidebar'; guideEl.id = 'guideBar';
+guideEl.innerHTML = '<button data-g="auto">🧭 Je t\'accompagne</button><button data-g="manual">✋ Je gère moi-même</button>';
+$('#vPistes .cardhead').after(guideEl);
+function syncGuide(){ guideEl.querySelectorAll('[data-g]').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.g === 'auto') === guided()))); }
+guideEl.addEventListener('click', e => { const b = e.target.closest('[data-g]'); if(!b) return; store.set('guide', b.dataset.g); syncGuide(); stepKey = ''; updStep(); track('pistes-' + b.dataset.g);
+  toast(b.dataset.g === 'auto' ? '🧭 Je t\'accompagne : étapes, bonne piste armée toute seule, prises rangées.' : '✋ À toi de jouer : touche le R de la piste où tu veux enregistrer, puis REC. Je ne range rien tout seul.'); });
+syncGuide();
 let stepKey = '', stepSkip = { sid: null, instru: false, text: false }, stepRetake = false;
 const vocalTracks = () => S.tracks.filter(t => t.preset !== 'instru');
 function armTrack(t){ if(!t || S.recording) return; S.tracks.forEach(x => x.arm = false); t.arm = true; renderTracks(); try{ if(monSrc){ detachMon(); attachMon(); } }catch(e){} }
@@ -5939,7 +5953,7 @@ function flowGet(){
   if(flow.sid !== id){ flow = Object.assign({ sid: id, instru: false, text: false, lead: false, refrain: false, back: false, arr: false, arrInit: false, styles: null }, store.get('flow:' + id, {})); flow.sid = id; }
   return flow;
 }
-function flowSet(k, v){ const f = flowGet(); f[k] = v; if(f.sid) store.set('flow:' + f.sid, Object.fromEntries(Object.entries(f).filter(([x]) => x !== 'sid' && x !== 'styles'))); }
+function flowSet(k, v){ const f = flowGet(); f[k] = v; if(f.sid) store.set('flow:' + f.sid, Object.fromEntries(Object.entries(f).filter(([x]) => x !== 'sid' && x !== 'styles'))); saveNow(); }
 async function rebalanceAll(){
   setBusy(true, 'Équilibrage des pistes…');
   try{ for(const t of S.tracks){ if(isLocked(t) || !t.buffer) continue; t.vol = 0.85; await autoLevel(t); } }catch(e){}
@@ -5960,6 +5974,7 @@ async function arrangeAuto(){
 }
 function updStep(){
   if(!isSimple()) return;
+  stepEl.hidden = !guided(); if(!guided()){ stepKey = ''; return; }
   const f = flowGet();
   const ins = trRole('instru'), L = trRole('lead'), R = trRole('refrain'), B = trRole('back');
   const lyr = ta.value.trim().length > 0, exported = !!lastMaster && masterSig === mixSig();
@@ -6355,7 +6370,9 @@ setInterval(() => {
 }, 500);
 /* Micro coupé dès qu'on n'enregistre plus : appli en arrière-plan ou fermée */
 document.addEventListener('visibilitychange', () => { if(document.hidden){ if(S.recording || S.playing) pause(); releaseMic(true); setTimeout(audioRest, 50); } });
-window.addEventListener('pagehide', () => releaseMic(true));
+window.addEventListener('pagehide', () => { releaseMic(true); saveNow(); });
+window.addEventListener('beforeunload', () => saveNow());
+setInterval(() => { if(saveTimer) saveNow(); }, 20000);
 setInterval(() => { if(mic && !S.mon && !S.recording && !(rec && rec.state === 'recording')) releaseMic(); }, 3000);
 document.addEventListener('pointerdown', firstTouch, { once: true });
 ctx.onstatechange = () => { if(ctx.state !== 'running' && (S.playing || S.recording)) ctx.resume().catch(() => {}); };
