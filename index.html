@@ -618,7 +618,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 1.8.6 · Bêta</span></div>
+      <span class="grp" id="ver">Version 1.8.7 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -1062,14 +1062,18 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 125; // numéro interne (jamais affiché)
-const APP_PUB = '1.8.6';
+const APP_VER = 126; // numéro interne (jamais affiché)
+const APP_PUB = '1.8.7';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
 const noTrack = () => { try{ return localStorage.getItem('cabine.noTrack') === 'true'; }catch(e){ return false; } };
 /* Mouchard de plantage : on note l'étape en cours ; si la page meurt, l'ouverture suivante sait où (statistique anonyme) */
 function boot(st){ try{ localStorage.setItem('sx.boot', st); }catch(e){} }
+/* Économie : au repos, l'écran ne se redessine que si on touche l'appli (ou de temps en temps) */
+let uiPokeAt = 0;
+['pointerdown', 'pointermove', 'keydown', 'input', 'wheel', 'scroll'].forEach(ev => addEventListener(ev, () => { uiPokeAt = performance.now(); }, { capture: true, passive: true }));
+const setTxt = (el, v) => { if(el && el._t !== v){ el._t = v; el.textContent = v; } };
 function track(ev){
   try{
     if(!/github\.io$/.test(location.hostname) || noTrack()) return;
@@ -1417,7 +1421,7 @@ function audible(t){ const solo = S.tracks.some(x => x.solo); return !t.mute && 
 /* Mode simple : voix brutes pendant qu'on pose (prise propre, on juge la voix telle qu'elle est). Les effets arrivent à l'habillage. */
 function rawPhase(){ try{ return isSimple() && guided() && !flowGet().arrInit; }catch(e){ return false; } }
 /* une piste vide (sans prise ni retour voix) n'a pas besoin d'effets qui tournent : ça économise le téléphone */
-function fxOff(t){ if(t.preset === 'instru') return false; if(rawPhase()) return true; try{ return !t.buffer && !(S.mon && monTrack() === t); }catch(e){ return false; } }
+function fxOff(t){ if(t.preset === 'instru') return false; if(rawPhase()) return true; try{ return (!t.buffer || !audible(t)) && !(S.mon && monTrack() === t); }catch(e){ return false; } }
 function applyMix(){ S.tracks.forEach(t => t.chain.set(t, audible(t), true)); }
 function setBypass(on){
   M.bypass = on;
@@ -2369,15 +2373,16 @@ function drawInstru(){
     else if(left <= 0 && left > -2 * beat){ txt = '▶ ' + cur.name + ' : c\'est ici'; col = '#f2b544'; }
     if(txt){ g.font = '800 18px system-ui, sans-serif'; const tw = g.measureText(txt).width; g.fillStyle = 'rgba(11,13,18,.85)'; g.fillRect(W / 2 - tw / 2 - 10, mid - 16, tw + 20, 32); g.fillStyle = col; g.fillText(txt, W / 2 - tw / 2, mid + 6); } }
   g.restore();
-  $('#iInfo').textContent = S.bpm + ' BPM · ' + fmt(p, true) + ' / ' + fmt(dur, true);
-  $('#iPlay').textContent = S.playing ? '⏸ Pause' : '▶ Écouter';
+  setTxt($('#iInfo'), S.bpm + ' BPM · ' + fmt(p, true) + ' / ' + fmt(dur, true));
+  setTxt($('#iPlay'), S.playing ? '⏸ Pause' : '▶ Écouter');
   const kinds = ['couplet', 'refrain'].filter(k => secs.some(x => x.kind === k));
   const leg = kinds.map(k => `<span><i style="background:${SEC_COL[k]}"></i>${{ couplet: S.markers.some(m => m.auto) ? 'Couplet' : 'Couplet probable', refrain: S.markers.some(m => m.auto) ? 'Refrain' : 'Refrain probable' }[k]}</span>`).join('') + '<span><i style="background:#2ee6a6"></i>Début du texte</span>' + (secs.some(x => x.was != null && Math.abs(x.was - x.t) > 0.05) ? '<span style="color:#ff7a59">┆→ repère déplacé</span>' : '');
   { const il = $('#iLeg'); if(il._src !== leg){ il._src = leg; il.innerHTML = leg; } }
   pan.classList.toggle('checking', !!(cur || tap)); document.body.classList.toggle('checking', !!(cur || tap));
 }
 let iView = null;
-(function iLoop(){ try{ if(!$('#viewP').hidden && !document.hidden) drawInstru(); }catch(e){} requestAnimationFrame(iLoop); })();
+let iLastT = 0;
+(function iLoop(){ try{ if(!$('#viewP').hidden && !document.hidden){ const t = performance.now(); if(S.playing || tap || chk || t - uiPokeAt < 700 || t - iLastT > 500){ iLastT = t; drawInstru(); } } }catch(e){} requestAnimationFrame(iLoop); })();
 { const cv = $('#iCv'); let drag = false;
   $('#iPan').addEventListener('pointerdown', () => { iTouchAt = Date.now(); }, true);
   const at = e => { const ins = trRole('instru'); if(!ins?.buffer) return 0; const r = cv.getBoundingClientRect(), dur = ins.offset + ins.buffer.duration, fx = clamp((e.clientX - r.left) / r.width, 0, 1);
@@ -6375,8 +6380,9 @@ stepEl.addEventListener('click', async e => {
   else if(a === 'reel'){ document.querySelector('.nav [data-view="vPartager"]').click(); setTimeout(() => $('#rsCanvas')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 200); }
   stepKey = ''; updStep();
 });
-setInterval(updStep, 500);
+setInterval(() => { if(!document.hidden) updStep(); }, 500);
 { let lastSig = null; setInterval(() => {
+    if(document.hidden) return;
     const sig = S.tracks.map(t => t.id + (fxOff(t) ? 'd' : 'w')).join(',');
     if(sig !== lastSig){ lastSig = sig; applyMix(); }
     try{ if(bus && bus.gc){ const ur = new Set(), ud = new Set(); S.tracks.forEach(t => { const x = t.chain.sends(); if(x.rev >= 0) ur.add(x.rev); if(x.dly >= 0) ud.add(x.dly); }); bus.gc(ur, ud); } }catch(e){}
@@ -6543,7 +6549,7 @@ let outHold = 0, micHold = 0, progKey = '';
 function updProg(p){
   const tot = Math.max(trackEnd(), 1), pct = clamp(p / tot, 0, 1) * 100;
   $('#tpFill').style.width = pct + '%'; $('#tpHead').style.left = pct + '%';
-  $('#tpCur').textContent = fmt(p, true); $('#tpTot').textContent = fmt(trackEnd(), true);
+  setTxt($('#tpCur'), fmt(p, true)); setTxt($('#tpTot'), fmt(trackEnd(), true));
   $('#tProg').setAttribute('aria-valuenow', Math.round(pct));
   $('#tProg').classList.toggle('rec', S.recording);
   const key = tot + '|' + S.markers.map(m => m.t + m.name).join(',');
@@ -6584,7 +6590,14 @@ function drawLive(){
   }
 }
 function cleanupLive(){ if(S.recording) return; document.querySelectorAll('.row.ghost, .clip.live').forEach(e => e.remove()); }
+let loopLastP = -1, loopLastT = 0;
 function loop(){
+  /* au repos (rien ne joue, pas de micro) : pas besoin de tout recalculer 60 fois par seconde */
+  if(!S.playing && !S.recording && !micAnalyser && !monSrc){
+    const t = performance.now(), p0 = now();
+    if(document.hidden || (p0 === loopLastP && t - loopLastT < 400 && t - uiPokeAt > 400)){ requestAnimationFrame(loop); return; }
+    loopLastP = p0; loopLastT = t;
+  }
   if(S.listenEnd != null){ if(!S.playing || S.recording) S.listenEnd = null; else if(now() >= S.listenEnd){ const a = bandSel ? bandSel.a : S.listenEnd; S.listenEnd = null; pause(); S.pos = a; } }
   if(S.rep && S.playing && !S.recording && now() >= S.rep.b){ pause(); S.pos = S.rep.a; play(); }
   if(S.loop.on && S.playing){
@@ -6594,7 +6607,7 @@ function loop(){
   }
   const p = now(), x = HDR + p * S.pps;
   ph.style.left = x + 'px';
-  clock.textContent = fmt(p);
+  setTxt(clock, fmt(p));
   updProg(p);
   if(S.playing && !$('#vPistes').hidden && Date.now() - userScrollAt > 2500){
     if(x > sc.scrollLeft + sc.clientWidth - 40 || x < sc.scrollLeft + HDR) sc.scrollLeft = x - HDR - 40;
@@ -6648,10 +6661,10 @@ function loop(){
   const pct = Math.min(100, outHold * 100) + '%';
   if(!$('#vMaster').hidden){
     $('#outMeter2').style.width = pct;
-    $('#outDb').textContent = outHold > 1e-4 ? todb(outHold).toFixed(1) + ' dB' : '−∞';
+    setTxt($('#outDb'), outHold > 1e-4 ? todb(outHold).toFixed(1) + ' dB' : '−∞');
     const r = M.bypass ? 0 : Math.abs(lim.reduction || 0);
     $('#limGr').style.width = Math.min(100, r * 8) + '%';
-    $('#limDb').textContent = (r > 0.05 ? '−' : '') + r.toFixed(1) + ' dB';
+    setTxt($('#limDb'), (r > 0.05 ? '−' : '') + r.toFixed(1) + ' dB');
   }
   if(!$('#vMix').hidden){ const zp = $('#zPh'), lane = $('#zRows .zlane'); if(zp && lane){ zp.style.left = (lane.offsetLeft + clamp(p / zTot(), 0, 1) * lane.clientWidth) + 'px'; } }
   if(!$('#vMix').hidden && S.mixFollow && S.playing && !S.rep && Date.now() - mixFolT > 400){
@@ -6661,7 +6674,7 @@ function loop(){
   }
   if(!$('#vMix').hidden){
     const t = selTrack(), gr = $('#trGr');
-    if(t && gr){ const r = Math.abs(t.chain.comp.reduction || 0); gr.style.width = Math.min(100, r * 5) + '%'; $('#trGrDb').textContent = (r > 0.05 ? '−' : '') + r.toFixed(1) + ' dB'; }
+    if(t && gr){ const r = Math.abs(t.chain.comp.reduction || 0); gr.style.width = Math.min(100, r * 5) + '%'; setTxt($('#trGrDb'), (r > 0.05 ? '−' : '') + r.toFixed(1) + ' dB'); }
   }
   updatePrompt(); updRecLyr();
   requestAnimationFrame(loop);
