@@ -613,7 +613,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 1.7.1 · Bêta</span></div>
+      <span class="grp" id="ver">Version 1.7.2 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -917,8 +917,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 106; // numéro interne (jamais affiché)
-const APP_PUB = '1.7.1';
+const APP_VER = 107; // numéro interne (jamais affiché)
+const APP_PUB = '1.7.2';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -960,7 +960,7 @@ const FXL = { rev:[15, 30, 50], dly:[10, 20, 34], dbl:[35, 65, 100] };
 const FXNAMES = { lead:'Voix lead', back:'Back', ambiance:'Ambiance / ad-libs', instru:'Instru', neutre:'Neutre', perso:'Perso' };
 const MPRE = { naturel:{ low:0, high:1, glue:25 }, rap:{ low:2.5, high:2, glue:45 }, chaud:{ low:1.5, high:-1, glue:35 } };
 
-let ctx, bus, mpre, preGain, lim, limOut, chainOut, bypass, outAn, outData;
+let ctx, bus, mpre, preGain, lim, limOut, chainOut, bypass, outAn, outData, micTouched = false;
 let mic = null, micAnalyser = null, micData = null;
 let sources = [], playStartCtx = 0, playStartPos = 0, metroTimer = null, nextBeatT = 0, nextBeatIdx = 0;
 let rec = null, recInfo = null, idSeq = 0;
@@ -1347,6 +1347,7 @@ async function getMic0(){
   const want = { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1, sampleRate: ctx.sampleRate };
   try{ mic = await navigator.mediaDevices.getUserMedia({ audio: want }); }
   catch(e){ if(e.name === 'NotAllowedError') throw e; mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } }); }
+  micTouched = true;
   const lbl = (mic.getAudioTracks()[0]?.label || '');
   S.micLabel = lbl;
   detectHeadset(true);
@@ -1357,7 +1358,25 @@ async function getMic0(){
 function audioSessionPlay(){ try{ if(navigator.audioSession) navigator.audioSession.type = 'playback'; }catch(e){} }
 function audioSessionRec(){ try{ if(navigator.audioSession) navigator.audioSession.type = 'play-and-record'; }catch(e){} }
 let silentEl = null;
+/* iPhone : une fois le micro utilisé, la sortie reste parfois en mode « appel » (son étouffé dans l'écouteur du haut).
+   Avant de rejouer, on recrée une sortie audio neuve, en mode musique, sur le haut-parleur. */
+function freshAudio(){
+  if(!micTouched || S.recording || S.mon || mic || S.playing || dict) return;
+  micTouched = false;
+  try{
+    const old = ctx;
+    initAudio();
+    try{ if(M.bypass){ chainOut.gain.value = 0; bypass.gain.value = 1; } }catch(e){}
+    bus.setBpm(S.bpm);
+    S.tracks.forEach(t => { try{ t.chain.kill(); }catch(e){} t.chain = makeChain(ctx, bus); t.chain.set(t, audible(t), false); });
+    tunePromise = null; tuneCtx = null; monTune = null;
+    ctx.onstatechange = () => { if(ctx.state !== 'running' && (S.playing || S.recording)) ctx.resume().catch(() => {}); };
+    try{ old.close(); }catch(e){}
+    ctx.resume().catch(() => {});
+  }catch(e){}
+}
 function unlockSpeaker(){
+  freshAudio();
   try{
     if(!silentEl){
       /* son muet en boucle : pousse l'iPhone en mode lecture sur le haut-parleur, même bouton silencieux activé */
@@ -3307,6 +3326,7 @@ $('#bDict').onclick = () => {
   };
   r.onerror = e => { toast(e.error === 'not-allowed' || e.error === 'service-not-allowed' ? 'Dictée refusée : autorise le micro et la reconnaissance vocale.' : 'Dictée interrompue.'); dictStop(); };
   r.onend = () => { if(dict === r){ try{ r.start(); }catch(e){ dictStop(); } } else { ta.value = base; store.set('lyrics', ta.value); lstat(); } };
+  micTouched = true;
   try{ r.start(); dict = r; $('#bDict').setAttribute('aria-pressed', 'true'); $('#bDict').textContent = '⏹ Arrêter la dictée'; toast('🎙️ Vas-y, je t\'écoute. Fais une petite pause entre chaque ligne.'); }
   catch(e){ toast('Dictée impossible : ' + e.message); }
 };
@@ -6126,6 +6146,7 @@ function setRecUI(){ renderQuick(); $('#micGrp').hidden = !((S.recording || S.mo
 $('#bPlay').onclick = async () => {
   if(S.recording){ pause(); return; }
   if(S.playing){ pause(); return; }
+  freshAudio();
   if(!mic) audioSessionPlay();
   unlockSpeaker();
   await wake(); play();
