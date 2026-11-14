@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
+<script>try{window.SX_PREV=localStorage.getItem('sx.boot');localStorage.setItem('sx.boot','page')}catch(e){}</script>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>StudioXel</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -617,7 +618,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 1.8.3 · Bêta</span></div>
+      <span class="grp" id="ver">Version 1.8.4 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -1061,12 +1062,14 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 122; // numéro interne (jamais affiché)
-const APP_PUB = '1.8.3';
+const APP_VER = 123; // numéro interne (jamais affiché)
+const APP_PUB = '1.8.4';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
 const noTrack = () => { try{ return localStorage.getItem('cabine.noTrack') === 'true'; }catch(e){ return false; } };
+/* Mouchard de plantage : on note l'étape en cours ; si la page meurt, l'ouverture suivante sait où (statistique anonyme) */
+function boot(st){ try{ localStorage.setItem('sx.boot', st); }catch(e){} }
 function track(ev){
   try{
     if(!/github\.io$/.test(location.hostname) || noTrack()) return;
@@ -1801,7 +1804,7 @@ async function record(){
   };
   rec.start();
   const recStart = await started;
-  S.recording = true; track('enregistrement'); setRecUI(); if(AUTO.lyr) showRecLyrics();
+  S.recording = true; boot('rec'); track('enregistrement'); setRecUI(); if(AUTO.lyr) showRecLyrics();
   const beat = 60 / S.bpm;
   let t0 = ctx.currentTime + 0.15;
   const cIn = S.countIn && !usePre;
@@ -1810,7 +1813,7 @@ async function record(){
   if(usePre) toast('⏪ Pré-roulement : écoute ta prise, l\'enregistrement démarre à ' + fmt(punchAt, true) + '.');
   play(t0);
 }
-function finishRec(){ S.recording = false; setRecUI(); hideRecLyrics(); if(rec && rec.state !== 'inactive') rec.stop(); }
+function finishRec(){ S.recording = false; boot('ok'); setRecUI(); hideRecLyrics(); if(rec && rec.state !== 'inactive') rec.stop(); }
 
 /* ---------- Calage automatique (latence) ---------- */
 function routeKey(){
@@ -3983,7 +3986,7 @@ async function saveSession(){
 async function loadSession(id){
   const rec = await dbDo('sessions', 'readonly', st => st.get(id));
   if(!rec) return false;
-  sessReady = false;
+  sessReady = false; boot('reprise');
   if(S.playing) pause();
   S.tracks.forEach(t => t.chain.kill()); S.tracks = []; idSeq = 0;
   undoStack.length = 0; updUndo();
@@ -3992,13 +3995,24 @@ async function loadSession(id){
     Object.assign(t, { keep: !!tr.keep, uid: tr.uid || t.uid, owner: tr.owner || null, ownerName: tr.ownerName || '', color: tr.color, fx: { ...FX.neutre, ...tr.fx }, vr: tr.vr || 0, vol: tr.vol, pan: tr.pan, mute: tr.mute, solo: tr.solo,
       trim: tr.trim, atOn: tr.atOn, at: { ...t.at, ...tr.at }, lv: tr.lv, vp: tr.vp, adapted: tr.adapted, semi: tr.semi, bpmOrig: tr.bpmOrig, origTake: tr.origTake });
     t.takes = [];
-    for(const k of tr.takes){
+    /* on ne recharge que les prises utiles (la prise en cours, sa version d'origine, et les dernières prises) : tout l'historique d'une longue séance
+       pouvait dépasser la mémoire de Safari sur iPhone et faire planter l'ouverture */
+    const all = tr.takes || [], cur = Math.min(tr.take, all.length - 1), need = new Set();
+    const addNeed = i => { if(i == null || i < 0 || i >= all.length || need.has(i)) return; need.add(i); addNeed(all[i].src); };
+    addNeed(cur); addNeed(tr.origTake);
+    for(let i = all.length - 1; i >= 0 && need.size < 4; i--) if(all[i].src == null) addNeed(i);
+    const remap = new Map();
+    for(const i of [...need].sort((a, b) => a - b)){
+      const k = all[i];
       const o = await dbDo('audio', 'readonly', st => st.get(k.aid));
       if(!o) continue;
       const b = unpackBuf(o); aidOf.set(b, k.aid); savedAids.add(k.aid);
+      remap.set(i, t.takes.length);
       t.takes.push({ buffer: b, offset: k.offset, tuned: k.tuned, src: k.src, xf: k.xf, punch: k.punch });
     }
-    t.take = Math.min(tr.take, t.takes.length - 1);
+    t.takes.forEach(k => { k.src = k.src != null && remap.has(k.src) ? remap.get(k.src) : undefined; });
+    t.origTake = tr.origTake != null && remap.has(tr.origTake) ? remap.get(tr.origTake) : undefined;
+    t.take = remap.has(cur) ? remap.get(cur) : t.takes.length - 1;
     if(t.take >= 0){ t.buffer = t.takes[t.take].buffer; t.offset = t.takes[t.take].offset; } else { t.buffer = null; t.offset = 0; }
   }
   S.bpm = rec.bpm || S.bpm; $('#bpm').value = S.bpm; bus.setBpm(S.bpm);
@@ -4013,7 +4027,7 @@ async function loadSession(id){
   S.pos = 0; S.sel = null; applyMix();
   sessReady = true;
   renderTracks(); renderMix(); renderMaster(); renderSessBar(); renderLoopUI(); setSessState('✓ Sauvegardé');
-  return true;
+  boot('ok'); return true;
 }
 async function openSession(id){
   if(busy || S.recording) return;
@@ -6362,6 +6376,10 @@ setTimeout(showBeta, 300);
   let taps = 0, tapT = 0;
   $('#ver').addEventListener('click', () => { const now = Date.now(); taps = now - tapT < 800 ? taps + 1 : 1; tapT = now; if(taps >= 5){ taps = 0; b.hidden = !b.hidden; } });
   b.onclick = () => { const v = !store.get('noTrack', false); if(!v) store.set('noTrack', false); else track('compteur-coupe'); if(v) store.set('noTrack', true); b.setAttribute('aria-pressed', String(v)); toast(v ? 'Tes visites ne sont plus comptées sur cet appareil.' : 'Tes visites sont de nouveau comptées.'); }; }
+setTimeout(() => { if(window.SX_PREV && window.SX_PREV !== 'ok') track('plantage-' + window.SX_PREV + '-v' + APP_PUB); }, 1600);
+setTimeout(() => { if(!S.recording) boot('ok'); }, 8000);
+document.addEventListener('visibilitychange', () => { if(document.hidden) boot('ok'); });
+addEventListener('pagehide', () => boot('ok'));
 setTimeout(() => { track(isStandalone() ? 'ouverture-appli-installee' : 'ouverture-navigateur'); track('langue-' + (window.SX_LANG || 'fr')); if(ENV.inApp) track('ouverture-dans-' + String(ENV.inApp).toLowerCase().replace(/[^a-z0-9]+/g, '-')); }, 1500);
 
 
@@ -6632,10 +6650,12 @@ function loop(){
   requestAnimationFrame(loop);
 }
 
+boot('audio');
 initAudio();
 [['Instru', 'instru'], ['Couplets', 'lead'], ['Refrain', 'lead'], ['Back', 'back'], ['Ambiance', 'ambiance']].forEach(([n, p]) => addTrack(n, p));
 defaultRefrain();
 renderTracks(); renderMaster(); lstat(); showLat();
+boot('sessions');
 startSessions();
 detectHeadset(true);
 
