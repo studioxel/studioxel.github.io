@@ -618,7 +618,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 1.8.4 · Bêta</span></div>
+      <span class="grp" id="ver">Version 1.8.6 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -1062,8 +1062,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 123; // numéro interne (jamais affiché)
-const APP_PUB = '1.8.4';
+const APP_VER = 125; // numéro interne (jamais affiché)
+const APP_PUB = '1.8.6';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -1186,7 +1186,7 @@ const DLY_KIND = [
   { div: 60, fb: 0.4, cross: 0.85, pan: 0.9, hp: 320, lp: 3600, flp: 2400, sat: 1.8 }
 ];
 function makeBus(ac){
-  const b = { masterIn: ac.createGain(), revs: [], dlys: [] };
+  const b = { masterIn: ac.createGain(), revs: [], dlys: [], revN: [] };
   b.revBus = lv => {
     if(b.revs[lv]) return b.revs[lv];
     const K = REV_KIND[lv], inp = ac.createGain();
@@ -1196,6 +1196,7 @@ function makeBus(ac){
     rmud.gain.value = K.mud;
     const ret = ac.createGain(); ret.gain.value = K.out;
     inp.connect(pre); pre.connect(conv); conv.connect(rhp); rhp.connect(rmud); rmud.connect(rlp); rlp.connect(ret); ret.connect(b.masterIn);
+    b.revN[lv] = [inp, pre, conv, rhp, rmud, rlp, ret];
     return (b.revs[lv] = inp);
   };
   b.dlyBus = lv => {
@@ -1215,7 +1216,7 @@ function makeBus(ac){
     } else {
       fbRL.gain.value = K.fb; dL.connect(fbHp); fbHp.connect(fbLp); fbLp.connect(sat); sat.connect(fbRL); fbRL.connect(dL);
     }
-    b.dlys[lv] = { inp, dL, dR, div: K.div };
+    b.dlys[lv] = { inp, dL, dR, div: K.div, nodes: [inp, dL, dR, inHp, inLp, fbHp, fbLp, sat, fbLR, fbRL, pL, pR] };
     b.setBpm(b.bpm || S.bpm);
     return inp;
   };
@@ -1223,7 +1224,11 @@ function makeBus(ac){
     b.bpm = bpm;
     b.dlys.forEach(d => { if(!d) return; const t = Math.min(1.9, d.div / bpm); d.dL.delayTime.value = t; d.dR.delayTime.value = t; });
   };
-  b.revIn = b.revBus(1);
+  /* réverbes et échos qu'aucune piste n'utilise : on les débranche (sur iPhone, ils tournaient pour rien et faisaient grésiller) */
+  b.gc = (usedR, usedD) => {
+    b.revs.forEach((x, lv) => { if(x && !usedR.has(lv)){ b.revN[lv].forEach(n => { try{ n.disconnect(); }catch(e){} }); b.revs[lv] = null; b.revN[lv] = null; } });
+    b.dlys.forEach((x, lv) => { if(x && !usedD.has(lv)){ x.nodes.forEach(n => { try{ n.disconnect(); }catch(e){} }); b.dlys[lv] = null; } });
+  };
   return b;
 }
 function makeMasterPre(ac){
@@ -1357,7 +1362,7 @@ function makeChain(ac, b){
     if(dblN) dblN.g0.gain.value = amt * [1, 0.75, 0.5][dblN.lv];
   };
   c.set = (t, on, live) => {
-    const f = t.fx;
+    const dry = fxOff(t), f = dry ? FX.neutre : t.fx;
     c.hp.frequency.value = f.hp; c.low.gain.value = f.low; c.mid.gain.value = f.mid; c.mid.frequency.value = f.midF; c.high.gain.value = f.high;
     if(f.ratio > 1){ c.comp.threshold.value = f.thr; c.comp.ratio.value = f.ratio; }
     setComp(f.ratio > 1);
@@ -1368,11 +1373,12 @@ function makeChain(ac, b){
     c.panner.pan.value = t.pan;
     c.rev.gain.value = f.rev / 100; c.dly.gain.value = f.dly / 100;
     setRev(f.rev > 0 ? lvOf(FXL.rev, f.rev) : -1); setDly(f.dly > 0 ? lvOf(FXL.dly, f.dly) : -1);
-    const v = (t.vr || 0) / 100;
+    const v = dry ? 0 : (t.vr || 0) / 100;
     setVr(v > 0); if(vr){ vr.dry.gain.value = 1 - v; vr.wet.gain.value = v; }
     c.input.gain.value = t.trim ?? 1;
     setDbl((f.dbl || 0) / 100, (f.dbl || 0) > 0 ? lvOf(FXL.dbl, f.dbl) : 0);
   };
+  c.sends = () => ({ rev: revLv, dly: dlyLv });
   c.kill = () => {
     setDbl(0, 0);
     [c.input, c.hp, c.low, c.mid, c.high, c.comp, c.makeup, c.fader, c.panner, c.rev, c.dly].forEach(n => safe(() => n.disconnect()));
@@ -1408,6 +1414,10 @@ async function wake(){
   return ctx.state === 'running';
 }
 function audible(t){ const solo = S.tracks.some(x => x.solo); return !t.mute && (!solo || t.solo); }
+/* Mode simple : voix brutes pendant qu'on pose (prise propre, on juge la voix telle qu'elle est). Les effets arrivent à l'habillage. */
+function rawPhase(){ try{ return isSimple() && guided() && !flowGet().arrInit; }catch(e){ return false; } }
+/* une piste vide (sans prise ni retour voix) n'a pas besoin d'effets qui tournent : ça économise le téléphone */
+function fxOff(t){ if(t.preset === 'instru') return false; if(rawPhase()) return true; try{ return !t.buffer && !(S.mon && monTrack() === t); }catch(e){ return false; } }
 function applyMix(){ S.tracks.forEach(t => t.chain.set(t, audible(t), true)); }
 function setBypass(on){
   M.bypass = on;
@@ -6270,7 +6280,7 @@ async function rebalanceAll(){
 /* Habillage studio : niveaux, style de voix par rôle, backs nettoyés */
 async function arrangeAuto(){
   const f = flowGet(); if(f.arrInit) return; flowSet('arrInit', true);
-  pushUndo('l\'habillage studio');
+  pushUndo('l\'habillage studio'); applyMix();
   for(const t of vocalTracks()){
     if(!t.buffer || isLocked(t) || t.keep) continue;
     const r = roleOf(t);
@@ -6310,12 +6320,14 @@ function updStep(){
     ? head(label + ' ✓', 'Écoute, et refais-la si elle ne te plaît pas.') + `<div class="stb"><button class="sbtn primary big" data-s="ok">C'est bon, suite →</button>${playB}<button class="sbtn" data-s="rec">🎤 Refaire</button></div>`
     : head(label, d) + `<div class="stb"><button class="sbtn primary big" data-s="rec">● Enregistrer ${esc(t ? t.name : '')}</button>${skip ? `<button class="sbtn" data-s="skip">${skip}</button>` : ''}</div>`;
   let h = '';
+  const rawTip = '<p class="sttip">🎙️ Pendant que tu poses, ta voix reste brute : les effets arrivent à l\'habillage, une fois tout enregistré.</p>';
   if(st === 'rec') h = `<div class="stn">● Enregistrement</div><h3>Ça tourne, kicke 🎤</h3><p>Retouche REC (ou le bouton ici) quand tu as fini.</p><div class="stb"><button class="sbtn primary big" data-s="stop">⏹ Arrêter</button></div>`;
   else if(st === 'instru') h = head('Charge ton instru', 'Le beat sur lequel tu vas kicker (MP3 ou WAV, depuis ton téléphone).') + `<div class="stb"><button class="sbtn primary big" data-s="instru">📂 Choisir mon instru</button><button class="sbtn" data-s="noinstru">Je kicke sans instru</button></div>`;
   else if(st === 'text') h = head('Écris ton texte', 'Il défilera tout seul pendant que tu enregistres.') + `<div class="stb"><button class="sbtn primary big" data-s="write">✍️ Écrire mon texte</button><button class="sbtn" data-s="notext">Passer</button></div>`;
   else if(st === 'lead'){
     h = take(L, 'Pose tes couplets', S.markers.some(m => m.auto) ? 'Tes parties sont calées : pose tout d\'un coup, couplets et refrains. Je range chaque refrain tout seul sur la piste Refrain.' : 'Tes couplets, la voix principale. Un décompte part, et tu kickes. Tu peux t\'arrêter et reprendre où tu veux.', null);
     if(S.markers.some(m => m.auto)) h += `<div class="arrt"><b>Comment tu enregistres ?</b><div class="arrs"><button class="sbtn" data-rm="onego" aria-pressed="${recMode() === 'onego'}">🎙️ Tout d'un coup</button><button class="sbtn" data-rm="parts" aria-pressed="${recMode() === 'parts'}">✂️ Partie par partie</button></div><p class="sttip">${recMode() === 'parts' ? 'Ça s\'arrête tout seul à la fin de chaque couplet ou refrain, et la bonne piste s\'arme pour la suite.' : 'Tu poses tout d\'une traite : à l\'arrêt, je range les couplets sur Couplets et les refrains sur Refrain.'}</p></div>`;
+    if(rawPhase()) h += rawTip;
     if(!L?.buffer) h += `<p class="sttip">💡 Astuce : pour avoir ton texte qui défile en rythme pendant que tu kickes, cale-le sur ton instru dans <button class="stlink" data-s="toprompt">Texte → Prompteur</button>.</p>`;
   }
   else if(st === 'refrain') h = take(R, 'Ton refrain', 'Sur sa propre piste : il pourra avoir son style à lui, plus large et plus fort. Place la lecture au début du refrain, puis enregistre.', 'Pas de refrain dans ce son');
@@ -6364,6 +6376,11 @@ stepEl.addEventListener('click', async e => {
   stepKey = ''; updStep();
 });
 setInterval(updStep, 500);
+{ let lastSig = null; setInterval(() => {
+    const sig = S.tracks.map(t => t.id + (fxOff(t) ? 'd' : 'w')).join(',');
+    if(sig !== lastSig){ lastSig = sig; applyMix(); }
+    try{ if(bus && bus.gc){ const ur = new Set(), ud = new Set(); S.tracks.forEach(t => { const x = t.chain.sends(); if(x.rev >= 0) ur.add(x.rev); if(x.dly >= 0) ud.add(x.dly); }); bus.gc(ur, ud); } }catch(e){}
+  }, 400); }
 applyMode();
 { const b = $('#tDeBleed'); store.set('deBleed', false); const up = () => b.setAttribute('aria-pressed', String(store.get('spkClean', true))); up();
   b.onclick = () => { store.set('spkClean', !store.get('spkClean', true)); up(); toast(store.get('spkClean', true) ? '🧽 Sans écouteurs, le téléphone retire l\'instru du micro : ta voix sort plus propre. Pendant la prise, l\'instru peut sonner un peu comme au téléphone, c\'est normal.' : 'Micro brut sans écouteurs : l\'instru qui sort du haut-parleur s\'entendra dans ta prise.'); }; }
