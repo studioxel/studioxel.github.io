@@ -497,6 +497,7 @@ body.ed-open .wmark{z-index:41}
 .chkl{display:flex;gap:10px;font-size:15px}.chkl span{font:12px var(--mono);color:var(--muted);min-width:52px;padding:1px 4px;border-radius:4px}
 .chkl.chg span{color:#1a1405;background:#ff7a59;font-weight:800}
 .tapbig{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:120px;border:0;border-radius:16px;background:var(--accent);color:#1a1405;font:800 28px var(--display);cursor:pointer;touch-action:manipulation}.tapbig small{font:600 13px system-ui,sans-serif;opacity:.75}.tapbig:active{transform:scale(.98)}
+.taplyr{min-height:46px;padding:8px 10px;border-radius:10px;background:var(--bg);display:flex;flex-direction:column;gap:2px}.tlcur{font-size:17px;font-weight:700}.tlnext{font-size:13px;color:var(--muted)}
 .tapinfo{text-align:center;color:var(--muted);font-size:14px}.tapsw{background:none;border:0;color:var(--accent);text-decoration:underline;font-size:14px;padding:0}.tapinfo b{color:var(--fg)}
 .chklink{align-self:center;background:none;border:0;color:var(--muted);text-decoration:underline;padding:4px}
 .tsrow .sbtn[aria-pressed=true]{background:var(--accent);color:#1a1405;border-color:var(--accent)}
@@ -583,8 +584,9 @@ body.ed-open .wmark{z-index:41}
       <div class="bkrow"><label class="grp">Tempo (BPM) <input type="number" id="bpm" min="40" max="220" value="90"></label>
       <button class="toggle" id="tCount" aria-pressed="true" title="1 mesure de décompte avant la prise">Décompte</button>
       <button class="toggle" id="tMetro" aria-pressed="false">Métronome</button></div>
+      <div class="bkrow"><span class="grp">Prises</span><div class="seg" id="recModeSeg" role="group" aria-label="Façon d'enregistrer"><button data-rm2="onego">🎙️ Tout d'un coup</button><button data-rm2="parts">✂️ Partie par partie</button></div></div>
       <div class="bkrow"><span class="grp">Pré-roulement</span><div class="seg" id="preSeg" role="group" aria-label="Pré-roulement"><button data-pr="0">Aucun</button><button data-pr="1">1 mesure</button><button data-pr="2">2 mesures</button></div></div>
-      <p class="note">Le tempo est détecté tout seul quand tu importes ton instru. Le pré-roulement : quand tu refais un passage sur une piste déjà enregistrée, tu réentends ta prise d'avant juste avant, puis l'enregistrement démarre pile au bon endroit (ça remplace le décompte).</p>
+      <p class="note">Le tempo est détecté tout seul quand tu importes ton instru. Prises (une fois tes parties calées dans Texte) : tout d'un coup, et je range couplets et refrains sur leur piste ; ou partie par partie, et ça s'arrête à la fin de chaque couplet ou refrain avec la bonne piste armée pour la suite. Le pré-roulement : quand tu refais un passage sur une piste déjà enregistrée, tu réentends ta prise d'avant juste avant, puis l'enregistrement démarre pile au bon endroit (ça remplace le décompte).</p>
     </div>
     <div class="autobox"><div class="autot">Toi</div>
       <label class="grp">Ton blaze <input id="meName" style="width:120px;height:34px;background:var(--raise);border:1px solid var(--line);border-radius:6px;padding:0 8px;text-transform:none;letter-spacing:0" placeholder="ex. Xela"></label>
@@ -611,7 +613,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 1.6.5 · Bêta</span></div>
+      <span class="grp" id="ver">Version 1.7.1 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -915,8 +917,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 104; // numéro interne (jamais affiché)
-const APP_PUB = '1.6.5';
+const APP_VER = 106; // numéro interne (jamais affiché)
+const APP_PUB = '1.7.1';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -1541,7 +1543,10 @@ function releaseMic(force){
 async function record(){
   if(S.recording){ pause(); return; }
   if(S.rep) setRep(null);
-  const t = S.tracks.find(x => x.arm);
+  let t = S.tracks.find(x => x.arm);
+  /* partie par partie : la partie où tu es (ou la suivante) choisit sa piste, l'enregistrement s'arrête à sa fin */
+  const part = partAt(S.pos);
+  if(part){ t = part.dst; S.tracks.forEach(x => x.arm = false); t.arm = true; if(S.pos < part.sec.t - 0.05 || S.pos > part.sec.end - 0.5) S.pos = part.sec.t; renderTracks(); }
   if(!t){ toast('Arme d\'abord une piste avec son bouton R.'); return; }
   ensureCtx();
   await detectHeadset(true);
@@ -1551,7 +1556,7 @@ async function record(){
   if(S.loop.on) S.pos = S.loop.start;
   /* pré-roulement : on réentend sa prise d'avant 1 ou 2 mesures, puis l'enregistrement démarre pile à l'endroit voulu */
   const preBars = store.get('preroll', 1), punchAt = S.pos;
-  const usePre = preBars > 0 && punchAt > 0.05 && !!t.buffer;
+  const usePre = preBars > 0 && punchAt > 0.05 && (!!t.buffer || !!part);
   if(usePre) S.pos = Math.max(0, punchAt - preBars * 4 * 60 / S.bpm);
   if(!(await wake())){ releaseMic(true); toast('L\'iPhone a coupé le son en branchant le micro. Touche ▶ une fois, puis relance REC.'); return; }
   openMicGraph();
@@ -1588,6 +1593,7 @@ async function record(){
       if(pk > 1e-4){ const g = Math.min(40, CEIL / pk); for(let c = 0; c < buf.numberOfChannels; c++){ const d = buf.getChannelData(c); for(let i = 0; i < d.length; i++) d[i] *= g; } }
       let tr = recInfo.track;
       pushUndo('la prise', false, true);
+      const takeBuf = buf, takePos = recInfo.pos, nextPart = recInfo.partsNext, donePart = recInfo.partName;
       let off0 = recInfo.pos, punched = false;
       /* la piste est déjà remplie : la prise se pose par-dessus, à l'endroit enregistré (Annuler pour revenir) */
       if(tr.buffer){ const pm = punchMerge(tr, buf, recInfo.pos, recInfo.punch ? recInfo.end : recInfo.pos + buf.duration); buf = pm.buffer; off0 = pm.offset; punched = true; }
@@ -1596,9 +1602,15 @@ async function record(){
       else { tr.takes = [{ buffer: buf, offset: off0 }]; tr.take = 0; }
       tr.buffer = buf; tr.offset = off0;
       if(!punched && AUTO.level){ await adaptVoice(tr); await autoLevel(tr); }
-      if(AUTO.sync && !recInfo.punch && tr.preset !== 'instru' && ta.value.trim() && (!Object.keys(syncs).length || (syncsAuto && [null, tr.uid || tr.id].includes(store.get('syncsTid', null))))) autoSyncFrom(tr, true) && setTimeout(() => toast('📝 Ton texte est calé tout seul sur cette prise : il défilera avec ta voix.'), 2500);
+      const moved = donePart ? '' : await splitByParts(tr, takeBuf, takePos);
+      if(AUTO.sync && !recInfo.punch && tr.preset !== 'instru' && ta.value.trim() && !S.markers.some(m => m.auto) && (!Object.keys(syncs).length || (syncsAuto && [null, tr.uid || tr.id].includes(store.get('syncsTid', null))))) autoSyncFrom(tr, true) && setTimeout(() => toast('📝 Ton texte est calé tout seul sur cette prise : il défilera avec ta voix.'), 2500);
       renderTracks();
       if(tr.atOn){ toast('Prise gardée, auto-tune en cours…'); await applyAutotune(tr); }
+      else if(donePart){
+        if(nextPart){ const nd = nextPart.kind === 'refrain' ? trRole('refrain') : trRole('lead'); S.tracks.forEach(x => x.arm = false); if(nd) nd.arm = true; S.pos = nextPart.t; renderTracks(); toast('✓ ' + donePart + ' posé sur « ' + tr.name + ' ». Prochain : ' + nextPart.name + ' (piste « ' + (nd ? nd.name : '') + ' » armée). Appuie sur REC quand tu es prêt.'); }
+        else toast('✓ ' + donePart + ' posé. C\'était la dernière partie 🔥');
+      }
+      else if(moved) toast(moved);
       else toast(recInfo.punch ? 'Phrase remplacée dans la boucle.' : punched ? 'Prise posée sur « ' + tr.name + ' », à la place de ce qui était dessous. Annuler pour revenir.' : 'Prise gardée sur « ' + tr.name + ' » · niveau calé sur l\'instru.');
       scheduleSave();
     }catch(e){ toast('Impossible de lire la prise : ' + e.message); }
@@ -1610,7 +1622,7 @@ async function record(){
   let t0 = ctx.currentTime + 0.15;
   const cIn = S.countIn && !usePre;
   if(cIn){ const b = ctx.currentTime + 0.1; for(let i = 0; i < 4; i++) click(b + i * beat, i === 0); t0 = b + 4 * beat; }
-  recInfo = { punch: S.loop.on, end: S.loop.on ? loopEnd() : null, track: t, recStart, t0, pos: punchAt, playFrom: S.pos, pre: usePre ? punchAt - S.pos : 0, b: cIn ? t0 - 4 * beat : null, beat, route: routeKey() };
+  recInfo = { autoEnd: part ? part.sec.end - 15 / S.bpm : null, partsNext: part ? part.next : null, partName: part ? part.sec.name : null, punch: S.loop.on, end: S.loop.on ? loopEnd() : null, track: t, recStart, t0, pos: punchAt, playFrom: S.pos, pre: usePre ? punchAt - S.pos : 0, b: cIn ? t0 - 4 * beat : null, beat, route: routeKey() };
   if(usePre) toast('⏪ Pré-roulement : écoute ta prise, l\'enregistrement démarre à ' + fmt(punchAt, true) + '.');
   play(t0);
 }
@@ -2262,6 +2274,16 @@ function tapNext(){
   if(tap.swap) kind = tap.swap;
   return kind === 'refrain' ? 'Refrain' : 'Couplet ' + (nC + 1);
 }
+function tapLyrTick(){
+  const box = $('#tapLyr'); if(!tap || !box){ return; }
+  const lines = ta.value.split('\n'), VS = activeSyncs(), p = S.playing ? now() : S.pos;
+  let cur = -1; Object.keys(VS).map(Number).sort((a, b) => a - b).forEach(i => { if(VS[i] <= p + 0.05) cur = i; });
+  const next = Object.keys(VS).map(Number).sort((a, b) => a - b).find(i => i > cur && VS[i] != null);
+  const html = cur < 0 ? `<div class="tlnext">${next != null ? '1re ligne : ' + esc(lines[next].trim()) : 'Pas encore de texte.'}</div>`
+    : `<div class="tlcur">🎤 ${esc(lines[cur].trim())}</div>${next != null ? `<div class="tlnext">ensuite : ${esc(lines[next].trim())}</div>` : ''}`;
+  if(box.innerHTML !== html) box.innerHTML = html;
+}
+(function tapLoop(){ try{ tapLyrTick(); }catch(e){} requestAnimationFrame(tapLoop); })();
 function tapGrid(){ const l = startSugs(); const bar = 4 * 60 / S.bpm; return { bar, g0: l && l.grid0 != null ? l.grid0 : 0 }; }
 function tapStart(){
   const ins = trRole('instru'); if(!ins?.buffer){ toast('Charge d\'abord ton instru.'); return; }
@@ -2289,6 +2311,7 @@ function tapShow(){
   const inGap = last && last.gap, inPart = last && !last.gap;
   el.innerHTML = `<div class="chkn">Écoute, et touche au bon moment<button class="chkx" data-c="end" aria-label="Terminer">✕</button></div>
      <button class="tapbig" data-c="tap">👆 ${esc(nm)}<small>touche quand ça commence</small></button>
+     <div class="taplyr" id="tapLyr"></div>
      <div class="tapinfo">${last ? (last.gap ? `🔇 Blanc à <b>${fmt(last.t, true)}</b>` : `✓ ${esc(last.name)} calé à <b>${fmt(last.t, true)}</b>`) : 'Le son démarre du début.'} · <button class="tapsw" data-c="swap">c'est ${other === 'refrain' ? 'un refrain' : 'un couplet'} ?</button></div>
      <div class="chkb"><button class="sbtn" data-c="gap" ${inPart ? '' : 'disabled'}>🔇 Blanc</button><button class="sbtn" data-c="undo" ${tap.marks.length ? '' : 'disabled'}>↶ Oups</button><button class="sbtn primary" data-c="end">J'ai fini</button></div>`;
 }
@@ -3944,6 +3967,46 @@ $('#loopBtn').onclick = () => {
 };
 $('#loopBars').addEventListener('click', e => { const b = e.target.closest('button'); if(!b) return; S.loop.bars = +b.dataset.b; renderLoopUI(); scheduleSave(); });
 /* La nouvelle phrase remplace le passage de la boucle dans la prise en cours, avec un fondu de 10 ms et le même niveau */
+/* Tes parties sont calées : une prise faite d'un coup est rangée toute seule, couplets sur Lead, refrains sur Refrain */
+async function splitByParts(tr, take, pos){
+  const role = roleOf(tr); if(role !== 'lead' && role !== 'refrain') return '';
+  const secs = (S.secs || []).filter(x => x.kind === 'couplet' || x.kind === 'refrain'); if(!secs.length) return '';
+  const L = trRole('lead'), R = trRole('refrain'); if(!L || !R) return '';
+  const end = pos + take.duration, half = 30 / S.bpm, sr = take.sampleRate, F = Math.round(sr * 0.01);
+  const parts = [];
+  secs.forEach(sc => { const dst = sc.kind === 'refrain' ? R : L; if(dst === tr) return; const a = Math.max(pos, sc.t - half), b = Math.min(end, sc.end - half); if(b - a > 0.3) parts.push({ a, b, dst }); });
+  if(!parts.length) return '';
+  let nTo = { [L.id]: 0, [R.id]: 0 };
+  for(const pt of parts){
+    const s0 = Math.round((pt.a - pos) * sr), s1 = Math.round((pt.b - pos) * sr);
+    const seg = bufSlice(take, s0, s1);
+    for(let c = 0; c < seg.numberOfChannels; c++){ const d = seg.getChannelData(c); for(let k = 0; k < F && k < d.length; k++){ d[k] *= k / F; d[d.length - 1 - k] *= k / F; } }
+    const dst = pt.dst, wasEmpty = !dst.buffer;
+    if(dst.buffer){ const pm = punchMerge(dst, seg, pt.a, pt.b); dst.takes.push({ buffer: pm.buffer, offset: pm.offset, punch: true }); dst.take = dst.takes.length - 1; dst.buffer = pm.buffer; dst.offset = pm.offset; }
+    else { dst.takes = [{ buffer: seg, offset: pt.a }]; dst.take = 0; dst.buffer = seg; dst.offset = pt.a; dst.vol = tr.vol; }
+    claim(dst);
+    /* et on l'enlève de la piste où tu as enregistré */
+    const nb = edCopy(tr.buffer), z0 = Math.max(0, Math.round((pt.a - tr.offset) * sr)), z1 = Math.min(nb.length, Math.round((pt.b - tr.offset) * sr));
+    for(let c = 0; c < nb.numberOfChannels; c++){ const d = nb.getChannelData(c); d.fill(0, z0, z1); for(let k = 0; k < F; k++){ if(z0 - 1 - k >= 0) d[z0 - 1 - k] *= k / F; if(z1 + k < d.length) d[z1 + k] *= k / F; } }
+    tr.buffer = nb; if(tr.takes[tr.take]) tr.takes[tr.take].buffer = nb;
+    nTo[dst.id]++;
+    if(wasEmpty) try{ dst.chain.set(dst, audible(dst), true); }catch(e){}
+  }
+  renderTracks(); scheduleSave();
+  const toR = nTo[R.id], toL = nTo[L.id];
+  return '🎛️ Prise rangée toute seule : ' + [toL ? toL + ' couplet' + (toL > 1 ? 's' : '') + ' sur « ' + L.name + ' »' : '', toR ? toR + ' refrain' + (toR > 1 ? 's' : '') + ' sur « ' + R.name + ' »' : ''].filter(Boolean).join(', ') + '. Annuler pour revenir.';
+}
+const recMode = () => store.get('recMode', 'onego');
+/* la partie à enregistrer en mode « partie par partie » : celle où est la lecture, sinon la suivante */
+function partAt(pos){
+  if(recMode() !== 'parts') return null;
+  const secs = (S.secs || []).filter(x => x.kind === 'couplet' || x.kind === 'refrain'); if(!secs.length) return null;
+  const L = trRole('lead'), R = trRole('refrain'); if(!L || !R) return null;
+  let i = secs.findIndex(x => pos >= x.t - 0.05 && pos < x.end - 0.5); if(i < 0) i = secs.findIndex(x => x.t >= pos - 0.05); if(i < 0) return null;
+  const sec = secs[i], next = secs[i + 1] || null;
+  return { sec, next, dst: sec.kind === 'refrain' ? R : L };
+}
+setInterval(() => { if(S.recording && recInfo && recInfo.autoEnd && now() >= recInfo.autoEnd){ recInfo.autoEnd = null; record(); } }, 40);
 function punchMerge(tr, nb, pos, end){
   const base = tr.buffer, sr = base.sampleRate, bo = tr.offset;
   const segLen = Math.max(1, Math.min(nb.length, Math.round((end - pos) * sr)));
@@ -5495,7 +5558,7 @@ const HELP = {
     { sel: ['.secbar'], t: 'Les sections', b: 'Ajoute Intro, Couplet (numéroté tout seul), Pré-refrain, Refrain, Pont ou Outro là où est ton curseur. Un deuxième Refrain recopie le premier, tu modifies si besoin.' },
     { sel: ['#lstat'], t: 'Les syllabes', b: 'Le nombre de syllabes de la ligne où tu es, pour équilibrer tes rimes et ton flow.' },
     { sel: ['#bDict'], t: 'Dicter', b: 'Dis tes lignes a cappella, elles s\'écrivent toutes seules, une par pause. Relis : le rap piège la dictée.' },
-    { t: 'Le prompteur', b: 'En haut, « Ton instru » : toute ton instru en grand, avec les parties que j\'entends (intro, couplets, refrains probables), mes propositions de départ (▲) et le début de ton texte (en vert). Touche l\'onde pour te placer, ▶ pour vérifier, « 📍 Le texte démarre ici » pour choisir, « 👆 Caler mes parties en écoutant » : l\'instru se lance et un gros bouton affiche ta prochaine section ([Couplet 1], [Refrain]…). Tu touches quand elle commence, je recale sur le début de la mesure la plus proche, et le temps de tes paroles change direct. Un silence entre deux parties ? Touche « 🔇 Blanc » quand la partie s\'arrête. Autant de couplets et de refrains que tu veux : après les sections de ton texte, ça continue tout seul (et « c\'est un refrain ? » inverse si je me trompe). « ↶ Oups » efface le dernier appui. À la fin, tes sections [Couplet 1], [Refrain]… démarrent pile sur chaque partie. Quand tu charges ton instru, je te propose aussi où démarrer le texte : l\'entrée de la rythmique (⭐ mon choix), quelques mesures après, un changement dans le beat, ou dès le début. Touche une proposition pour l\'écouter et la choisir. Tu peux aussi régler à la main (📍 Ici, ou ± 1 mesure). Pose des repères au nom de tes sections (+ → Repère) : chaque section démarre pile dessus. Le texte défile une phrase par mesure : chaque ligne tombe pile sur le 1er temps d\'une mesure, grâce au BPM de ton instru (une ligne par demi-mesure si une partie est trop remplie). Après ta prise, il se recale sur ta vraie voix. Pour forcer, ouvre « Vitesse du texte ». Ensuite le texte se cale tout seul : sur le tempo pendant ta première prise, puis sur ta voix une fois la prise posée. Tu peux aussi caler à la main (« Caler la ligne suivante » au début de chaque ligne pendant la lecture), ou forcer « Caler sur ma prise » / « Caler sur le tempo ». Pendant REC, ton texte s\'affiche en bas tout seul.' }
+    { t: 'Le prompteur', b: 'En haut, « Ton instru » : toute ton instru en grand, avec les parties que j\'entends (intro, couplets, refrains probables), mes propositions de départ (▲) et le début de ton texte (en vert). Touche l\'onde pour te placer, ▶ pour vérifier, « 📍 Le texte démarre ici » pour choisir, « 👆 Caler mes parties en écoutant » : l\'instru se lance et un gros bouton affiche ta prochaine section ([Couplet 1], [Refrain]…). Tu touches quand elle commence, je recale sur le début de la mesure la plus proche, et le temps de tes paroles change direct. Ce calage sert ensuite à toutes tes pistes, et si tu enregistres tout d\'un coup, je range les refrains sur la piste Refrain et les couplets sur Lead. Un silence entre deux parties ? Touche « 🔇 Blanc » quand la partie s\'arrête. Autant de couplets et de refrains que tu veux : après les sections de ton texte, ça continue tout seul (et « c\'est un refrain ? » inverse si je me trompe). « ↶ Oups » efface le dernier appui. À la fin, tes sections [Couplet 1], [Refrain]… démarrent pile sur chaque partie. Quand tu charges ton instru, je te propose aussi où démarrer le texte : l\'entrée de la rythmique (⭐ mon choix), quelques mesures après, un changement dans le beat, ou dès le début. Touche une proposition pour l\'écouter et la choisir. Tu peux aussi régler à la main (📍 Ici, ou ± 1 mesure). Pose des repères au nom de tes sections (+ → Repère) : chaque section démarre pile dessus. Le texte défile une phrase par mesure : chaque ligne tombe pile sur le 1er temps d\'une mesure, grâce au BPM de ton instru (une ligne par demi-mesure si une partie est trop remplie). Après ta prise, il se recale sur ta vraie voix. Pour forcer, ouvre « Vitesse du texte ». Ensuite le texte se cale tout seul : sur le tempo pendant ta première prise, puis sur ta voix une fois la prise posée. Tu peux aussi caler à la main (« Caler la ligne suivante » au début de chaque ligne pendant la lecture), ou forcer « Caler sur ma prise » / « Caler sur le tempo ». Pendant REC, ton texte s\'affiche en bas tout seul.' }
   ],
   vProjets: [
     { t: 'L\'onglet Projets', b: 'Pour préparer un single, un EP ou un album.' },
@@ -5891,10 +5954,10 @@ function updStep(){
   else if(!exported) st = 'export';
   else st = 'done';
   const want = { lead: L, refrain: R, back: B }[st];
-  if(want && !want.arm && !S.recording){ S.tracks.forEach(x => x.arm = false); want.arm = true; renderTracks(); }
+  if(want && !want.arm && !S.recording && !S.markers.some(m => m.auto)){ S.tracks.forEach(x => x.arm = false); want.arm = true; renderTracks(); }
   const idl = (st === 'arr' || st === 'export' || st === 'done') ? ideas() : [];
   const voc = vocalTracks().filter(t => t.buffer);
-  const key = [st, voc.map(t => t.id + ':' + t.vstyle + ':' + (isTuned(t) || t.atOn ? 1 : 0)).join(','), L?.buffer ? 1 : 0, R?.buffer ? 1 : 0, B?.buffer ? 1 : 0, S.playing, idl.map(i => i.id).join(','), M.preset, M.target, S.textStart].join('|');
+  const key = [st, voc.map(t => t.id + ':' + t.vstyle + ':' + (isTuned(t) || t.atOn ? 1 : 0)).join(','), L?.buffer ? 1 : 0, R?.buffer ? 1 : 0, B?.buffer ? 1 : 0, S.playing, idl.map(i => i.id).join(','), M.preset, M.target, S.textStart, recMode(), S.markers.some(m => m.auto)].join('|');
   if(key === stepKey) return; stepKey = key;
   const n = STEP_N[st] || 7;
   const dots = `<div class="stdots">${[1, 2, 3, 4, 5, 6, 7].map(i => `<i class="${i <= n ? 'on' : ''}"></i>`).join('')}</div>`;
@@ -5908,7 +5971,8 @@ function updStep(){
   else if(st === 'instru') h = head('Charge ton instru', 'Le beat sur lequel tu vas kicker (MP3 ou WAV, depuis ton téléphone).') + `<div class="stb"><button class="sbtn primary big" data-s="instru">📂 Choisir mon instru</button><button class="sbtn" data-s="noinstru">Je kicke sans instru</button></div>`;
   else if(st === 'text') h = head('Écris ton texte', 'Il défilera tout seul pendant que tu enregistres.') + `<div class="stb"><button class="sbtn primary big" data-s="write">✍️ Écrire mon texte</button><button class="sbtn" data-s="notext">Passer</button></div>`;
   else if(st === 'lead'){
-    h = take(L, 'Pose ta lead', 'Tes couplets, la voix principale. Un décompte part, et tu kickes. Tu peux t\'arrêter et reprendre où tu veux.', null);
+    h = take(L, 'Pose ta lead', S.markers.some(m => m.auto) ? 'Tes parties sont calées : pose tout d\'un coup, couplets et refrains. Je range chaque refrain tout seul sur la piste Refrain.' : 'Tes couplets, la voix principale. Un décompte part, et tu kickes. Tu peux t\'arrêter et reprendre où tu veux.', null);
+    if(S.markers.some(m => m.auto)) h += `<div class="arrt"><b>Comment tu enregistres ?</b><div class="arrs"><button class="sbtn" data-rm="onego" aria-pressed="${recMode() === 'onego'}">🎙️ Tout d'un coup</button><button class="sbtn" data-rm="parts" aria-pressed="${recMode() === 'parts'}">✂️ Partie par partie</button></div><p class="sttip">${recMode() === 'parts' ? 'Ça s\'arrête tout seul à la fin de chaque couplet ou refrain, et la bonne piste s\'arme pour la suite.' : 'Tu poses tout d\'une traite : à l\'arrêt, je range les couplets sur Lead et les refrains sur Refrain.'}</p></div>`;
     if(!L?.buffer) h += `<p class="sttip">💡 Astuce : pour avoir ton texte qui défile en rythme pendant que tu kickes, cale-le sur ton instru dans <button class="stlink" data-s="toprompt">Texte → Prompteur</button>.</p>`;
   }
   else if(st === 'refrain') h = take(R, 'Ton refrain', 'Sur sa propre piste : il pourra avoir son style à lui, plus large et plus fort. Place la lecture au début du refrain, puis enregistre.', 'Pas de refrain dans ce son');
@@ -5930,6 +5994,7 @@ function updStep(){
 }
 stepEl.addEventListener('click', async e => {
   const ib = e.target.closest('[data-idea]'); if(ib){ await ideaUse(ib.dataset.idea); stepKey = ''; updStep(); return; }
+  const rmb = e.target.closest('[data-rm]'); if(rmb){ store.set('recMode', rmb.dataset.rm); syncRecMode(); stepKey = ''; updStep(); return; }
   const sgb = e.target.closest('[data-sug]'); if(sgb){ const o = startSugs()[+sgb.dataset.sug]; if(o) pickSug(o); stepKey = ''; updStep(); return; }
   const av = e.target.closest('[data-avs]'); if(av){ const [id, k] = av.dataset.avs.split(':'); const t = trackById(id); if(t){ await applyVStyle(t, +k); ideaPlay(t); } stepKey = ''; updStep(); return; }
   const aa = e.target.closest('[data-aat]'); if(aa){ const t = trackById(aa.dataset.aat); if(t){ if(!(isTuned(t) || t.atOn)) t.at.speed = t.at.speed ?? AT_SP[0]; await toggleAT(t); ideaPlay(t); } stepKey = ''; updStep(); return; }
@@ -5957,6 +6022,9 @@ stepEl.addEventListener('click', async e => {
 });
 setInterval(updStep, 500);
 applyMode();
+function syncRecMode(){ document.querySelectorAll('#recModeSeg [data-rm2]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.rm2 === recMode()))); }
+$('#recModeSeg').addEventListener('click', e => { const b = e.target.closest('[data-rm2]'); if(!b) return; store.set('recMode', b.dataset.rm2); syncRecMode(); stepKey = ''; toast(b.dataset.rm2 === 'parts' ? '✂️ Partie par partie : ça s\'arrête à la fin de chaque couplet ou refrain.' : '🎙️ Tout d\'un coup : je range couplets et refrains sur leur piste.'); });
+syncRecMode();
 setTimeout(showBeta, 300);
 { const b = $('#tNoTrack'); b.setAttribute('aria-pressed', String(store.get('noTrack', false)));
   if(store.get('noTrack', false)) b.hidden = false;
@@ -6034,6 +6102,8 @@ showSessTitle();
 /* ---------- Vues & interface ---------- */
 document.querySelector('.nav').addEventListener('click', e => {
   const b = e.target.closest('button'); if(!b) return;
+  const was = document.querySelector('.nav [aria-selected=true]')?.dataset.view;
+  if(was === 'vTexte' && b.dataset.view !== 'vTexte' && !S.recording){ if(S.playing) pause(); if(tap){ tap = null; tapShow(); } S.pos = 0; }
   document.querySelectorAll('.nav button').forEach(x => x.setAttribute('aria-selected', x === b));
   document.querySelectorAll('.view').forEach(v => v.hidden = v.id !== b.dataset.view);
   if(b.dataset.view === 'vPistes') renderTracks();
