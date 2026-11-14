@@ -479,7 +479,7 @@ body.ed-open .wmark{z-index:41}
 .tssug .sbtn{height:38px;font-size:13px}
 .ipan{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}
 .iphead{display:flex;align-items:baseline;gap:8px}.iphead b{font:800 15px var(--display)}.iphead .note{margin:0}
-#iCv{width:100%;height:120px;display:block;border:1px solid var(--line);border-radius:10px;background:var(--bg);touch-action:none;cursor:pointer}
+#iCv{width:100%;height:190px;display:block;border:1px solid var(--line);border-radius:10px;background:var(--bg);touch-action:none;cursor:pointer}
 .ilegend{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--muted)}.ilegend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
 .ipan .sbtn{height:40px;font-size:13px}
 .chkcard{position:fixed;left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));bottom:max(10px,env(safe-area-inset-bottom,0px));z-index:35;max-width:520px;margin:0 auto;background:var(--panel);border:2px solid var(--accent);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px;box-shadow:0 18px 50px rgba(0,0,0,.6)}
@@ -601,7 +601,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 1.5.1 · Bêta</span></div>
+      <span class="grp" id="ver">Version 1.5.2 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -839,7 +839,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
       <canvas id="iCv" aria-label="Aperçu de l'instru : touche pour te placer"></canvas>
       <div class="ilegend" id="iLeg"></div>
       <div class="tsrow"><button class="sbtn primary" id="iPlay">▶ Écouter</button><button class="sbtn" id="iHere">📍 Le texte démarre ici</button><button class="sbtn" id="iCheck">✅ On vérifie ensemble</button></div>
-      <p class="note">Touche l'onde pour te placer, puis ▶. Les couleurs, c'est ce que j'entends : intro, couplets, refrains (probables : vérifie à l'oreille). « On vérifie ensemble » : je te fais écouter chaque partie, tu réponds oui ou non, et tes sections [Couplet 1], [Refrain]… se calent dessus.</p>
+      <p class="note">En haut, tout ton son : touche-le pour y aller. En dessous, le zoom qui suit la lecture : touche pour te placer, puis ▶. Les couleurs, c'est ce que j'entends : intro, couplets, refrains (probables : vérifie à l'oreille). « On vérifie ensemble » : je te fais écouter chaque partie, tu réponds oui ou non, et tes sections [Couplet 1], [Refrain]… se calent dessus.</p>
     </div>
     <div class="tstart"><span>Les paroles commencent à <b id="tsVal">0:00</b></span><div class="tsrow tssug" id="tsSug" hidden></div><button class="sbtn" id="tsHere">📍 Ici (tête de lecture)</button><button class="sbtn" id="tsMinus" aria-label="1 mesure plus tôt">− 1 mesure</button><button class="sbtn" id="tsPlus" aria-label="1 mesure plus tard">+ 1 mesure</button>
       <details class="tsrow tsman"><summary>Vitesse du texte : <b id="tsMode">auto</b></summary>
@@ -905,8 +905,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 96; // numéro interne (jamais affiché)
-const APP_PUB = '1.5.1';
+const APP_VER = 97; // numéro interne (jamais affiché)
+const APP_PUB = '1.5.2';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -2078,34 +2078,62 @@ function drawInstru(){
   const cv = $('#iCv'), W = cv.clientWidth, H = cv.clientHeight, dpr = Math.min(2, devicePixelRatio || 1); if(!W) return;
   if(cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)){ cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
   const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
-  const buf = ins.buffer, dur = ins.offset + buf.duration, X = t => t / dur * W;
-  const secs = instruSections(), sugs = startSugs();
-  /* parties */
-  /* anciens emplacements des repères déplacés : en pointillés, avec une flèche vers le nouveau */
-  secs.forEach(sc => { if(sc.was != null && Math.abs(sc.was - sc.t) > 0.05){ const xa = X(sc.was), xb = X(sc.t); g.save(); g.setLineDash([3, 3]); g.strokeStyle = '#ff7a59'; g.lineWidth = 2; g.beginPath(); g.moveTo(xa, 16); g.lineTo(xa, H); g.stroke(); g.setLineDash([]); g.beginPath(); g.moveTo(xa, 24); g.lineTo(xb, 24); g.stroke(); g.fillStyle = '#ff7a59'; g.beginPath(); const d = xb > xa ? 1 : -1; g.moveTo(xb, 24); g.lineTo(xb - 6 * d, 20); g.lineTo(xb - 6 * d, 28); g.fill(); g.restore(); } });
-  secs.forEach((sc, i) => { if(chk && chk.i === i){ g.fillStyle = 'rgba(255,255,255,.10)'; g.fillRect(X(sc.t), 0, X(sc.end) - X(sc.t), H); g.strokeStyle = '#ffffff'; g.lineWidth = 2; g.strokeRect(X(sc.t) + 1, 1, X(sc.end) - X(sc.t) - 2, H - 2); } });
-  secs.forEach(sc => { g.fillStyle = SEC_COL[sc.kind] + '33'; g.fillRect(X(sc.t), 0, Math.max(1, X(sc.end) - X(sc.t)), H); g.fillStyle = SEC_COL[sc.kind]; g.fillRect(X(sc.t), 0, 2, H);
-    g.font = '700 11px system-ui, sans-serif'; const wsec = X(sc.end) - X(sc.t); let lbl = (sc.ok ? '🔒 ' : '') + sc.name; if(wsec < g.measureText(lbl).width + 8) lbl = sc.name; if(wsec < g.measureText(lbl).width + 8) lbl = sc.name.charAt(0) + (sc.name.match(/\d+/) || [''])[0]; if(wsec > g.measureText(lbl).width + 6) g.fillText(lbl, X(sc.t) + 4, 13); });
-  /* onde */
-  let pk = iPeaks.get(buf); const N = 600;
-  if(!pk){ pk = new Float32Array(N); const d = buf.getChannelData(0), per = Math.max(1, Math.floor(d.length / N)); for(let i = 0; i < N; i++){ let m = 0; for(let j = i * per, e = Math.min(d.length, j + per); j < e; j += 16){ const v = Math.abs(d[j]); if(v > m) m = v; } pk[i] = m; } iPeaks.set(buf, pk); }
-  g.fillStyle = 'rgba(200,206,220,.75)'; const x0 = X(ins.offset), ww = X(ins.offset + buf.duration) - x0;
-  for(let i = 0; i < N; i++){ const h = Math.max(1, pk[i] * (H - 34)); g.fillRect(x0 + i / N * ww, 18 + (H - 18 - h) / 2, Math.max(1, ww / N), h); }
-  /* propositions de départ */
-  sugs.forEach(o => { const x = X(o.t); g.fillStyle = '#e7eaf0'; g.beginPath(); g.moveTo(x - 5, H); g.lineTo(x + 5, H); g.lineTo(x, H - 8); g.fill(); if(o.best){ g.font = '11px system-ui'; g.fillText('⭐', x - 6, H - 10); } });
-  /* début du texte */
-  const xt = X(S.textStart || 0); g.fillStyle = '#2ee6a6'; g.fillRect(xt - 1, 0, 3, H); g.font = '700 11px system-ui, sans-serif'; g.fillText('Texte', Math.min(W - 34, xt + 4), H - 4);
-  /* tête de lecture */
-  const xp = X(S.playing ? now() : S.pos); g.fillStyle = S.playing ? '#ff4b4b' : '#ffffff'; g.fillRect(xp - 1, 0, 2, H);
-  $('#iInfo').textContent = S.bpm + ' BPM · ' + fmt(dur, true) + (S.playing ? ' · ' + fmt(now(), true) : '');
+  const buf = ins.buffer, dur = ins.offset + buf.duration, bar = 4 * 60 / S.bpm;
+  const secs = instruSections(), sugs = startSugs(), p = S.playing ? now() : S.pos;
+  const cur = chk && secs[chk.i];
+  /* fenêtre zoomée : 8 mesures autour de la partie vérifiée, sinon autour de la lecture (elle suit) */
+  let v0, v1;
+  if(cur){ v0 = Math.max(0, cur.t - 2 * bar); v1 = Math.min(dur, cur.t + 6 * bar); }
+  else { const span = Math.min(dur, 8 * bar); iView = iView ?? 0; if(p < iView + span * 0.1 || p > iView + span * 0.85) iView = clamp(p - span * 0.25, 0, Math.max(0, dur - span)); v0 = iView; v1 = v0 + span; }
+  const OV = 22, TOP = OV + 6, X = t => (t - v0) / (v1 - v0) * W, XO = t => t / dur * W;
+  /* 1. la bande du haut : tout le morceau, la zone zoomée encadrée (touche-la pour aller ailleurs) */
+  secs.forEach(sc => { g.fillStyle = SEC_COL[sc.kind] + '88'; g.fillRect(XO(sc.t), 4, Math.max(1, XO(sc.end) - XO(sc.t) - 1), OV - 8); });
+  g.strokeStyle = '#ffffff'; g.lineWidth = 2; g.strokeRect(XO(v0) + 1, 2, Math.max(4, XO(v1) - XO(v0) - 2), OV - 4);
+  g.fillStyle = '#ff4b4b'; g.fillRect(XO(p) - 1, 0, 2, OV);
+  /* 2. la zone zoomée */
+  g.save(); g.beginPath(); g.rect(0, TOP, W, H - TOP); g.clip();
+  secs.forEach(sc => { if(sc.end < v0 || sc.t > v1) return; g.fillStyle = SEC_COL[sc.kind] + (cur && sc === cur ? '55' : '2a'); g.fillRect(X(sc.t), TOP, X(sc.end) - X(sc.t), H - TOP); });
+  /* mesures numérotées */
+  const g0 = secs.length ? secs[0].t % bar : 0;
+  for(let t = Math.ceil((v0 - g0) / bar) * bar + g0; t < v1; t += bar){ const x = X(t); g.fillStyle = 'rgba(160,170,190,.25)'; g.fillRect(x, TOP, 1, H - TOP); }
+  /* onde détaillée */
+  const d = buf.getChannelData(0), sr = buf.sampleRate, mid = TOP + 18 + (H - TOP - 30) / 2, amp = (H - TOP - 34) / 2;
+  g.fillStyle = 'rgba(210,216,230,.8)';
+  for(let x = 0; x < W; x += 2){ const t0 = v0 + x / W * (v1 - v0) - ins.offset, t1 = v0 + (x + 2) / W * (v1 - v0) - ins.offset; let m = 0; for(let i = Math.max(0, Math.floor(t0 * sr)), e = Math.min(d.length, Math.floor(t1 * sr)); i < e; i += 24){ const v = Math.abs(d[i]); if(v > m) m = v; } const h = Math.max(1, m * amp * 2); g.fillRect(x, mid - h / 2, 2, h); }
+  /* débuts de parties : gros traits et noms lisibles */
+  g.font = '800 13px system-ui, sans-serif';
+  secs.forEach((sc, i) => { if(sc.t < v0 - 0.01 || sc.t > v1) return; const x = X(sc.t), isCur = cur && sc === cur;
+    g.fillStyle = isCur ? '#ffffff' : SEC_COL[sc.kind]; g.fillRect(x - (isCur ? 2 : 1), TOP, isCur ? 4 : 2, H - TOP);
+    const lbl = (sc.ok ? '🔒 ' : '') + (isCur ? sc.name + ' ?' : sc.name); g.fillStyle = 'rgba(11,13,18,.75)'; const tw = g.measureText(lbl).width; g.fillRect(x + 3, TOP + 2, tw + 10, 20); g.fillStyle = isCur ? '#ffffff' : SEC_COL[sc.kind]; g.fillText(lbl, x + 8, TOP + 17); });
+  /* la partie d'avant, rappelée à gauche */
+  const before = secs.filter(sc => sc.t < v0 + 0.01).pop(); if(before){ g.fillStyle = SEC_COL[before.kind]; g.font = '700 12px system-ui, sans-serif'; g.fillText('◀ ' + before.name, 6, H - 8); }
+  /* repères déplacés : ancien emplacement en pointillés orange + flèche */
+  secs.forEach(sc => { if(sc.was == null || Math.abs(sc.was - sc.t) < 0.05) return; const xa = X(sc.was), xb = X(sc.t); g.save(); g.setLineDash([4, 4]); g.strokeStyle = '#ff7a59'; g.lineWidth = 2; g.beginPath(); g.moveTo(xa, TOP); g.lineTo(xa, H); g.stroke(); g.setLineDash([]); g.beginPath(); g.moveTo(xa, TOP + 34); g.lineTo(xb, TOP + 34); g.stroke(); const dd = xb > xa ? 1 : -1; g.fillStyle = '#ff7a59'; g.beginPath(); g.moveTo(xb, TOP + 34); g.lineTo(xb - 7 * dd, TOP + 29); g.lineTo(xb - 7 * dd, TOP + 39); g.fill(); g.font = '700 11px system-ui'; g.fillText('avant ' + fmt(sc.was, true), Math.min(W - 80, xa + 4), H - 22); g.restore(); });
+  /* propositions et début du texte */
+  sugs.forEach(o => { if(o.t < v0 || o.t > v1) return; const x = X(o.t); g.fillStyle = '#e7eaf0'; g.beginPath(); g.moveTo(x - 6, H); g.lineTo(x + 6, H); g.lineTo(x, H - 9); g.fill(); });
+  if((S.textStart || 0) >= v0 && (S.textStart || 0) <= v1){ const xt = X(S.textStart || 0); g.fillStyle = '#2ee6a6'; g.fillRect(xt - 1, TOP, 3, H - TOP); g.font = '700 11px system-ui'; g.fillText('Texte', Math.min(W - 36, xt + 5), H - 8); }
+  /* tête de lecture : bien visible, avec l'heure */
+  const xp = X(p); if(xp >= 0 && xp <= W){ g.fillStyle = S.playing ? '#ff4b4b' : '#ffffff'; g.fillRect(xp - 2, TOP, 4, H - TOP); g.beginPath(); g.moveTo(xp - 7, TOP); g.lineTo(xp + 7, TOP); g.lineTo(xp, TOP + 9); g.fill(); }
+  /* compte à rebours avant la partie vérifiée */
+  if(cur && S.playing){ const left = cur.t - p, beat = 60 / S.bpm;
+    let txt = '', col = '#ffffff';
+    if(left > 0 && left <= 4 * beat + 0.05) txt = cur.name + ' dans ' + Math.ceil(left / beat - 0.001) + '…';
+    else if(left <= 0 && left > -2 * beat){ txt = '▶ ' + cur.name + ' : c\'est ici'; col = '#f2b544'; }
+    if(txt){ g.font = '800 18px system-ui, sans-serif'; const tw = g.measureText(txt).width; g.fillStyle = 'rgba(11,13,18,.85)'; g.fillRect(W / 2 - tw / 2 - 10, mid - 16, tw + 20, 32); g.fillStyle = col; g.fillText(txt, W / 2 - tw / 2, mid + 6); } }
+  g.restore();
+  $('#iInfo').textContent = S.bpm + ' BPM · ' + fmt(p, true) + ' / ' + fmt(dur, true);
   $('#iPlay').textContent = S.playing ? '⏸ Pause' : '▶ Écouter';
   const kinds = [...new Set(secs.map(x => x.kind))];
-  const leg = kinds.map(k => `<span><i style="background:${SEC_COL[k]}"></i>${{ intro: 'Intro', couplet: 'Couplet', refrain: S.secs ? 'Refrain' : 'Refrain probable', pont: 'Pont', outro: 'Outro' }[k]}</span>`).join('') + '<span><i style="background:#2ee6a6"></i>Début du texte</span><span>▲ mes propositions</span>' + (secs.some(x => x.was != null && Math.abs(x.was - x.t) > 0.05) ? '<span style="color:#ff7a59">┆→ repère déplacé</span>' : '');
+  const leg = kinds.map(k => `<span><i style="background:${SEC_COL[k]}"></i>${{ intro: 'Intro', couplet: 'Couplet', refrain: S.secs ? 'Refrain' : 'Refrain probable', pont: 'Pont', outro: 'Outro' }[k]}</span>`).join('') + '<span><i style="background:#2ee6a6"></i>Début du texte</span>' + (secs.some(x => x.was != null && Math.abs(x.was - x.t) > 0.05) ? '<span style="color:#ff7a59">┆→ repère déplacé</span>' : '');
   if($('#iLeg').innerHTML !== leg) $('#iLeg').innerHTML = leg;
+  pan.classList.toggle('checking', !!cur);
 }
+let iView = null;
 (function iLoop(){ try{ if(!$('#viewP').hidden && !document.hidden) drawInstru(); }catch(e){} requestAnimationFrame(iLoop); })();
 { const cv = $('#iCv'); let drag = false;
-  const at = e => { const ins = trRole('instru'); if(!ins?.buffer) return 0; const r = cv.getBoundingClientRect(); return clamp((e.clientX - r.left) / r.width, 0, 1) * (ins.offset + ins.buffer.duration); };
+  const at = e => { const ins = trRole('instru'); if(!ins?.buffer) return 0; const r = cv.getBoundingClientRect(), dur = ins.offset + ins.buffer.duration, fx = clamp((e.clientX - r.left) / r.width, 0, 1);
+    if(e.clientY - r.top < 26 || chk) { iView = null; return fx * dur; }
+    const bar = 4 * 60 / S.bpm, span = Math.min(dur, 8 * bar), v0 = iView ?? 0; return v0 + fx * span; };
   cv.addEventListener('pointerdown', e => { drag = true; cv.setPointerCapture(e.pointerId); seek(at(e)); });
   cv.addEventListener('pointermove', e => { if(drag) seek(at(e)); });
   cv.addEventListener('pointerup', () => { drag = false; }); cv.addEventListener('pointercancel', () => { drag = false; });
@@ -2136,7 +2164,7 @@ function chkStart(){
 }
 /* l'aperçu de l'instru juste sous la barre du haut, visible au-dessus de la carte de questions */
 function chkScroll(){ const pan = $('#iPan'), tr = document.querySelector('.transport'); if(!pan) return; const y = pan.getBoundingClientRect().top + scrollY - (tr ? tr.getBoundingClientRect().height : 0) - 8; window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' }); }
-function chkPlay(){ const x = S.secs[chk.i]; if(!x) return; if(S.playing) pause(); S.pos = Math.max(0, x.t - 4 * 60 / S.bpm * 0.5); if(!mic) audioSessionPlay(); unlockSpeaker(); wake().then(() => play()); }
+function chkPlay(){ const x = S.secs[chk.i]; if(!x) return; if(S.playing) pause(); S.pos = Math.max(0, x.t - 4 * 60 / S.bpm * 1.25); if(!mic) audioSessionPlay(); unlockSpeaker(); wake().then(() => play()); }
 function chkShow(){
   let el = $('#chkCard');
   if(!chk){ if(el) el.remove(); return; }
@@ -2144,7 +2172,7 @@ function chkShow(){
   const x = S.secs[chk.i] || S.secs[S.secs.length - 1], n = S.secs.length;
   const head = `<div class="chkn">Partie ${chk.i + 1} sur ${n} · ${fmt(x.t, true)}<button class="chkx" data-c="close" aria-label="Arrêter la vérification">✕</button></div>`;
   const moved = x.was != null && Math.abs(x.was - x.t) > 0.05 ? `<p class="chkmv">↔ Repère déplacé : ${fmt(x.was, true)} → <b>${fmt(x.t, true)}</b></p>` : '';
-  if(chk.mode === 'ask') el.innerHTML = head + `<h3>Là, c'est bien ${KIND_Q[x.kind]} ?</h3><p>Écoute : ça démarre au trait blanc.</p>${moved}<div class="chkb"><button class="sbtn primary" data-c="yes">✅ Oui</button><button class="sbtn" data-c="no">❌ Non</button></div><button class="chklink" data-c="replay">🔁 Réécouter</button>`;
+  if(chk.mode === 'ask') el.innerHTML = head + `<h3>Là, c'est bien ${KIND_Q[x.kind]} ?</h3><p>Écoute le compte à rebours sur l'instru : ça démarre au gros trait blanc.</p>${moved}<div class="chkb"><button class="sbtn primary" data-c="yes">✅ Oui</button><button class="sbtn" data-c="no">❌ Non</button></div><button class="chklink" data-c="replay">🔁 Réécouter</button>`;
   else if(chk.mode === 'what') el.innerHTML = head + `<h3>C'est quoi alors ?</h3><div class="chkb wrap">${SEC_KINDS.filter(([k]) => k !== x.kind).map(([k, l]) => `<button class="sbtn" data-k="${k}">${l}</button>`).join('')}<button class="sbtn" data-c="when">C'est ${KIND_Q[x.kind]}, mais ça ne démarre pas là</button></div>`;
   else if(chk.mode === 'move') el.innerHTML = head + `<h3>${x.name} démarre…</h3><p>Je décale d'une mesure et je te fais réécouter.</p>${moved}<div class="chkb"><button class="sbtn" data-c="earlier">◀ Plus tôt</button><button class="sbtn" data-c="later">Plus tard ▶</button></div><div class="chkb"><button class="sbtn primary" data-c="yes">✅ C'est bon là</button></div>`;
   else if(chk.mode === 'end') el.innerHTML = `<div class="chkn">C'est vérifié</div><h3>Nickel 👌</h3><p>${S.secs.filter(y => y.was != null && Math.abs(y.was - y.t) > 0.05).length ? 'Les repères déplacés sont en orange sur ton instru. ' : ''}Tes sections [Couplet 1], [Refrain]… démarrent maintenant pile sur chaque partie.</p><div class="chkb"><button class="sbtn primary" data-c="close">Fermer</button></div>`;
