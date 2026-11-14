@@ -615,7 +615,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 1.7.12 · Bêta</span></div>
+      <span class="grp" id="ver">Version 1.7.13 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -919,8 +919,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 117; // numéro interne (jamais affiché)
-const APP_PUB = '1.7.12';
+const APP_VER = 118; // numéro interne (jamais affiché)
+const APP_PUB = '1.7.13';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -4066,7 +4066,8 @@ function partAt(pos){
   const secs = userSecs(); if(!secs.length) return null;
   const L = trRole('lead'), R = trRole('refrain'); if(!L || !R) return null;
   const armed = S.tracks.find(x => x.arm), ar = roleOf(armed);
-  const want = ar === 'refrain' ? 'refrain' : (ar === 'lead' || ar === 'back') ? 'couplet' : null;
+  if(armed && ar !== 'lead' && ar !== 'refrain') return null;
+  const want = ar === 'refrain' ? 'refrain' : ar === 'lead' ? 'couplet' : null;
   const ok = x => !want || x.kind === want;
   let i = secs.findIndex(x => ok(x) && pos >= x.t - 0.05 && pos < x.end - 0.5);
   if(i < 0) i = secs.findIndex(x => ok(x) && x.t >= pos - 0.05);
@@ -4079,7 +4080,7 @@ setInterval(() => { if(S.recording && recInfo && recInfo.autoEnd && now() >= rec
 /* Tu gères toi-même : quand tu armes une piste, la lecture et le prompteur se placent sur la partie qui va avec */
 function armJump(t){
   if(guided() || S.playing) return;
-  const r = roleOf(t); if(r !== 'lead' && r !== 'refrain' && r !== 'back') return;
+  const r = roleOf(t); if(r !== 'lead' && r !== 'refrain') return; /* Back et Ambiance : on enregistre là où est la lecture */
   const kind = r === 'refrain' ? 'refrain' : 'couplet';
   const list = userSecs().filter(x => x.kind === kind).sort((x, y) => x.t - y.t);
   /* déjà dans une partie qui va avec : on ne bouge pas. Sinon : la première (Couplet 1 pour Couplets, le 1er refrain pour Refrain) */
