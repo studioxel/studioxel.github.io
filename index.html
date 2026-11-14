@@ -589,6 +589,7 @@ body.ed-open .wmark{z-index:41}
       <button class="toggle" id="tCount" aria-pressed="true" title="1 mesure de décompte avant la prise">Décompte</button>
       <button class="toggle" id="tMetro" aria-pressed="false">Métronome</button></div>
       <div class="bkrow"><button class="toggle" id="tDeBleed" aria-pressed="true">🧽 Sans écouteurs : le téléphone retire l'instru du micro</button></div>
+      <div class="bkrow"><button class="sbtn" id="bCal">🎯 Caler le timing de mes écouteurs</button></div>
       <div class="bkrow"><span class="grp">Prises</span><div class="seg" id="recModeSeg" role="group" aria-label="Façon d'enregistrer"><button data-rm2="onego">🎙️ Tout d'un coup</button><button data-rm2="parts">✂️ Partie par partie</button></div></div>
       <div class="bkrow"><span class="grp">Pré-roulement</span><div class="seg" id="preSeg" role="group" aria-label="Pré-roulement"><button data-pr="0">Aucun</button><button data-pr="1">1 mesure</button><button data-pr="2">2 mesures</button></div></div>
       <p class="note">Le tempo est détecté tout seul quand tu importes ton instru. Prises (une fois tes parties calées dans Texte) : tout d'un coup, et je range couplets et refrains sur leur piste ; ou partie par partie, et ça s'arrête à la fin de chaque couplet ou refrain avec la bonne piste armée pour la suite. Le pré-roulement : quand tu refais un passage sur une piste déjà enregistrée, tu réentends ta prise d'avant juste avant, puis l'enregistrement démarre pile au bon endroit (ça remplace le décompte).</p>
@@ -618,7 +619,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 1.8.8 · Bêta</span></div>
+      <span class="grp" id="ver">Version 1.9 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -1062,8 +1063,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 127; // numéro interne (jamais affiché)
-const APP_PUB = '1.8.8';
+const APP_VER = 129; // numéro interne (jamais affiché)
+const APP_PUB = '1.9';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -1881,6 +1882,83 @@ function detectClickLatency(raw, info){
   res.sort((a, b) => a - b);
   if(res[3] - res[0] > 25) return null;
   return Math.round((res[1] + res[2]) / 2);
+}
+
+/* ---------- Calage des écouteurs : l'écouteur collé au micro, on joue des clics et on mesure le vrai retard ---------- */
+let calBusy = false;
+function calClick(when){
+  const n = Math.round(ctx.sampleRate * 0.004), b = ctx.createBuffer(1, n, ctx.sampleRate), d = b.getChannelData(0);
+  for(let i = 0; i < n; i++) d[i] = (i % 2 ? -1 : 1) * 0.9 * (1 - i / n);
+  const src = ctx.createBufferSource(); src.buffer = b; src.connect(ctx.destination); src.start(when);
+}
+function calDetect(raw, recStart, times){
+  const sr = raw.sampleRate, d = raw.getChannelData(0), w = Math.round(0.5 * sr), sm = Math.max(1, Math.round(sr * 0.0005)), res = [];
+  for(const t of times){
+    const e = Math.round((t - recStart) * sr); if(e < 2 || e + w >= d.length) continue;
+    const env = new Float32Array(w); let acc = 0, mx = 0, sum = 0;
+    for(let k = 0; k < w; k++){ const v = Math.abs(d[e + k] - d[e + k - 1]); acc += v - (k >= sm ? Math.abs(d[e + k - sm] - d[e + k - sm - 1]) : 0); env[k] = acc; if(acc > mx) mx = acc; sum += acc; }
+    if(mx < (sum / w) * 8) continue;
+    let k = 0; while(k < w && env[k] < mx * 0.35) k++;
+    res.push(k / sr * 1000);
+  }
+  if(res.length < 5) return null;
+  res.sort((a, b) => a - b);
+  const mid = res.slice(1, res.length - 1), med = mid[Math.floor(mid.length / 2)];
+  const ok = mid.filter(v => Math.abs(v - med) < 12);
+  if(ok.length < 4) return null;
+  return Math.round(ok.reduce((a, v) => a + v, 0) / ok.length);
+}
+async function calibrateLat(){
+  if(calBusy || S.recording) return; calBusy = true; S.calib = true;
+  if(S.playing) pause();
+  ensureCtx(); await wake();
+  const route = routeKey();
+  try{
+    if(mic && micEC) releaseMic(true);
+    await getMic();
+    if(!window.MediaRecorder) throw new Error('rec');
+    setBusy(true, '🎯 Calage en cours… garde l\'écouteur collé au micro.');
+    const chunks = [], r = new MediaRecorder(mic);
+    r.ondataavailable = e => { if(e.data.size) chunks.push(e.data); };
+    const started = new Promise(res => r.onstart = () => res(ctx.currentTime)), stopped = new Promise(res => r.onstop = res);
+    r.start(); const recStart = await started;
+    const b0 = ctx.currentTime + 0.5, times = []; for(let i = 0; i < 8; i++){ times.push(b0 + i * 0.6); calClick(b0 + i * 0.6); }
+    await new Promise(res => setTimeout(res, (0.5 + 8 * 0.6 + 0.7) * 1000));
+    r.stop(); await stopped; releaseMic();
+    const raw = await ctx.decodeAudioData(await new Blob(chunks, { type: r.mimeType }).arrayBuffer());
+    const ms = calDetect(raw, recStart, times);
+    setBusy(false);
+    if(ms == null || ms < 5 || ms > 500){
+      track('calage-ecouteurs-rate');
+      toast('🎯 Je n\'ai pas bien entendu les clics. Colle l\'écouteur contre le micro (celui du fil s\'il y en a un, sinon en bas du téléphone), monte le volume et réessaie dans Réglages.');
+    } else {
+      S.latMap[route] = ms; store.set('latMap', S.latMap); store.set('latCal:' + route, ms); showLat();
+      track('calage-ecouteurs-ok');
+      toast('🎯 Calé : ' + ms + ' ms de retard mesuré sur tes écouteurs. Tes prises tombent maintenant pile dans les temps.');
+    }
+  }catch(e){ setBusy(false); toast(e && e.name === 'NotAllowedError' ? 'Autorise le micro pour faire le calage.' : 'Calage impossible ici, réessaie dans Réglages.'); }
+  calBusy = false; S.calib = false;
+}
+/* écouteurs filaires détectés et jamais calés : on propose une fois le calage (3 secondes) */
+let calAsked = false;
+function offerCal(){
+  if(calAsked || calBusy || S.recording || routeKey() !== 'wired' || store.get('latCal:wired', null) != null || store.get('calNo', 0) >= 2) return;
+  if(document.querySelector('.welcome,.tour,.beta')) { setTimeout(offerCal, 4000); return; }
+  calAsked = true;
+  const w = document.createElement('div');
+  w.className = 'welcome'; w.setAttribute('role', 'dialog'); w.setAttribute('aria-label', 'Calage des écouteurs');
+  w.innerHTML = `<div class="wpanel">
+    <h2>🎧 On cale tes écouteurs ?</h2>
+    <p class="note">Pour que ta voix tombe pile dans les temps. Colle un écouteur contre le micro (celui du fil s'il y en a un, sinon en bas du téléphone), puis touche Go : 3 secondes de petits clics et c'est réglé pour toujours.</p>
+    <button class="wbig" data-c="go">🎯 Go</button>
+    <button class="sbtn" data-c="no">Plus tard</button>
+  </div>`;
+  document.body.appendChild(w);
+  w.addEventListener('click', e => {
+    const b = e.target.closest('[data-c]'); if(!b) return;
+    w.remove();
+    if(b.dataset.c === 'go') calibrateLat(); else store.set('calNo', store.get('calNo', 0) + 1);
+  });
 }
 
 /* ---------- Annuler (retour en arrière) ---------- */
@@ -5393,7 +5471,7 @@ async function detectHeadset(silent){
     if(known){
       const r = classifyRoute(labels), before = S.routeInfo?.kind;
       S.routeInfo = r; S.headset = r.kind === 'ecouteurs'; S.route = r.kind;
-      applyOutMode(); showRoute();
+      applyOutMode(); showRoute(); setTimeout(offerCal, 1200);
       autoMon(r.kind, before);
       if(!silent && before && before !== r.kind && S.outMode === 'auto')
         toast(r.kind === 'ecouteurs' ? '🎧 ' + (r.name || 'Écouteurs') + ' détectés : mode casque.' : r.kind === 'bt' ? '🚗 ' + (r.name || 'Bluetooth') + ' détecté : son sur la voiture ou l\'enceinte.' : '📱 Plus rien de branché : haut-parleur du téléphone.');
@@ -6323,6 +6401,7 @@ function updStep(){
   const playB = `<button class="sbtn" data-s="play">${S.playing ? '⏸ Pause' : '▶ Écouter'}</button>`;
   const take = (t, label, d, skip) => t?.buffer
     ? head(label + ' ✓', 'Écoute, et refais-la si elle ne te plaît pas.') + `<div class="stb"><button class="sbtn primary big" data-s="ok">C'est bon, suite →</button>${playB}<button class="sbtn" data-s="rec">🎤 Refaire</button></div>`
+      + `<div class="arrt"><b>⏱️ Pas dans les temps ?</b><div class="arrs"><button class="sbtn" data-s="early">⏪ Ma voix est en retard</button><button class="sbtn" data-s="late">Ma voix est en avance ⏩</button></div><p class="sttip">Touche jusqu'à ce que ce soit calé. Je retiens le réglage pour tes prochaines prises.</p></div>`
     : head(label, d) + `<div class="stb"><button class="sbtn primary big" data-s="rec">● Enregistrer ${esc(t ? t.name : '')}</button>${skip ? `<button class="sbtn" data-s="skip">${skip}</button>` : ''}</div>`;
   let h = '';
   const rawTip = '<p class="sttip">🎙️ Pendant que tu poses, ta voix reste brute : les effets arrivent à l\'habillage, une fois tout enregistré.</p>';
@@ -6369,6 +6448,19 @@ stepEl.addEventListener('click', async e => {
   else if(a === 'notext') flowSet('text', true);
   else if(a === 'rec' || a === 'stop'){ if(a === 'rec' && curStep && cur[curStep]) armTrack(cur[curStep]); record(); }
   else if(a === 'ok' || a === 'skip'){ if(curStep) flowSet(curStep, true); if(S.playing) pause(); }
+  else if(a === 'early' || a === 'late'){
+    const t = curStep && cur[curStep]; if(!t?.buffer) return;
+    const dt = a === 'early' ? -0.02 : 0.02, r = routeKey();
+    pushUndo('le calage');
+    if(t.offset + dt < 0){ const cut = Math.round(-(t.offset + dt) * t.buffer.sampleRate); setTrackBuf(t, bufSlice(t.buffer, cut, t.buffer.length), 0); }
+    else { t.offset = t.offset + dt; if(t.takes[t.take]) t.takes[t.take].offset = t.offset; }
+    /* on apprend : voix en retard = le téléphone a plus de retard que prévu, on compense davantage la prochaine fois */
+    S.latMap[r] = clamp(latFor(r) - dt * 1000, 0, 600); store.set('latMap', S.latMap); showLat();
+    track('calage-' + a + '-' + r);
+    renderTracks(); scheduleSave();
+    if(S.playing) pause(); S.pos = Math.max(0, t.offset); $('#bPlay').click();
+    toast(a === 'early' ? '⏪ Voix avancée de 20 ms. Encore si besoin.' : '⏩ Voix reculée de 20 ms. Encore si besoin.');
+  }
   else if(a === 'arrok'){ flowSet('arr', true); if(S.playing) pause(); }
   else if(a === 'back2arr'){ flowSet('arr', false); }
   else if(a === 'level'){ pushUndo('le rééquilibrage'); await rebalanceAll(); toast('Niveaux recalés : voix devant, instru derrière.'); }
@@ -6388,6 +6480,7 @@ setInterval(() => { if(!document.hidden) updStep(); }, 500);
     try{ if(bus && bus.gc){ const ur = new Set(), ud = new Set(); S.tracks.forEach(t => { const x = t.chain.sends(); if(x.rev >= 0) ur.add(x.rev); if(x.dly >= 0) ud.add(x.dly); }); bus.gc(ur, ud); } }catch(e){}
   }, 400); }
 applyMode();
+$('#bCal').onclick = () => { if(!S.casque){ toast('🎧 Branche d\'abord tes écouteurs, puis colle un écouteur contre le micro et retouche ce bouton.'); return; } calibrateLat(); };
 { const b = $('#tDeBleed'); store.set('deBleed', false); const up = () => b.setAttribute('aria-pressed', String(store.get('spkClean', true))); up();
   b.onclick = () => { store.set('spkClean', !store.get('spkClean', true)); up(); toast(store.get('spkClean', true) ? '🧽 Sans écouteurs, le téléphone retire l\'instru du micro : ta voix sort plus propre. Pendant la prise, l\'instru peut sonner un peu comme au téléphone, c\'est normal.' : 'Micro brut sans écouteurs : l\'instru qui sort du haut-parleur s\'entendra dans ta prise.'); }; }
 function syncRecMode(){ document.querySelectorAll('#recModeSeg [data-rm2]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.rm2 === recMode()))); }
@@ -6701,7 +6794,7 @@ async function askMicEarly(){
 /* Le son de l'appli ne prend la main que pendant lecture, enregistrement ou retour voix.
    Le reste du temps (appli ouverte au repos, ou en arrière-plan) : ta musique d'ailleurs continue. */
 const firstTouch = () => {};
-const audioActive = () => !!(S.playing || S.recording || S.mon || S.reelRec || (typeof rsPlaying !== 'undefined' && rsPlaying) || (rec && rec.state === 'recording'));
+const audioActive = () => !!(S.calib || S.playing || S.recording || S.mon || S.reelRec || (typeof rsPlaying !== 'undefined' && rsPlaying) || (rec && rec.state === 'recording'));
 let audioLastActive = 0, audioIdle = false;
 function audioRest(){
   try{ if(silentEl && !silentEl.paused) silentEl.pause(); }catch(e){}
