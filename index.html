@@ -442,6 +442,7 @@ body:not(.simple) .stepbar{display:none}
 .power .pwb .sbtn{height:42px;padding:0 14px;font-weight:800}
 .arr{display:flex;flex-direction:column;gap:10px}
 .arrt{display:flex;flex-direction:column;gap:6px}
+.nudgebar{padding:12px 14px;border-bottom:1px solid var(--line);background:var(--panel)}.nudgebar .sttip{margin:0;font-size:13px;color:var(--muted)}
 .arrt b{font:800 14px var(--display)}
 .arrs{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
 .arrs .sbtn{flex:none;height:40px;padding:0 12px;font-weight:700}
@@ -619,7 +620,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 1.9 · Bêta</span></div>
+      <span class="grp" id="ver">Version 1.9.1 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -1063,8 +1064,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 129; // numéro interne (jamais affiché)
-const APP_PUB = '1.9';
+const APP_VER = 130; // numéro interne (jamais affiché)
+const APP_PUB = '1.9.1';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -1734,13 +1735,19 @@ async function record(){
   if(part){ t = part.dst; S.tracks.forEach(x => x.arm = false); t.arm = true; if(S.pos < part.sec.t - 0.05 || S.pos > part.sec.end - 0.5) S.pos = part.sec.t; renderTracks(); }
   if(!t){ toast('Arme d\'abord une piste avec son bouton R.'); return; }
   /* accompagné, lecture restée au tout début : on part sur la première partie (ou le début du texte), pas sur l'intro */
-  if(!part && guided() && S.pos < 0.05 && !S.loop.on){
+  /* et si la lecture est hors d'une partie qui va avec (au début, dans l'intro, entre deux parties) : on part sur la bonne partie */
+  if(!part && guided() && !S.loop.on){
     const r = roleOf(t);
     if(r === 'lead' || r === 'refrain'){
       const secs = userSecs().slice().sort((x, y) => x.t - y.t), want = r === 'refrain' ? 'refrain' : 'couplet';
-      const sec = recMode() === 'onego' ? secs[0] : (secs.find(x => x.kind === want) || secs[0]);
-      const to = sec ? sec.t : (S.textStart || 0);
-      if(to > 0.05) S.pos = to;
+      const inside = secs.some(x => S.pos >= x.t - 0.05 && S.pos < x.end - 0.5);
+      let to = null;
+      if(!secs.length){ if(S.pos < 0.05) to = S.textStart || 0; }
+      else if(!inside){
+        if(recMode() === 'onego'){ if(S.pos < secs[0].t) to = secs[0].t; }
+        else { const m = secs.filter(x => x.kind === want), nx = m.find(x => x.t >= S.pos - 0.05) || m[0] || secs[0]; to = nx.t; }
+      }
+      if(to != null && to > 0.05) S.pos = to;
     }
   }
   ensureCtx();
@@ -1814,6 +1821,7 @@ async function record(){
       else if(moved) toast(moved);
       else if(cleaned || meas != null) toast('Prise gardée sur « ' + tr.name + ' »' + (meas != null ? ' · calage mesuré : ' + meas + ' ms' : '') + (cleaned ? ' · instru captée par le micro retirée' : '') + '. Pour le meilleur son : des écouteurs.');
       else toast(recInfo.punch ? 'Phrase remplacée dans la boucle.' : punched ? 'Prise posée sur « ' + tr.name + ' », à la place de ce qui était dessous. Annuler pour revenir.' : 'Prise gardée sur « ' + tr.name + ' » · niveau calé sur l\'instru.');
+      try{ nudgeShow(tr); }catch(e){}
       saveNow();
     }catch(e){ toast('Impossible de lire la prise : ' + e.message); }
   };
@@ -4344,7 +4352,7 @@ function partAt(pos){
 setInterval(() => { if(S.recording && recInfo && recInfo.autoEnd && now() >= recInfo.autoEnd){ recInfo.autoEnd = null; record(); } }, 40);
 /* Tu gères toi-même : quand tu armes une piste, la lecture et le prompteur se placent sur la partie qui va avec */
 function armJump(t){
-  if(S.playing) return;
+  if(S.recording) return;
   const r = roleOf(t); if(r !== 'lead' && r !== 'refrain') return; /* Back et Ambiance : on enregistre là où est la lecture */
   const kind = r === 'refrain' ? 'refrain' : 'couplet';
   const list = userSecs().filter(x => x.kind === kind).sort((x, y) => x.t - y.t);
@@ -4362,6 +4370,7 @@ function armJump(t){
     }
   }
   if(!sec){ toast('« ' + t.name + ' » armée. Pour que je trouve tes ' + (kind === 'refrain' ? 'refrains' : 'couplets') + ' tout seul, cale tes parties dans Texte → Prompteur (« 👆 Caler mes parties en écoutant »).'); return; }
+  if(S.playing) pause();
   seek(sec.t);
   toast('« ' + t.name + ' » armée · lecture et prompteur sur ' + sec.name + ' (' + fmt(sec.t, true) + '). REC quand tu veux.');
 }
@@ -6304,6 +6313,28 @@ guideEl.addEventListener('click', e => { const b = e.target.closest('[data-g]');
 syncGuide();
 let stepArmed = null, stepKey = '', stepSkip = { sid: null, instru: false, text: false }, stepRetake = false;
 const vocalTracks = () => S.tracks.filter(t => t.preset !== 'instru');
+/* Pas dans les temps ? on décale la prise de 20 ms et on retient le réglage pour ce matériel */
+function nudgeTake(t, a){
+  if(!t?.buffer || S.recording) return;
+  const dt = a === 'early' ? -0.02 : 0.02, r = routeKey();
+  pushUndo('le calage');
+  if(t.offset + dt < 0){ const cut = Math.round(-(t.offset + dt) * t.buffer.sampleRate); setTrackBuf(t, bufSlice(t.buffer, cut, t.buffer.length), 0); }
+  else { t.offset = t.offset + dt; if(t.takes[t.take]) t.takes[t.take].offset = t.offset; }
+  /* voix en retard = le téléphone a plus de retard que prévu : on compense davantage la prochaine fois */
+  S.latMap[r] = clamp(latFor(r) - dt * 1000, 0, 600); store.set('latMap', S.latMap); showLat();
+  track('calage-' + a + '-' + r);
+  renderTracks(); scheduleSave();
+  if(S.playing) pause(); S.pos = Math.max(0, t.offset); $('#bPlay').click();
+  toast(a === 'early' ? '⏪ Voix avancée de 20 ms. Encore si besoin.' : '⏩ Voix reculée de 20 ms. Encore si besoin.');
+}
+let nudgeT = null;
+const nudgeEl = document.createElement('div'); nudgeEl.className = 'nudgebar'; nudgeEl.id = 'nudgeBar'; nudgeEl.hidden = true;
+nudgeEl.innerHTML = `<div class="arrt"><b>⏱️ Pas dans les temps ?</b><div class="arrs"><button class="sbtn" data-n="early">⏪ Ma voix est en retard</button><button class="sbtn" data-n="late">Ma voix est en avance ⏩</button><button class="sbtn" data-n="x">✕</button></div><p class="sttip">Touche jusqu'à ce que ce soit calé. Je retiens le réglage pour tes prochaines prises.</p></div>`;
+stepEl.after(nudgeEl);
+function nudgeShow(t){ nudgeT = t; nudgeUpd(); }
+function nudgeUpd(){ const show = !!(nudgeT && nudgeT.buffer && S.tracks.includes(nudgeT) && !S.recording && !(isSimple() && guided())); if(nudgeEl.hidden === show) nudgeEl.hidden = !show; }
+nudgeEl.addEventListener('click', e => { const b = e.target.closest('[data-n]'); if(!b) return; if(b.dataset.n === 'x'){ nudgeT = null; nudgeUpd(); return; } nudgeTake(nudgeT, b.dataset.n); });
+setInterval(() => { if(!document.hidden) nudgeUpd(); }, 500);
 function armTrack(t){ if(!t || S.recording) return; S.tracks.forEach(x => x.arm = false); t.arm = true; renderTracks(); try{ if(monSrc){ detachMon(); attachMon(); } }catch(e){} }
 /* ---------- Après la lead : on propose d'enrichir le son, sans rien bloquer ---------- */
 const trByPreset = pr => S.tracks.find(t => t.preset === pr);
@@ -6448,19 +6479,7 @@ stepEl.addEventListener('click', async e => {
   else if(a === 'notext') flowSet('text', true);
   else if(a === 'rec' || a === 'stop'){ if(a === 'rec' && curStep && cur[curStep]) armTrack(cur[curStep]); record(); }
   else if(a === 'ok' || a === 'skip'){ if(curStep) flowSet(curStep, true); if(S.playing) pause(); }
-  else if(a === 'early' || a === 'late'){
-    const t = curStep && cur[curStep]; if(!t?.buffer) return;
-    const dt = a === 'early' ? -0.02 : 0.02, r = routeKey();
-    pushUndo('le calage');
-    if(t.offset + dt < 0){ const cut = Math.round(-(t.offset + dt) * t.buffer.sampleRate); setTrackBuf(t, bufSlice(t.buffer, cut, t.buffer.length), 0); }
-    else { t.offset = t.offset + dt; if(t.takes[t.take]) t.takes[t.take].offset = t.offset; }
-    /* on apprend : voix en retard = le téléphone a plus de retard que prévu, on compense davantage la prochaine fois */
-    S.latMap[r] = clamp(latFor(r) - dt * 1000, 0, 600); store.set('latMap', S.latMap); showLat();
-    track('calage-' + a + '-' + r);
-    renderTracks(); scheduleSave();
-    if(S.playing) pause(); S.pos = Math.max(0, t.offset); $('#bPlay').click();
-    toast(a === 'early' ? '⏪ Voix avancée de 20 ms. Encore si besoin.' : '⏩ Voix reculée de 20 ms. Encore si besoin.');
-  }
+  else if(a === 'early' || a === 'late'){ nudgeTake(curStep && cur[curStep], a); }
   else if(a === 'arrok'){ flowSet('arr', true); if(S.playing) pause(); }
   else if(a === 'back2arr'){ flowSet('arr', false); }
   else if(a === 'level'){ pushUndo('le rééquilibrage'); await rebalanceAll(); toast('Niveaux recalés : voix devant, instru derrière.'); }
