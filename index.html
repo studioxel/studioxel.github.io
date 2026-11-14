@@ -614,7 +614,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 1.7.4 · Bêta</span></div>
+      <span class="grp" id="ver">Version 1.7.5 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -918,8 +918,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 109; // numéro interne (jamais affiché)
-const APP_PUB = '1.7.4';
+const APP_VER = 110; // numéro interne (jamais affiché)
+const APP_PUB = '1.7.5';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -4036,11 +4036,12 @@ setInterval(() => { if(S.recording && recInfo && recInfo.autoEnd && now() >= rec
 function armJump(t){
   if(guided() || S.playing) return;
   const r = roleOf(t); if(r !== 'lead' && r !== 'refrain' && r !== 'back') return;
-  const secs = (S.secs || []).filter(x => x.kind === 'couplet' || x.kind === 'refrain');
   const kind = r === 'refrain' ? 'refrain' : 'couplet';
-  const has = sc => t.buffer && sc.t >= t.offset - 0.05 && sc.t < t.offset + t.buffer.duration && (() => { const sr = t.buffer.sampleRate, d = t.buffer.getChannelData(0), a = Math.max(0, Math.round((sc.t - t.offset + 0.5) * sr)), b = Math.min(d.length, a + sr * 2); let m = 0; for(let i = a; i < b; i += 64) m = Math.max(m, Math.abs(d[i])); return m > 0.01; })();
-  const list = secs.filter(x => x.kind === kind), sec = list.find(x => !has(x)) || list[0];
-  const tt = sec ? sec.t : (r === 'refrain' ? null : (S.textStart || 0));
+  const list = (S.secs || []).filter(x => x.kind === kind).sort((x, y) => x.t - y.t);
+  /* déjà dans une partie qui va avec : on ne bouge pas. Sinon : la première (Couplet 1 pour Lead, le 1er refrain pour Refrain) */
+  if(list.some(x => S.pos >= x.t - 0.05 && S.pos < x.end - 0.5)) return;
+  const sec = list[0];
+  const tt = sec ? sec.t : (kind === 'couplet' ? (S.textStart || 0) : null);
   if(tt == null) return;
   seek(tt);
   toast('« ' + t.name + ' » armée · lecture et prompteur sur ' + (sec ? sec.name : 'le début du texte') + ' (' + fmt(tt, true) + '). REC quand tu veux.');
@@ -5911,7 +5912,7 @@ const guideEl = document.createElement('div'); guideEl.className = 'guidebar'; g
 guideEl.innerHTML = '<button data-g="auto">🧭 Je t\'accompagne</button><button data-g="manual">✋ Je gère moi-même</button>';
 $('#vPistes .cardhead').after(guideEl);
 function syncGuide(){ guideEl.querySelectorAll('[data-g]').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.g === 'auto') === guided()))); }
-guideEl.addEventListener('click', e => { const b = e.target.closest('[data-g]'); if(!b) return; store.set('guide', b.dataset.g); syncGuide(); stepKey = ''; updStep(); track('pistes-' + b.dataset.g);
+guideEl.addEventListener('click', e => { const b = e.target.closest('[data-g]'); if(!b) return; store.set('guide', b.dataset.g); syncGuide(); stepKey = ''; updStep(); track('pistes-' + b.dataset.g); if(b.dataset.g === 'manual'){ const at = S.tracks.find(x => x.arm); if(at) setTimeout(() => armJump(at), 2500); }
   toast(b.dataset.g === 'auto' ? '🧭 Je t\'accompagne : étapes, bonne piste armée toute seule, prises rangées.' : '✋ À toi de jouer : touche le R de la piste où tu veux enregistrer, puis REC. Je ne range rien tout seul.'); });
 syncGuide();
 let stepKey = '', stepSkip = { sid: null, instru: false, text: false }, stepRetake = false;
