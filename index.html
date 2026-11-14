@@ -614,7 +614,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 1.7.8 · Bêta</span></div>
+      <span class="grp" id="ver">Version 1.7.9 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -918,8 +918,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 113; // numéro interne (jamais affiché)
-const APP_PUB = '1.7.8';
+const APP_VER = 114; // numéro interne (jamais affiché)
+const APP_PUB = '1.7.9';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -1716,7 +1716,7 @@ function undo(){
   if(!trackById(S.sel)) S.sel = S.tracks[0]?.id ?? null;
   applyMix();
   Object.assign(M, u.M); mpre.set(); saveM();
-  S.markers = u.markers || []; if(u.bpm && u.bpm !== S.bpm){ S.bpm = u.bpm; $('#bpm').value = u.bpm; bus.setBpm(u.bpm); }
+  S.markers = /calage des parties|découpage|repères de parties/.test(u.label || '') ? (u.markers || []) : (u.markers || []).filter(m => !m.auto).concat(S.markers.filter(m => m.auto)); if(u.bpm && u.bpm !== S.bpm){ S.bpm = u.bpm; $('#bpm').value = u.bpm; bus.setBpm(u.bpm); }
   scheduleSave();
   bandSel = null;
   renderTracks(); renderMix(); renderMaster();
@@ -2104,7 +2104,7 @@ function startSugs(){
 }
 function instruSections(){
   const ins = trRole('instru');
-  if(S.secs && ins?.buffer && Math.abs((S.secsDur || 0) - ins.buffer.duration) < 0.05) return S.secs.filter(x => x.kind === 'couplet' || x.kind === 'refrain');
+  if(S.markers.some(m => m.auto)) return userSecs();
   const l = startSugs(), raw = ((l && l.sections) || []).filter(x => x.kind !== 'intro' && x.kind !== 'outro').map(x => ({ ...x, kind: x.kind === 'refrain' ? 'refrain' : 'couplet' }));
   secRename(raw); return raw; 
 }
@@ -2170,7 +2170,7 @@ function drawInstru(){
   $('#iInfo').textContent = S.bpm + ' BPM · ' + fmt(p, true) + ' / ' + fmt(dur, true);
   $('#iPlay').textContent = S.playing ? '⏸ Pause' : '▶ Écouter';
   const kinds = ['couplet', 'refrain'].filter(k => secs.some(x => x.kind === k));
-  const leg = kinds.map(k => `<span><i style="background:${SEC_COL[k]}"></i>${{ couplet: 'Couplet', refrain: S.secs ? 'Refrain' : 'Refrain probable' }[k]}</span>`).join('') + '<span><i style="background:#2ee6a6"></i>Début du texte</span>' + (secs.some(x => x.was != null && Math.abs(x.was - x.t) > 0.05) ? '<span style="color:#ff7a59">┆→ repère déplacé</span>' : '');
+  const leg = kinds.map(k => `<span><i style="background:${SEC_COL[k]}"></i>${{ couplet: S.markers.some(m => m.auto) ? 'Couplet' : 'Couplet probable', refrain: S.markers.some(m => m.auto) ? 'Refrain' : 'Refrain probable' }[k]}</span>`).join('') + '<span><i style="background:#2ee6a6"></i>Début du texte</span>' + (secs.some(x => x.was != null && Math.abs(x.was - x.t) > 0.05) ? '<span style="color:#ff7a59">┆→ repère déplacé</span>' : '');
   if($('#iLeg').innerHTML !== leg) $('#iLeg').innerHTML = leg;
   pan.classList.toggle('checking', !!(cur || tap)); document.body.classList.toggle('checking', !!(cur || tap));
 }
@@ -2318,7 +2318,7 @@ function tapStart(){
 function tapApply(){
   const ins = trRole('instru'), dur = ins.offset + ins.buffer.duration;
   S.markers = S.markers.filter(m => !m.auto);
-  tap.marks.forEach(m => { if(!m.gap) S.markers.push({ t: m.t, name: m.name, auto: true }); });
+  tap.marks.forEach(m => S.markers.push(m.gap ? { t: m.t, name: 'Blanc', auto: true, gap: true } : { t: m.t, name: m.name, auto: true }));
   S.secs = tap.marks.map((m, k) => m.gap ? null : ({ t: m.t, end: tap.marks[k + 1] ? tap.marks[k + 1].t : dur, name: m.name, kind: /refrain/i.test(m.name) ? 'refrain' : 'couplet', ok: true })).filter(Boolean);
   const first = tap.marks.find(m => !m.gap); if(first){ S.textStart = first.t; S.tsUser = true; updTextStart(); }
   renderMarkers(); renderPrompt(); scheduleSave();
@@ -3396,7 +3396,7 @@ function virtualSyncs(){
   /* auto : la ligne dure le temps de la dire (syllabes ÷ ton débit), arrondi au temps près pour rester sur la grille */
   const durOf = l => S.lineBars ? 4 * beat * S.lineBars : Math.max(2, Math.round(Math.max(1, syl(l)) / rate / beat)) * beat;
   /* 1. les blocs : tes sections [Couplet 1], [Refrain]… ; sans sections, tes paragraphes (séparés par une ligne vide) */
-  const hasHead = lines.some(l => isHead(l)), autoMk = S.markers.filter(x => x.auto).sort((x, y) => x.t - y.t);
+  const hasHead = lines.some(l => isHead(l)), autoMk = S.markers.filter(x => x.auto && !x.gap).sort((x, y) => x.t - y.t);
   const blocks = []; let blk = null;
   lines.forEach((l, i) => {
     if(isHead(l)){ blk = { head: l.trim().slice(1, -1), lines: [] }; blocks.push(blk); return; }
@@ -4026,7 +4026,7 @@ function userSecs(){
   const ins = trRole('instru'), dur = ins?.buffer ? ins.offset + ins.buffer.duration : 0;
   const mk = S.markers.filter(m => m.auto).sort((a, b) => a.t - b.t);
   if(!mk.length) return [];
-  return mk.map((m, k) => ({ t: m.t, end: mk[k + 1] ? mk[k + 1].t : dur, name: m.name, kind: /refrain/i.test(m.name) ? 'refrain' : 'couplet' }));
+  return mk.map((m, k) => m.gap ? null : ({ t: m.t, end: mk[k + 1] ? mk[k + 1].t : dur, name: m.name, kind: /refrain/i.test(m.name) ? 'refrain' : 'couplet' })).filter(Boolean);
 }
 const guided = () => store.get('guide', 'auto') === 'auto';
 /* la partie à enregistrer en mode « partie par partie » : celle où est la lecture, sinon la suivante */
@@ -4053,11 +4053,20 @@ function armJump(t){
   const list = userSecs().filter(x => x.kind === kind).sort((x, y) => x.t - y.t);
   /* déjà dans une partie qui va avec : on ne bouge pas. Sinon : la première (Couplet 1 pour Couplets, le 1er refrain pour Refrain) */
   if(list.some(x => S.pos >= x.t - 0.05 && S.pos < x.end - 0.5)) return;
-  const sec = list[0];
-  const tt = sec ? sec.t : (kind === 'couplet' ? (S.textStart || 0) : null);
-  if(tt == null) return;
-  seek(tt);
-  toast('« ' + t.name + ' » armée · lecture et prompteur sur ' + (sec ? sec.name : 'le début du texte') + ' (' + fmt(tt, true) + '). REC quand tu veux.');
+  let sec = list[0];
+  if(!sec){
+    /* pas encore de parties calées : on prend la 1re section de ton texte qui va avec ([Couplet…] ou [Refrain…]) */
+    const lines = ta.value.split('\n'), VS = virtualSyncs();
+    for(let i = 0; i < lines.length && !sec; i++){
+      if(!isHead(lines[i])) continue;
+      const nm = lines[i].trim().slice(1, -1), isR = /refrain/i.test(nm);
+      if((kind === 'refrain') !== isR) continue;
+      for(let j = i + 1; j < lines.length; j++){ if(isHead(lines[j])) break; if(VS[j] != null){ sec = { t: VS[j], name: nm }; break; } }
+    }
+  }
+  if(!sec){ toast('« ' + t.name + ' » armée. Pour que je trouve tes ' + (kind === 'refrain' ? 'refrains' : 'couplets') + ' tout seul, cale tes parties dans Texte → Prompteur (« 👆 Caler mes parties en écoutant »).'); return; }
+  seek(sec.t);
+  toast('« ' + t.name + ' » armée · lecture et prompteur sur ' + sec.name + ' (' + fmt(sec.t, true) + '). REC quand tu veux.');
 }
 function punchMerge(tr, nb, pos, end){
   const base = tr.buffer, sr = base.sampleRate, bo = tr.offset;
