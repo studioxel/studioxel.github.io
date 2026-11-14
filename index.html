@@ -101,6 +101,8 @@ button{cursor:pointer}
 .pal button[aria-pressed=true]{border-color:var(--fg);box-shadow:0 0 0 2px var(--bg) inset}
 .name{flex:1;min-width:0;background:transparent;border:1px solid transparent;border-radius:4px;padding:2px 4px;font-weight:700;font-size:15px}
 .name:focus{border-color:var(--line);background:var(--raise)}
+.lockname{display:flex;align-items:center;gap:3px;font-size:14px;padding:2px 2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:default}.lockname i{font-style:normal;font-size:9px;opacity:.5;flex:none}.lockname b{overflow:hidden;text-overflow:ellipsis}
+.tlabel{display:block;width:100%;box-sizing:border-box;margin-top:6px;height:32px;background:var(--raise);color:inherit;border:1px solid var(--line);border-radius:6px;padding:0 8px;font-size:14px}.tlabel:focus{outline:none;border-color:var(--accent)}
 .chip{width:34px;height:32px;border-radius:7px;border:1px solid var(--line);background:var(--raise);font:700 13px/1 var(--mono);padding:0;flex:none}
 .chip.arm[aria-pressed=true]{background:var(--rec);border-color:var(--rec);color:#fff}
 .chip.mute[aria-pressed=true]{background:#5a6478;border-color:#5a6478}
@@ -621,7 +623,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 1.9.5 · Bêta</span></div>
+      <span class="grp" id="ver">Version 1.9.6 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -1065,8 +1067,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 134; // numéro interne (jamais affiché)
-const APP_PUB = '1.9.5';
+const APP_VER = 135; // numéro interne (jamais affiché)
+const APP_PUB = '1.9.6';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -2056,7 +2058,7 @@ let undoAt = 0, undoLbl = '';
 function snapTrack(t){
   return { id: t.id, name: t.name, color: t.color, preset: t.preset, vstyle: t.vstyle, fx: { ...t.fx }, vr: t.vr, vol: t.vol, pan: t.pan,
     mute: t.mute, solo: t.solo, arm: t.arm, offset: t.offset, buffer: t.buffer, take: t.take, takes: t.takes.map(k => ({ ...k })),
-    trim: t.trim, atOn: t.atOn, at: { ...t.at }, lv: t.lv ? { ...t.lv } : undefined, vp: t.vp, adapted: t.adapted, semi: t.semi, bpmOrig: t.bpmOrig, origTake: t.origTake, uid: t.uid, owner: t.owner, ownerName: t.ownerName, keep: t.keep };
+    trim: t.trim, atOn: t.atOn, at: { ...t.at }, lv: t.lv ? { ...t.lv } : undefined, vp: t.vp, adapted: t.adapted, semi: t.semi, bpmOrig: t.bpmOrig, origTake: t.origTake, uid: t.uid, owner: t.owner, ownerName: t.ownerName, keep: t.keep, label: t.label };
 }
 function pushUndo(label, coalesce, force){
   if(S.recording && !force) return;
@@ -2129,7 +2131,11 @@ function trackEnd(){ return S.tracks.reduce((m, t) => t.buffer ? Math.max(m, t.o
 function timelineW(){ return Math.ceil(Math.max(90, trackEnd() + 20) * S.pps); }
 function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
+let rtPending = false;
 function renderTracks(){
+  /* pendant que tu tapes ton nom de piste, on ne redessine pas (sinon le clavier se ferme) */
+  const ae = document.activeElement;
+  if(ae && ae.classList && ae.classList.contains('tlabel')){ if(!rtPending){ rtPending = true; ae.addEventListener('blur', () => { rtPending = false; renderTracks(); }, { once: true }); } return; }
   const W = timelineW();
   $('#inner').style.width = (HDR + W) + 'px';
   const rc = $('#ruler'); rc.width = W; drawRuler(rc);
@@ -2143,11 +2149,12 @@ function renderTracks(){
     row.innerHTML = `
       <div class="hdr">
         <div class="l1"><button class="swatch" data-act="color" style="background:${t.color}" aria-expanded="${colorOpen === t.id}" aria-label="Couleur de la piste" title="Changer la couleur"></button>
-          <input class="name" data-act="name" value="${esc(t.name)}" aria-label="Nom de la piste" ${lk ? 'disabled' : ''}>
+          <span class="name lockname" data-v="${esc(t.name)}" title="Nom fixe : il sert au prompteur et au rangement des prises"><i aria-hidden="true">🔒</i><b>${esc(t.name)}</b></span>
           <button class="chip arm" data-act="arm" aria-pressed="${t.arm}" title="Armer pour l'enregistrement">R</button>
           <button class="chip mute" data-act="mute" aria-pressed="${t.mute}" title="Muet">M</button>
           <button class="chip solo" data-act="solo" aria-pressed="${t.solo}" title="Solo">S</button>
         </div>
+        <input class="tlabel" data-act="label" value="${esc(t.label || '')}" maxlength="40" placeholder="Ton nom (facultatif)" aria-label="Ton nom pour cette piste (facultatif)" ${lk ? 'disabled' : ''}>
         ${colorOpen === t.id ? `<div class="pal" role="group" aria-label="Couleurs">${PALETTE.map(c => `<button data-act="setcolor" data-c="${c}" style="background:${c}" aria-pressed="${c.toLowerCase() === String(t.color).toLowerCase()}" aria-label="Couleur ${c}"></button>`).join('')}</div>` : ''}
         <div class="l2">
           <span>Vol</span><input type="range" min="0" max="2" step="0.01" value="${t.vol}" data-act="vol" aria-label="Volume" ${lk ? 'disabled' : ''}><button class="mv" data-act="up" aria-label="Monter la piste" title="Monter" ${S.tracks[0] === t ? 'disabled' : ''}>↑</button>
@@ -2339,7 +2346,7 @@ list.addEventListener('input', e => {
   if(act === 'vol' || act === 'pan') pushUndo('le volume', true);
   if(act === 'vol'){ t.vol = +el.value; applyMix(); }
   if(act === 'pan'){ t.pan = +el.value; applyMix(); }
-  if(act === 'name'){ t.name = el.value; }
+  if(act === 'label'){ t.label = el.value.slice(0, 40); scheduleSave(); }
 });
 $('#file').addEventListener('change', async e => {
   const f = e.target.files[0]; e.target.value = '';
@@ -4145,7 +4152,7 @@ async function saveSession(){
     showSessTitle();
     const tracks = S.tracks.map(t => ({
       name: t.name, color: t.color, preset: t.preset, fx: t.fx, vr: t.vr, vol: t.vol, pan: t.pan, mute: t.mute, solo: t.solo,
-      uid: t.uid, owner: t.owner, ownerName: t.ownerName, keep: !!t.keep, take: t.take, trim: t.trim, atOn: t.atOn, at: t.at, lv: t.lv, vp: t.vp, adapted: t.adapted, semi: t.semi, bpmOrig: t.bpmOrig, origTake: t.origTake,
+      uid: t.uid, owner: t.owner, ownerName: t.ownerName, label: t.label || '', keep: !!t.keep, take: t.take, trim: t.trim, atOn: t.atOn, at: t.at, lv: t.lv, vp: t.vp, adapted: t.adapted, semi: t.semi, bpmOrig: t.bpmOrig, origTake: t.origTake,
       takes: t.takes.map(k => ({ aid: bufAid(k.buffer), offset: k.offset, tuned: k.tuned, src: k.src, xf: k.xf, punch: k.punch }))
     }));
     for(const t of S.tracks) for(const k of t.takes){
@@ -4174,7 +4181,7 @@ async function loadSession(id){
   undoStack.length = 0; updUndo();
   for(const tr of rec.tracks){
     const t = addTrack(tr.name, FX[tr.preset] ? tr.preset : 'neutre'); t.preset = tr.preset;
-    Object.assign(t, { keep: !!tr.keep, uid: tr.uid || t.uid, owner: tr.owner || null, ownerName: tr.ownerName || '', color: tr.color, fx: { ...FX.neutre, ...tr.fx }, vr: tr.vr || 0, vol: tr.vol, pan: tr.pan, mute: tr.mute, solo: tr.solo,
+    Object.assign(t, { keep: !!tr.keep, label: tr.label || '', uid: tr.uid || t.uid, owner: tr.owner || null, ownerName: tr.ownerName || '', color: tr.color, fx: { ...FX.neutre, ...tr.fx }, vr: tr.vr || 0, vol: tr.vol, pan: tr.pan, mute: tr.mute, solo: tr.solo,
       trim: tr.trim, atOn: tr.atOn, at: { ...t.at, ...tr.at }, lv: tr.lv, vp: tr.vp, adapted: tr.adapted, semi: tr.semi, bpmOrig: tr.bpmOrig, origTake: tr.origTake });
     t.takes = [];
     /* on ne recharge que les prises utiles (la prise en cours, sa version d'origine, et les dernières prises) : tout l'historique d'une longue séance
