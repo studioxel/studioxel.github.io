@@ -496,7 +496,7 @@ body.ed-open .wmark{z-index:41}
 .chkl{display:flex;gap:10px;font-size:15px}.chkl span{font:12px var(--mono);color:var(--muted);min-width:52px;padding:1px 4px;border-radius:4px}
 .chkl.chg span{color:#1a1405;background:#ff7a59;font-weight:800}
 .tapbig{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:120px;border:0;border-radius:16px;background:var(--accent);color:#1a1405;font:800 28px var(--display);cursor:pointer;touch-action:manipulation}.tapbig small{font:600 13px system-ui,sans-serif;opacity:.75}.tapbig:active{transform:scale(.98)}
-.tapinfo{text-align:center;color:var(--muted);font-size:14px}.tapinfo b{color:var(--fg)}
+.tapinfo{text-align:center;color:var(--muted);font-size:14px}.tapsw{background:none;border:0;color:var(--accent);text-decoration:underline;font-size:14px;padding:0}.tapinfo b{color:var(--fg)}
 .chklink{align-self:center;background:none;border:0;color:var(--muted);text-decoration:underline;padding:4px}
 .tsrow .sbtn[aria-pressed=true]{background:var(--accent);color:#1a1405;border-color:var(--accent)}
 .pl.virt .t{opacity:.45;font-style:italic}
@@ -610,7 +610,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 1.6.1 · Bêta</span></div>
+      <span class="grp" id="ver">Version 1.6.2 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -914,8 +914,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 100; // numéro interne (jamais affiché)
-const APP_PUB = '1.6.1';
+const APP_VER = 101; // numéro interne (jamais affiché)
+const APP_PUB = '1.6.2';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -2251,15 +2251,21 @@ async function chkClick(e){
 }
 /* ---------- Caler ses parties en écoutant : un seul gros bouton, l'appui est recalé sur la mesure ---------- */
 let tap = null;
-function tapNames(){
-  const heads = ta.value.split('\n').filter(l => isHead(l)).map(l => l.trim().slice(1, -1).trim()).filter(Boolean);
-  return heads.length ? heads : ['Couplet 1', 'Refrain', 'Couplet 2', 'Refrain', 'Couplet 3', 'Refrain'];
+const tapHeads = () => ta.value.split('\n').filter(l => isHead(l)).map(l => l.trim().slice(1, -1).trim()).filter(Boolean);
+/* la prochaine partie : celle de ton texte, puis on continue tout seul (couplet, refrain, couplet…) autant qu'il faut */
+function tapNext(){
+  const secs = tap.marks.filter(m => !m.gap);
+  if(tap.i < tap.heads.length && !tap.swap) return tap.heads[tap.i];
+  const last = secs[secs.length - 1], nC = secs.filter(m => !/refrain/i.test(m.name)).length;
+  let kind = !last ? 'couplet' : /refrain/i.test(last.name) ? 'couplet' : 'refrain';
+  if(tap.swap) kind = tap.swap;
+  return kind === 'refrain' ? 'Refrain' : 'Couplet ' + (nC + 1);
 }
 function tapGrid(){ const l = startSugs(); const bar = 4 * 60 / S.bpm; return { bar, g0: l && l.grid0 != null ? l.grid0 : 0 }; }
 function tapStart(){
   const ins = trRole('instru'); if(!ins?.buffer){ toast('Charge d\'abord ton instru.'); return; }
   pushUndo('le calage des parties');
-  tap = { names: tapNames(), i: 0, marks: [], own: !ta.value.split('\n').some(l => isHead(l)) };
+  tap = { heads: tapHeads(), i: 0, marks: [], swap: null };
   S.markers = S.markers.filter(m => !m.auto); S.secs = []; S.secsDur = ins.buffer.duration;
   renderMarkers(); renderPrompt(); tapShow(); chkScroll();
   if(S.playing) pause(); S.pos = 0; if(!mic) audioSessionPlay(); unlockSpeaker(); wake().then(() => play());
@@ -2268,39 +2274,42 @@ function tapStart(){
 function tapApply(){
   const ins = trRole('instru'), dur = ins.offset + ins.buffer.duration;
   S.markers = S.markers.filter(m => !m.auto);
-  tap.marks.forEach(m => S.markers.push({ t: m.t, name: m.name, auto: true }));
-  S.secs = tap.marks.map((m, k) => ({ t: m.t, end: tap.marks[k + 1] ? tap.marks[k + 1].t : dur, name: m.name, kind: /refrain/i.test(m.name) ? 'refrain' : 'couplet', ok: true }));
-  if(!S.tsUser && tap.marks[0]) S.textStart = tap.marks[0].t, updTextStart();
+  tap.marks.forEach(m => { if(!m.gap) S.markers.push({ t: m.t, name: m.name, auto: true }); });
+  S.secs = tap.marks.map((m, k) => m.gap ? null : ({ t: m.t, end: tap.marks[k + 1] ? tap.marks[k + 1].t : dur, name: m.name, kind: /refrain/i.test(m.name) ? 'refrain' : 'couplet', ok: true })).filter(Boolean);
+  const first = tap.marks.find(m => !m.gap); if(!S.tsUser && first){ S.textStart = first.t; updTextStart(); }
   renderMarkers(); renderPrompt(); scheduleSave();
 }
 function tapShow(){
   let el = $('#chkCard');
   if(!tap){ if(el) el.remove(); return; }
   if(!el){ el = document.createElement('div'); el.id = 'chkCard'; el.className = 'chkcard'; document.body.appendChild(el); el.addEventListener('click', tapClick); }
-  const nm = tap.names[tap.i], nx = tap.names[tap.i + 1], last = tap.marks[tap.marks.length - 1];
-  el.innerHTML = nm
-    ? `<div class="chkn">Écoute, et touche au bon moment<button class="chkx" data-c="end" aria-label="Terminer">✕</button></div>
-       <button class="tapbig" data-c="tap">👆 ${esc(nm)}<small>touche quand ça commence</small></button>
-       <div class="tapinfo">${last ? `✓ ${esc(last.name)} calé à <b>${fmt(last.t, true)}</b>` : 'Le son démarre du début.'}${nx ? ` · ensuite : ${esc(nx)}` : ''}</div>
-       <div class="chkb"><button class="sbtn" data-c="undo" ${tap.marks.length ? '' : 'disabled'}>↶ Oups</button><button class="sbtn" data-c="end">J'ai fini</button></div>`
-    : `<div class="chkn">C'est calé<button class="chkx" data-c="end" aria-label="Fermer">✕</button></div><h3>Nickel 👌</h3><p>${tap.marks.length} parties calées, chacune sur le début d'une mesure. Les temps de tes paroles sont à jour.</p><div class="chkb"><button class="sbtn" data-c="undo">↶ Oups</button><button class="sbtn primary" data-c="end">Fermer</button></div>`;
+  const nm = tapNext(), last = tap.marks[tap.marks.length - 1], other = /refrain/i.test(nm) ? 'couplet' : 'refrain';
+  const inGap = last && last.gap, inPart = last && !last.gap;
+  el.innerHTML = `<div class="chkn">Écoute, et touche au bon moment<button class="chkx" data-c="end" aria-label="Terminer">✕</button></div>
+     <button class="tapbig" data-c="tap">👆 ${esc(nm)}<small>touche quand ça commence</small></button>
+     <div class="tapinfo">${last ? (last.gap ? `🔇 Blanc à <b>${fmt(last.t, true)}</b>` : `✓ ${esc(last.name)} calé à <b>${fmt(last.t, true)}</b>`) : 'Le son démarre du début.'} · <button class="tapsw" data-c="swap">c'est ${other === 'refrain' ? 'un refrain' : 'un couplet'} ?</button></div>
+     <div class="chkb"><button class="sbtn" data-c="gap" ${inPart ? '' : 'disabled'}>🔇 Blanc</button><button class="sbtn" data-c="undo" ${tap.marks.length ? '' : 'disabled'}>↶ Oups</button><button class="sbtn primary" data-c="end">J'ai fini</button></div>`;
 }
 function tapClick(e){
   const b = e.target.closest('button'); if(!b || !tap) return;
   const c = b.dataset.c;
-  if(c === 'tap'){
-    const nm = tap.names[tap.i]; if(!nm) return;
+  if(c === 'tap' || c === 'gap'){
     const { bar, g0 } = tapGrid(), p = (S.playing ? now() : S.pos) - 0.12;
     let t = g0 + Math.round((p - g0) / bar) * bar;
     const prev = tap.marks[tap.marks.length - 1]; if(prev && t < prev.t + bar - 0.01) t = prev.t + bar;
     t = Math.max(0, Math.round(t * 100) / 100);
-    tap.marks.push({ t, name: nm }); tap.i++;
-    tapApply(); tapShow();
-    if(!tap.names[tap.i]){ if(S.playing) pause(); }
-    return;
+    if(c === 'gap') tap.marks.push({ t, gap: true });
+    else { const fromText = tap.i < tap.heads.length && !tap.swap; tap.marks.push({ t, name: tapNext(), fromText }); if(fromText) tap.i++; tap.swap = null; }
+    tapApply(); tapShow(); return;
   }
-  if(c === 'undo'){ const m = tap.marks.pop(); if(m){ tap.i--; tapApply(); if(!S.playing){ S.pos = Math.max(0, m.t - 2 * 4 * 60 / S.bpm); if(!mic) audioSessionPlay(); unlockSpeaker(); wake().then(() => play()); } } tapShow(); return; }
-  if(c === 'end'){ if(S.playing) pause(); if(tap.own && tap.marks.length) toast('Astuce : écris tes sections dans Écrire ([Couplet 1], [Refrain]…) pour que chaque partie de ton texte se cale sur son repère.'); tap = null; tapShow(); }
+  if(c === 'swap'){ const nm = tapNext(); tap.swap = /refrain/i.test(nm) ? 'couplet' : 'refrain'; tapShow(); return; }
+  if(c === 'undo'){ const m = tap.marks.pop(); if(m){ if(m.fromText) tap.i--; tapApply(); if(S.playing) pause(); S.pos = Math.max(0, m.t - 2 * 4 * 60 / S.bpm); if(!mic) audioSessionPlay(); unlockSpeaker(); wake().then(() => play()); } tapShow(); return; }
+  if(c === 'end'){
+    if(S.playing) pause();
+    const n = tap.marks.filter(m => !m.gap).length;
+    if(n) toast('👌 ' + n + ' parties calées sur le début des mesures.' + (tap.heads.length ? '' : ' Astuce : écris tes sections dans Écrire ([Couplet 1], [Refrain]…) pour que chaque partie de ton texte suive son repère.'));
+    tap = null; tapShow();
+  }
 }
 function pickSug(o){
   setTextStart(o.t); S.tsUser = true; renderSugs();
@@ -5459,7 +5468,7 @@ const HELP = {
     { sel: ['.secbar'], t: 'Les sections', b: 'Ajoute Intro, Couplet (numéroté tout seul), Pré-refrain, Refrain, Pont ou Outro là où est ton curseur. Un deuxième Refrain recopie le premier, tu modifies si besoin.' },
     { sel: ['#lstat'], t: 'Les syllabes', b: 'Le nombre de syllabes de la ligne où tu es, pour équilibrer tes rimes et ton flow.' },
     { sel: ['#bDict'], t: 'Dicter', b: 'Dis tes lignes a cappella, elles s\'écrivent toutes seules, une par pause. Relis : le rap piège la dictée.' },
-    { t: 'Le prompteur', b: 'En haut, « Ton instru » : toute ton instru en grand, avec les parties que j\'entends (intro, couplets, refrains probables), mes propositions de départ (▲) et le début de ton texte (en vert). Touche l\'onde pour te placer, ▶ pour vérifier, « 📍 Le texte démarre ici » pour choisir, « 👆 Caler mes parties en écoutant » : l\'instru se lance et un gros bouton affiche ta prochaine section ([Couplet 1], [Refrain]…). Tu touches quand elle commence, je recale sur le début de la mesure la plus proche, et le temps de tes paroles change direct. « ↶ Oups » efface le dernier appui. À la fin, tes sections [Couplet 1], [Refrain]… démarrent pile sur chaque partie. Quand tu charges ton instru, je te propose aussi où démarrer le texte : l\'entrée de la rythmique (⭐ mon choix), quelques mesures après, un changement dans le beat, ou dès le début. Touche une proposition pour l\'écouter et la choisir. Tu peux aussi régler à la main (📍 Ici, ou ± 1 mesure). Pose des repères au nom de tes sections (+ → Repère) : chaque section démarre pile dessus. La vitesse du texte est automatique : chaque ligne dure le temps de la dire, et l\'appli apprend ton débit à chaque prise. Pour forcer, ouvre « Vitesse du texte ». Ensuite le texte se cale tout seul : sur le tempo pendant ta première prise, puis sur ta voix une fois la prise posée. Tu peux aussi caler à la main (« Caler la ligne suivante » au début de chaque ligne pendant la lecture), ou forcer « Caler sur ma prise » / « Caler sur le tempo ». Pendant REC, ton texte s\'affiche en bas tout seul.' }
+    { t: 'Le prompteur', b: 'En haut, « Ton instru » : toute ton instru en grand, avec les parties que j\'entends (intro, couplets, refrains probables), mes propositions de départ (▲) et le début de ton texte (en vert). Touche l\'onde pour te placer, ▶ pour vérifier, « 📍 Le texte démarre ici » pour choisir, « 👆 Caler mes parties en écoutant » : l\'instru se lance et un gros bouton affiche ta prochaine section ([Couplet 1], [Refrain]…). Tu touches quand elle commence, je recale sur le début de la mesure la plus proche, et le temps de tes paroles change direct. Un silence entre deux parties ? Touche « 🔇 Blanc » quand la partie s\'arrête. Autant de couplets et de refrains que tu veux : après les sections de ton texte, ça continue tout seul (et « c\'est un refrain ? » inverse si je me trompe). « ↶ Oups » efface le dernier appui. À la fin, tes sections [Couplet 1], [Refrain]… démarrent pile sur chaque partie. Quand tu charges ton instru, je te propose aussi où démarrer le texte : l\'entrée de la rythmique (⭐ mon choix), quelques mesures après, un changement dans le beat, ou dès le début. Touche une proposition pour l\'écouter et la choisir. Tu peux aussi régler à la main (📍 Ici, ou ± 1 mesure). Pose des repères au nom de tes sections (+ → Repère) : chaque section démarre pile dessus. La vitesse du texte est automatique : chaque ligne dure le temps de la dire, et l\'appli apprend ton débit à chaque prise. Pour forcer, ouvre « Vitesse du texte ». Ensuite le texte se cale tout seul : sur le tempo pendant ta première prise, puis sur ta voix une fois la prise posée. Tu peux aussi caler à la main (« Caler la ligne suivante » au début de chaque ligne pendant la lecture), ou forcer « Caler sur ma prise » / « Caler sur le tempo ». Pendant REC, ton texte s\'affiche en bas tout seul.' }
   ],
   vProjets: [
     { t: 'L\'onglet Projets', b: 'Pour préparer un single, un EP ou un album.' },
