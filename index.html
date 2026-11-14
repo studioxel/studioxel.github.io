@@ -614,7 +614,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 1.7.6 · Bêta</span></div>
+      <span class="grp" id="ver">Version 1.7.7 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -918,8 +918,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 111; // numéro interne (jamais affiché)
-const APP_PUB = '1.7.6';
+const APP_VER = 112; // numéro interne (jamais affiché)
+const APP_PUB = '1.7.7';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -1623,7 +1623,7 @@ async function record(){
       tr.buffer = buf; tr.offset = off0;
       if(!punched && AUTO.level){ await adaptVoice(tr); await autoLevel(tr); }
       const moved = donePart ? '' : await splitByParts(tr, takeBuf, takePos);
-      if(AUTO.sync && !recInfo.punch && tr.preset !== 'instru' && ta.value.trim() && !S.markers.some(m => m.auto) && (!Object.keys(syncs).length || (syncsAuto && [null, tr.uid || tr.id].includes(store.get('syncsTid', null))))) autoSyncFrom(tr, true) && setTimeout(() => toast('📝 Ton texte est calé tout seul sur cette prise : il défilera avec ta voix.'), 2500);
+      if(false && (!Object.keys(syncs).length || (syncsAuto && [null, tr.uid || tr.id].includes(store.get('syncsTid', null))))) autoSyncFrom(tr, true) && setTimeout(() => toast('📝 Ton texte est calé tout seul sur cette prise : il défilera avec ta voix.'), 2500);
       renderTracks();
       if(tr.atOn){ toast('Prise gardée, auto-tune en cours…'); await applyAutotune(tr); }
       else if(donePart){
@@ -3498,7 +3498,7 @@ $('#syncTake').onclick = () => {
 };
 $('#syncTempo').onclick = () => {
   if(!ta.value.trim()){ toast('Écris d\'abord ton texte dans l\'onglet Écrire.'); return; }
-  if(syncToTempo()) toast('🎵 Texte calé sur le tempo' + (S.lineBars ? ' : une ligne = ' + ({0.5: '½ mesure', 1: '1 mesure', 2: '2 mesures'}[S.lineBars]) : ' : une phrase par mesure') + ', à partir de ' + fmt(S.textStart || 0, true) + (S.markers.length ? ', chaque section sur son repère' : '') + '. Une prise le recalera sur ta voix.');
+  if(syncToTempo()) toast('🎵 Texte calé sur le tempo' + (S.lineBars ? ' : une ligne = ' + ({0.5: '½ mesure', 1: '1 mesure', 2: '2 mesures'}[S.lineBars]) : ' : une phrase par mesure') + ', à partir de ' + fmt(S.textStart || 0, true) + (S.markers.length ? ', chaque section sur son repère' : '') + '.');
 };
 let curLine = null;
 /* ---------- Pendant la prise : le texte s'affiche tout seul (ou on propose de l'écrire) ---------- */
@@ -3815,7 +3815,7 @@ async function loadSession(id){
   S.bpm = rec.bpm || S.bpm; $('#bpm').value = S.bpm; bus.setBpm(S.bpm);
   S.instruKey = rec.instruKey || null; S.markers = rec.markers || []; S.loop = { on: false, bars: rec.loopBars || 4, start: 0 };
   /* chaque son a son propre texte et son propre calage */
-  if(rec.lyrics != null){ ta.value = rec.lyrics; syncs = rec.syncs || {}; syncsAuto = rec.syncsAuto ?? true; store.set('syncsTid', rec.syncsTid ?? null); }
+  if(rec.lyrics != null){ ta.value = rec.lyrics; syncs = rec.syncs || {}; syncsAuto = rec.syncsAuto ?? true; store.set('syncsTid', rec.syncsTid ?? null); if(syncsAuto && rec.syncsTid != null){ syncs = {}; store.set('syncs', {}); store.set('syncsTid', null); } }
   S.textStart = rec.textStart || 0; S.tsUser = !!rec.tsUser; S.startSugs = null; S.secs = rec.secs || null; S.secsDur = rec.secsDur || 0; S.lineBars = rec.lineBars || 0; try{ updLineUI(); }catch(e){}
   store.set('lyrics', ta.value); store.set('syncs', syncs); store.set('syncsAuto', syncsAuto); lstat(); if(!$('#viewP').hidden) renderPrompt(); updTextStart();
   Object.assign(M, rec.M || {}); mpre.set();
@@ -3994,7 +3994,7 @@ $('#loopBars').addEventListener('click', e => { const b = e.target.closest('butt
 async function splitByParts(tr, take, pos){
   if(!guided()) return '';
   const role = roleOf(tr); if(role !== 'lead' && role !== 'refrain') return '';
-  const secs = (S.secs || []).filter(x => x.kind === 'couplet' || x.kind === 'refrain'); if(!secs.length) return '';
+  const secs = userSecs(); if(!secs.length) return '';
   const L = trRole('lead'), R = trRole('refrain'); if(!L || !R) return '';
   const end = pos + take.duration, half = 30 / S.bpm, sr = take.sampleRate, F = Math.round(sr * 0.01);
   const parts = [];
@@ -4021,11 +4021,17 @@ async function splitByParts(tr, take, pos){
   return '🎛️ Prise rangée toute seule : ' + [toL ? toL + ' couplet' + (toL > 1 ? 's' : '') + ' sur « ' + L.name + ' »' : '', toR ? toR + ' refrain' + (toR > 1 ? 's' : '') + ' sur « ' + R.name + ' »' : ''].filter(Boolean).join(', ') + '. Annuler pour revenir.';
 }
 const recMode = () => store.get('recMode', 'onego');
+function userSecs(){
+  const s0 = (S.secs || []).filter(x => x.kind === 'couplet' || x.kind === 'refrain'); if(s0.length) return s0;
+  const ins = trRole('instru'), dur = ins?.buffer ? ins.offset + ins.buffer.duration : 0;
+  const mk = S.markers.filter(m => m.auto).sort((a, b) => a.t - b.t);
+  return mk.map((m, k) => ({ t: m.t, end: mk[k + 1] ? mk[k + 1].t : dur, name: m.name, kind: /refrain/i.test(m.name) ? 'refrain' : 'couplet' }));
+}
 const guided = () => store.get('guide', 'auto') === 'auto';
 /* la partie à enregistrer en mode « partie par partie » : celle où est la lecture, sinon la suivante */
 function partAt(pos){
   if(recMode() !== 'parts' || !guided()) return null;
-  const secs = (S.secs || []).filter(x => x.kind === 'couplet' || x.kind === 'refrain'); if(!secs.length) return null;
+  const secs = userSecs(); if(!secs.length) return null;
   const L = trRole('lead'), R = trRole('refrain'); if(!L || !R) return null;
   const armed = S.tracks.find(x => x.arm), ar = roleOf(armed);
   const want = ar === 'refrain' ? 'refrain' : (ar === 'lead' || ar === 'back') ? 'couplet' : null;
@@ -4043,7 +4049,7 @@ function armJump(t){
   if(guided() || S.playing) return;
   const r = roleOf(t); if(r !== 'lead' && r !== 'refrain' && r !== 'back') return;
   const kind = r === 'refrain' ? 'refrain' : 'couplet';
-  const list = (S.secs || []).filter(x => x.kind === kind).sort((x, y) => x.t - y.t);
+  const list = userSecs().filter(x => x.kind === kind).sort((x, y) => x.t - y.t);
   /* déjà dans une partie qui va avec : on ne bouge pas. Sinon : la première (Couplet 1 pour Lead, le 1er refrain pour Refrain) */
   if(list.some(x => S.pos >= x.t - 0.05 && S.pos < x.end - 0.5)) return;
   const sec = list[0];
@@ -5604,7 +5610,7 @@ const HELP = {
     { sel: ['.secbar'], t: 'Les sections', b: 'Ajoute Intro, Couplet (numéroté tout seul), Pré-refrain, Refrain, Pont ou Outro là où est ton curseur. Un deuxième Refrain recopie le premier, tu modifies si besoin.' },
     { sel: ['#lstat'], t: 'Les syllabes', b: 'Le nombre de syllabes de la ligne où tu es, pour équilibrer tes rimes et ton flow.' },
     { sel: ['#bDict'], t: 'Dicter', b: 'Dis tes lignes a cappella, elles s\'écrivent toutes seules, une par pause. Relis : le rap piège la dictée.' },
-    { t: 'Le prompteur', b: 'En haut, « Ton instru » : toute ton instru en grand, avec les parties que j\'entends (intro, couplets, refrains probables), mes propositions de départ (▲) et le début de ton texte (en vert). Touche l\'onde pour te placer, ▶ pour vérifier, « 📍 Le texte démarre ici » pour choisir, « 👆 Caler mes parties en écoutant » : l\'instru se lance et un gros bouton affiche ta prochaine section ([Couplet 1], [Refrain]…). Tu touches quand elle commence, je recale sur le début de la mesure la plus proche, et le temps de tes paroles change direct. Ce calage sert ensuite à toutes tes pistes, et si tu enregistres tout d\'un coup, je range les refrains sur la piste Refrain et les couplets sur Lead. Un silence entre deux parties ? Touche « 🔇 Blanc » quand la partie s\'arrête. Autant de couplets et de refrains que tu veux : après les sections de ton texte, ça continue tout seul (et « c\'est un refrain ? » inverse si je me trompe). « ↶ Oups » efface le dernier appui. À la fin, tes sections [Couplet 1], [Refrain]… démarrent pile sur chaque partie. Quand tu charges ton instru, je te propose aussi où démarrer le texte : l\'entrée de la rythmique (⭐ mon choix), quelques mesures après, un changement dans le beat, ou dès le début. Touche une proposition pour l\'écouter et la choisir. Tu peux aussi régler à la main (📍 Ici, ou ± 1 mesure). Pose des repères au nom de tes sections (+ → Repère) : chaque section démarre pile dessus. Le texte défile une phrase par mesure : chaque ligne tombe pile sur le 1er temps d\'une mesure, grâce au BPM de ton instru (une ligne par demi-mesure si une partie est trop remplie). Après ta prise, il se recale sur ta vraie voix. Pour forcer, ouvre « Vitesse du texte ». Ensuite le texte se cale tout seul : sur le tempo pendant ta première prise, puis sur ta voix une fois la prise posée. Tu peux aussi caler à la main (« Caler la ligne suivante » au début de chaque ligne pendant la lecture), ou forcer « Caler sur ma prise » / « Caler sur le tempo ». Pendant REC, ton texte s\'affiche en bas tout seul.' }
+    { t: 'Le prompteur', b: 'En haut, « Ton instru » : toute ton instru en grand, avec les parties que j\'entends (intro, couplets, refrains probables), mes propositions de départ (▲) et le début de ton texte (en vert). Touche l\'onde pour te placer, ▶ pour vérifier, « 📍 Le texte démarre ici » pour choisir, « 👆 Caler mes parties en écoutant » : l\'instru se lance et un gros bouton affiche ta prochaine section ([Couplet 1], [Refrain]…). Tu touches quand elle commence, je recale sur le début de la mesure la plus proche, et le temps de tes paroles change direct. Ce calage sert ensuite à toutes tes pistes, et si tu enregistres tout d\'un coup, je range les refrains sur la piste Refrain et les couplets sur Lead. Un silence entre deux parties ? Touche « 🔇 Blanc » quand la partie s\'arrête. Autant de couplets et de refrains que tu veux : après les sections de ton texte, ça continue tout seul (et « c\'est un refrain ? » inverse si je me trompe). « ↶ Oups » efface le dernier appui. À la fin, tes sections [Couplet 1], [Refrain]… démarrent pile sur chaque partie. Quand tu charges ton instru, je te propose aussi où démarrer le texte : l\'entrée de la rythmique (⭐ mon choix), quelques mesures après, un changement dans le beat, ou dès le début. Touche une proposition pour l\'écouter et la choisir. Tu peux aussi régler à la main (📍 Ici, ou ± 1 mesure). Pose des repères au nom de tes sections (+ → Repère) : chaque section démarre pile dessus. Le texte défile une phrase par mesure : chaque ligne tombe pile sur le 1er temps d\'une mesure, grâce au BPM de ton instru (une ligne par demi-mesure si une partie est trop remplie). Et ça reste pareil sur toutes tes pistes. Pour forcer, ouvre « Vitesse du texte ». Ensuite le texte défile une phrase par mesure, pareil sur toutes tes pistes. Tu peux aussi caler à la main (« Caler la ligne suivante » au début de chaque ligne pendant la lecture), ou forcer « Caler sur ma prise » / « Caler sur le tempo ». Pendant REC, ton texte s\'affiche en bas tout seul.' }
   ],
   vProjets: [
     { t: 'L\'onglet Projets', b: 'Pour préparer un single, un EP ou un album.' },
