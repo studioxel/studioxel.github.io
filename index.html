@@ -476,6 +476,19 @@ body.ed-open .wmark{z-index:41}
 .tstart .note{flex-basis:100%;margin:0}
 .tsrow{display:flex;gap:6px;flex-wrap:wrap;align-items:center;flex-basis:100%}
 .tsman{display:block}.tsman summary{cursor:pointer;color:var(--muted);padding:4px 0}.tsman .tsrow{margin-top:6px}
+.tssug .sbtn{height:38px;font-size:13px}
+.ipan{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}
+.iphead{display:flex;align-items:baseline;gap:8px}.iphead b{font:800 15px var(--display)}.iphead .note{margin:0}
+#iCv{width:100%;height:120px;display:block;border:1px solid var(--line);border-radius:10px;background:var(--bg);touch-action:none;cursor:pointer}
+.ilegend{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--muted)}.ilegend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+.ipan .sbtn{height:40px;font-size:13px}
+.chkcard{position:fixed;left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));bottom:max(10px,env(safe-area-inset-bottom,0px));z-index:35;max-width:520px;margin:0 auto;background:var(--panel);border:2px solid var(--accent);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px;box-shadow:0 18px 50px rgba(0,0,0,.6)}
+.chkcard .chkn{font:800 12px var(--display);letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.chkcard h3{margin:0;font:800 20px var(--display)}.chkcard p{margin:0;color:var(--muted)}
+.chkcard .chkmv{color:#ff7a59}.chkcard .chkmv b{color:#ff7a59}
+.chkb{display:flex;gap:8px}.chkb .sbtn{flex:1 1 0;height:50px;font-size:16px;font-weight:800}.chkb.wrap{flex-wrap:wrap}.chkb.wrap .sbtn{flex:1 1 40%;height:46px;font-size:14px}
+.chkn{display:flex;align-items:center}.chkx{margin-left:auto;background:none;border:0;color:var(--muted);font-size:18px;padding:0 4px}
+.chklink{align-self:center;background:none;border:0;color:var(--muted);text-decoration:underline;padding:4px}
 .tsrow .sbtn[aria-pressed=true]{background:var(--accent);color:#1a1405;border-color:var(--accent)}
 .pl.virt .t{opacity:.45;font-style:italic}
 .rlcd{font:700 13px var(--mono, ui-monospace);color:var(--accent);margin-right:auto}
@@ -588,7 +601,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 1.4 · Bêta</span></div>
+      <span class="grp" id="ver">Version 1.5.1 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -821,7 +834,14 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
     <div class="dictbar"><button class="sbtn" id="bDict" aria-pressed="false">🎙️ Dicter mon texte</button><span class="note" id="dictInfo">Dis tes lignes a cappella, elles s'écrivent toutes seules. Brouillon à relire : le rap, ça piège la dictée.</span></div>
   </div>
   <div id="viewP" hidden>
-    <div class="tstart"><span>Les paroles commencent à <b id="tsVal">0:00</b></span><button class="sbtn" id="tsHere">📍 Ici (tête de lecture)</button><button class="sbtn" id="tsMinus" aria-label="1 mesure plus tôt">− 1 mesure</button><button class="sbtn" id="tsPlus" aria-label="1 mesure plus tard">+ 1 mesure</button>
+    <div class="ipan" id="iPan" hidden>
+      <div class="iphead"><b>🎵 Ton instru</b><span class="note" id="iInfo"></span></div>
+      <canvas id="iCv" aria-label="Aperçu de l'instru : touche pour te placer"></canvas>
+      <div class="ilegend" id="iLeg"></div>
+      <div class="tsrow"><button class="sbtn primary" id="iPlay">▶ Écouter</button><button class="sbtn" id="iHere">📍 Le texte démarre ici</button><button class="sbtn" id="iCheck">✅ On vérifie ensemble</button></div>
+      <p class="note">Touche l'onde pour te placer, puis ▶. Les couleurs, c'est ce que j'entends : intro, couplets, refrains (probables : vérifie à l'oreille). « On vérifie ensemble » : je te fais écouter chaque partie, tu réponds oui ou non, et tes sections [Couplet 1], [Refrain]… se calent dessus.</p>
+    </div>
+    <div class="tstart"><span>Les paroles commencent à <b id="tsVal">0:00</b></span><div class="tsrow tssug" id="tsSug" hidden></div><button class="sbtn" id="tsHere">📍 Ici (tête de lecture)</button><button class="sbtn" id="tsMinus" aria-label="1 mesure plus tôt">− 1 mesure</button><button class="sbtn" id="tsPlus" aria-label="1 mesure plus tard">+ 1 mesure</button>
       <details class="tsrow tsman"><summary>Vitesse du texte : <b id="tsMode">auto</b></summary>
         <div class="tsrow"><button class="sbtn" data-lb="0" aria-pressed="true">Auto</button><button class="sbtn" data-lb="0.5" aria-pressed="false">½ mesure</button><button class="sbtn" data-lb="1" aria-pressed="false">1 mesure</button><button class="sbtn" data-lb="2" aria-pressed="false">2 mesures</button></div>
         <div class="tsrow"><span>Tempo <b id="tsBpm">90</b> BPM</span><button class="sbtn" data-bx="2" aria-label="Tempo fois deux">×2</button><button class="sbtn" data-bx="0.5" aria-label="Tempo divisé par deux">÷2</button></div>
@@ -885,8 +905,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 93; // numéro interne (jamais affiché)
-const APP_PUB = '1.4';
+const APP_VER = 96; // numéro interne (jamais affiché)
+const APP_PUB = '1.5.1';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -1927,12 +1947,230 @@ $('#file').addEventListener('change', async e => {
     const keyTxt = key ? ' · ' + NOTES[key.key] + ' ' + SCALES[key.scale].name.toLowerCase() : '';
     if(bpm){
       S.bpm = bpm; $('#bpm').value = bpm; store.set('bpm', bpm); bus.setBpm(bpm); renderTracks();
-      toast('« ' + f.name + ' » chargé · ' + bpm + ' BPM' + keyTxt + ' · niveau calé.');
+      let stTxt = '';
+      if(isInstru){ S.startSugs = null; S.secs = null; const sg = startSugs(), bs = sg.find(o => o.best); if(bs && !S.tsUser){ setTextStart(bs.t); stTxt = ' · paroles à ' + fmt(bs.t, true) + ' (' + bs.why + ')'; } }
+      toast('« ' + f.name + ' » chargé · ' + bpm + ' BPM' + keyTxt + stTxt + '. ' + (stTxt ? 'Autres choix dans Texte → Prompteur.' : 'Niveau calé.'));
     } else toast('« ' + f.name + ' » chargé' + keyTxt + ' · niveau calé.');
     scheduleSave();
   }catch(err){ toast('Format non lu. Essaie un MP3 ou un WAV.'); }
 });
 
+/* ---------- Où démarrent les paroles ? On écoute l'instru : entrée de la rythmique, fin d'intro, changements ---------- */
+function startSuggest(buf, bpm){
+  try{
+    const sr = buf.sampleRate, nc = buf.numberOfChannels, hop = Math.round(sr / 100), N = Math.floor(buf.length / hop);
+    if(!bpm || N < 400) return [];
+    const chs = []; for(let c = 0; c < nc; c++) chs.push(buf.getChannelData(c));
+    /* énergie totale, énergie des graves (kick, basse) et attaques, toutes les 10 ms */
+    const E = new Float32Array(N), Lo = new Float32Array(N), On = new Float32Array(N), Hi = new Float32Array(N);
+    const a = Math.exp(-2 * Math.PI * 150 / sr), ah = Math.exp(-2 * Math.PI * 3000 / sr); let lp = 0, hl = 0, prev = 0;
+    for(let f = 0; f < N; f++){
+      let e = 0, l = 0, hh = 0; const o = f * hop;
+      for(let i = 0; i < hop; i++){ let v = 0; for(let c = 0; c < nc; c++) v += chs[c][o + i]; v /= nc; lp = lp * a + v * (1 - a); hl = hl * ah + v * (1 - ah); const hv = v - hl; e += v * v; l += lp * lp; hh += hv * hv; }
+      E[f] = Math.sqrt(e / hop); Lo[f] = Math.sqrt(l / hop); Hi[f] = Math.sqrt(hh / hop);
+      const le = Math.log(1e-6 + E[f]); On[f] = Math.max(0, le - prev); prev = le;
+    }
+    /* grille : le temps qui tombe le mieux sur les attaques, puis le 1er temps de la mesure = celui où le kick tape le plus */
+    const P = 60 / bpm * 100, bar = P * 4;
+    let ph = 0, best = -1;
+    for(let p0 = 0; p0 < P; p0 += 1){ let sc = 0; for(let x = p0; x < N; x += P) sc += On[Math.round(x)] || 0; if(sc > best){ best = sc; ph = p0; } }
+    /* le « 1 » de la mesure : là où les changements tombent (une partie démarre toujours sur un 1), puis là où le kick tape le plus */
+    let dph = ph, bl = -Infinity; const ks = [], cs = [];
+    for(let k = 0; k < 4; k++){
+      let kick = 0, con = 0, pe = -1, tot = 0;
+      for(let x = ph + k * P; x + bar < N; x += bar){
+        const i = Math.round(x); for(let j = i; j < i + 6 && j < N; j++) kick += Lo[j];
+        let e = 0; for(let j = i; j < i + Math.round(bar); j++) e += E[j] + Lo[j];
+        if(pe >= 0) con += Math.abs(e - pe) * Math.abs(e - pe); pe = e; tot += e;
+      }
+      ks.push(kick); cs.push(tot ? con / tot : 0);
+    }
+    const kM = Math.max(...ks) || 1, cM = Math.max(...cs) || 1;
+    for(let k = 0; k < 4; k++){ const sc = cs[k] / cM + 0.35 * ks[k] / kM; if(sc > bl){ bl = sc; dph = ph + k * P; } }
+    dph = ((dph % bar) + bar) % bar; if(dph > bar - 4) dph -= bar; dph = Math.max(0, dph);
+    const nB = Math.floor((N - dph) / bar); if(nB < 4) return [];
+    const bE = [], bL = [], bO = [], bH = [];
+    for(let b = 0; b < nB; b++){
+      const s0 = Math.round(dph + b * bar), s1 = Math.round(dph + (b + 1) * bar); let e = 0, l = 0, o = 0, hh = 0;
+      for(let f = s0; f < s1; f++){ e += E[f]; l += Lo[f]; o += On[f]; hh += Hi[f]; }
+      const n = s1 - s0; bE.push(e / n); bL.push(l / n); bO.push(o / n); bH.push(hh / n);
+    }
+    const med = arr => { const q = [...arr].sort((x, y) => x - y); return q[q.length >> 1] || 1e-9; };
+    const mE = med(bE), mL = med(bL), mO = med(bO);
+    const tOf = b => Math.max(0, (dph + b * bar) / 100);
+    const out = [];
+    const push = (b, why, sc) => { if(b < 0 || b >= nB) return; const t = tOf(b); if(out.some(o => Math.abs(o.t - t) < bar / 100 * 1.5)) return; out.push({ t, why, sc }); };
+    /* 1. l'entrée de la rythmique : première mesure où graves et attaques arrivent au niveau du morceau */
+    let drum = -1;
+    for(let b = 0; b < nB; b++) if(bL[b] > mL * 0.6 && bO[b] > mO * 0.6){ drum = b; break; }
+    if(drum > 0) push(drum, 'la rythmique démarre', 10);
+    else push(0, 'dès le premier temps', 6);
+    /* 2. les changements : la prod s'ouvre (comparaison 4 mesures avant / 4 mesures après) */
+    const nov = [];
+    for(let b = 2; b < nB - 2 && tOf(b) < 120; b++){
+      const w = Math.min(4, b, nB - b); let d = 0;
+      for(const [arr, m] of [[bE, mE], [bL, mL], [bO, mO]]){ let x = 0, y = 0; for(let k = 1; k <= w; k++){ x += arr[b - k]; y += arr[b + k - 1]; } d += Math.max(0, (y - x) / w / m); }
+      nov.push({ b, d });
+    }
+    /* un vrai changement : un pic local, de préférence calé sur la structure (multiple de 4 mesures après l'entrée de la rythmique) */
+    const base0 = Math.max(0, drum);
+    const peaks = nov.filter((n, i) => (!nov[i - 1] || n.d >= nov[i - 1].d) && (!nov[i + 1] || n.d >= nov[i + 1].d))
+      .map(n => ({ ...n, s: n.d * (((n.b - base0) % 4 === 0) ? 1.6 : 0.7) })).filter(n => n.s > 0.5);
+    peaks.sort((x, y) => y.s - x.s);
+    peaks.slice(0, 3).forEach(n => push(n.b, n.b === drum ? 'la rythmique démarre' : 'le beat change', 5 + Math.min(3, n.s)));
+    /* 3. les intros classiques : 4 ou 8 mesures après le début de la rythmique */
+    const base = Math.max(0, drum);
+    [4, 8].forEach(k => push(base + k, 'après ' + k + ' mesures de rythmique', 3));
+    if(drum > 0) push(0, 'dès le début', 1);
+    out.sort((x, y) => x.t - y.t);
+    const top = out.reduce((m, o) => o.sc > m.sc ? o : m, out[0]);
+    const res = out.filter(o => o.t < 150).sort((x, y) => y.sc - x.sc).slice(0, 4).sort((x, y) => x.t - y.t).map(o => ({ t: Math.round(o.t * 100) / 100, why: o.why, best: o === top }));
+    /* 4. la structure : on découpe en blocs de 4 mesures, on regroupe ceux qui se ressemblent,
+          les parties les plus chargées (graves, aigus, énergie) = refrains probables, les autres = couplets */
+    const mH = med(bH), fv = b => [bE[b] / mE, bL[b] / mL, bO[b] / mO, bH[b] / mH];
+    const blk = (b0, b1) => { const v = [0, 0, 0, 0]; let n = 0; for(let b = b0; b < b1 && b < nB; b++){ fv(b).forEach((x, i) => v[i] += x); n++; } return n ? v.map(x => x / n) : v; };
+    const dist = (x, y) => x.reduce((d, v, i) => d + Math.abs(v - y[i]) / Math.max(0.3, (v + y[i]) / 2), 0) / 4;
+    const segs = [];
+    if(drum > 0) segs.push({ b0: 0, b1: drum, kind: 'intro' });
+    let cur = { b0: base, b1: Math.min(nB, base + 4) };
+    for(let b = base + 4; b < nB; b += 4){
+      const nx = Math.min(nB, b + 4); if(nx - b < 2){ cur.b1 = nx; break; }
+      if(dist(blk(cur.b1 - 4 < cur.b0 ? cur.b0 : cur.b1 - 4, cur.b1), blk(b, nx)) > 0.22){ segs.push(cur); cur = { b0: b, b1: nx }; }
+      else cur.b1 = nx;
+    }
+    cur.b1 = nB; segs.push(cur);
+    const body = segs.filter(g => g.kind !== 'intro');
+    const lvl = g => { const v = blk(g.b0, g.b1); return v[0] + v[1] + v[3]; };
+    if(body.length){
+      const ls = body.map(lvl), lo = Math.min(...ls), hi = Math.max(...ls);
+      const last = body[body.length - 1];
+      if(body.length > 1 && lvl(last) < lo + (hi - lo) * 0.25 && last.b1 - last.b0 <= 8) last.kind = 'outro';
+      body.forEach(g => { if(!g.kind) g.kind = (hi - lo > 0.35 && lvl(g) > (lo + hi) / 2) ? 'refrain' : 'couplet'; });
+    }
+    let nc2 = 0;
+    res.sections = segs.map(g => ({ t: Math.round(tOf(g.b0) * 100) / 100, end: Math.round(tOf(g.b1) * 100) / 100, bars: g.b1 - g.b0, kind: g.kind,
+      name: g.kind === 'intro' ? 'Intro' : g.kind === 'outro' ? 'Outro' : g.kind === 'refrain' ? 'Refrain' : 'Couplet ' + (++nc2) }));
+    res.barSec = bar / 100;
+    return res;
+  }catch(e){ return []; }
+}
+function startSugs(){
+  if(S.startSugs && S.startSugs.bid === bid(trRole('instru')?.buffer)) return S.startSugs.list;
+  const ins = trRole('instru'); if(!ins?.buffer) return [];
+  const list = startSuggest(ins.buffer, S.bpm);
+  S.startSugs = { bid: bid(ins.buffer), list }; return list;
+}
+function instruSections(){ const ins = trRole('instru'); if(S.secs && ins?.buffer && Math.abs((S.secsDur || 0) - ins.buffer.duration) < 0.05) return S.secs; const l = startSugs(); return (l && l.sections) || []; 
+}
+function renderSugs(){
+  const box = $('#tsSug'); if(!box) return;
+  const list = startSugs();
+  box.hidden = !list.length; if(!list.length) return;
+  box.innerHTML = '<span>🎯 Mes propositions :</span>' + list.map((o, i) => `<button class="sbtn" data-sug="${i}" aria-pressed="${Math.abs((S.textStart || 0) - o.t) < 0.05}">${fmt(o.t, true)} · ${o.why}${o.best ? ' ⭐' : ''}</button>`).join('') + '<span class="note" style="flex-basis:100%">Touche une proposition : j\'y cale le début du texte et je te la fais écouter.</span>';
+}
+/* ---------- Aperçu de l'instru dans Texte → Prompteur ---------- */
+const SEC_COL = { intro: '#7c8597', couplet: '#4f8cff', refrain: '#f2b544', pont: '#b07cff', outro: '#7c8597' };
+const iPeaks = new WeakMap();
+function drawInstru(){
+  const pan = $('#iPan'), ins = trRole('instru');
+  if(!pan) return;
+  pan.hidden = !ins?.buffer; if(pan.hidden) return;
+  const cv = $('#iCv'), W = cv.clientWidth, H = cv.clientHeight, dpr = Math.min(2, devicePixelRatio || 1); if(!W) return;
+  if(cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)){ cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
+  const buf = ins.buffer, dur = ins.offset + buf.duration, X = t => t / dur * W;
+  const secs = instruSections(), sugs = startSugs();
+  /* parties */
+  /* anciens emplacements des repères déplacés : en pointillés, avec une flèche vers le nouveau */
+  secs.forEach(sc => { if(sc.was != null && Math.abs(sc.was - sc.t) > 0.05){ const xa = X(sc.was), xb = X(sc.t); g.save(); g.setLineDash([3, 3]); g.strokeStyle = '#ff7a59'; g.lineWidth = 2; g.beginPath(); g.moveTo(xa, 16); g.lineTo(xa, H); g.stroke(); g.setLineDash([]); g.beginPath(); g.moveTo(xa, 24); g.lineTo(xb, 24); g.stroke(); g.fillStyle = '#ff7a59'; g.beginPath(); const d = xb > xa ? 1 : -1; g.moveTo(xb, 24); g.lineTo(xb - 6 * d, 20); g.lineTo(xb - 6 * d, 28); g.fill(); g.restore(); } });
+  secs.forEach((sc, i) => { if(chk && chk.i === i){ g.fillStyle = 'rgba(255,255,255,.10)'; g.fillRect(X(sc.t), 0, X(sc.end) - X(sc.t), H); g.strokeStyle = '#ffffff'; g.lineWidth = 2; g.strokeRect(X(sc.t) + 1, 1, X(sc.end) - X(sc.t) - 2, H - 2); } });
+  secs.forEach(sc => { g.fillStyle = SEC_COL[sc.kind] + '33'; g.fillRect(X(sc.t), 0, Math.max(1, X(sc.end) - X(sc.t)), H); g.fillStyle = SEC_COL[sc.kind]; g.fillRect(X(sc.t), 0, 2, H);
+    g.font = '700 11px system-ui, sans-serif'; const wsec = X(sc.end) - X(sc.t); let lbl = (sc.ok ? '🔒 ' : '') + sc.name; if(wsec < g.measureText(lbl).width + 8) lbl = sc.name; if(wsec < g.measureText(lbl).width + 8) lbl = sc.name.charAt(0) + (sc.name.match(/\d+/) || [''])[0]; if(wsec > g.measureText(lbl).width + 6) g.fillText(lbl, X(sc.t) + 4, 13); });
+  /* onde */
+  let pk = iPeaks.get(buf); const N = 600;
+  if(!pk){ pk = new Float32Array(N); const d = buf.getChannelData(0), per = Math.max(1, Math.floor(d.length / N)); for(let i = 0; i < N; i++){ let m = 0; for(let j = i * per, e = Math.min(d.length, j + per); j < e; j += 16){ const v = Math.abs(d[j]); if(v > m) m = v; } pk[i] = m; } iPeaks.set(buf, pk); }
+  g.fillStyle = 'rgba(200,206,220,.75)'; const x0 = X(ins.offset), ww = X(ins.offset + buf.duration) - x0;
+  for(let i = 0; i < N; i++){ const h = Math.max(1, pk[i] * (H - 34)); g.fillRect(x0 + i / N * ww, 18 + (H - 18 - h) / 2, Math.max(1, ww / N), h); }
+  /* propositions de départ */
+  sugs.forEach(o => { const x = X(o.t); g.fillStyle = '#e7eaf0'; g.beginPath(); g.moveTo(x - 5, H); g.lineTo(x + 5, H); g.lineTo(x, H - 8); g.fill(); if(o.best){ g.font = '11px system-ui'; g.fillText('⭐', x - 6, H - 10); } });
+  /* début du texte */
+  const xt = X(S.textStart || 0); g.fillStyle = '#2ee6a6'; g.fillRect(xt - 1, 0, 3, H); g.font = '700 11px system-ui, sans-serif'; g.fillText('Texte', Math.min(W - 34, xt + 4), H - 4);
+  /* tête de lecture */
+  const xp = X(S.playing ? now() : S.pos); g.fillStyle = S.playing ? '#ff4b4b' : '#ffffff'; g.fillRect(xp - 1, 0, 2, H);
+  $('#iInfo').textContent = S.bpm + ' BPM · ' + fmt(dur, true) + (S.playing ? ' · ' + fmt(now(), true) : '');
+  $('#iPlay').textContent = S.playing ? '⏸ Pause' : '▶ Écouter';
+  const kinds = [...new Set(secs.map(x => x.kind))];
+  const leg = kinds.map(k => `<span><i style="background:${SEC_COL[k]}"></i>${{ intro: 'Intro', couplet: 'Couplet', refrain: S.secs ? 'Refrain' : 'Refrain probable', pont: 'Pont', outro: 'Outro' }[k]}</span>`).join('') + '<span><i style="background:#2ee6a6"></i>Début du texte</span><span>▲ mes propositions</span>' + (secs.some(x => x.was != null && Math.abs(x.was - x.t) > 0.05) ? '<span style="color:#ff7a59">┆→ repère déplacé</span>' : '');
+  if($('#iLeg').innerHTML !== leg) $('#iLeg').innerHTML = leg;
+}
+(function iLoop(){ try{ if(!$('#viewP').hidden && !document.hidden) drawInstru(); }catch(e){} requestAnimationFrame(iLoop); })();
+{ const cv = $('#iCv'); let drag = false;
+  const at = e => { const ins = trRole('instru'); if(!ins?.buffer) return 0; const r = cv.getBoundingClientRect(); return clamp((e.clientX - r.left) / r.width, 0, 1) * (ins.offset + ins.buffer.duration); };
+  cv.addEventListener('pointerdown', e => { drag = true; cv.setPointerCapture(e.pointerId); seek(at(e)); });
+  cv.addEventListener('pointermove', e => { if(drag) seek(at(e)); });
+  cv.addEventListener('pointerup', () => { drag = false; }); cv.addEventListener('pointercancel', () => { drag = false; });
+  $('#iPlay').onclick = () => $('#bPlay').click();
+  $('#iHere').onclick = () => { S.tsUser = true; const p = S.playing ? now() : S.pos; const b = 4 * 60 / S.bpm, sg = startSugs(), g0 = sg.length ? sg[0].t % b : 0; const snap = Math.max(0, Math.round((p - g0) / b) * b + g0); setTextStart(Math.abs(snap - p) < 0.6 ? snap : p); renderSugs(); toast('📍 Le texte démarre à ' + fmt(S.textStart, true) + (Math.abs(snap - p) < 0.6 ? ' (calé sur le 1er temps de la mesure).' : '.')); };
+  window.__applySecs = () => {
+    const secs = instruSections().filter(x => x.kind !== 'outro'); if(!secs.length){ toast('Je n\'ai pas trouvé de parties nettes dans cette instru.'); return; }
+    pushUndo('les repères de parties');
+    const auto = new Set(secs.map(x => normSec(x.name)).concat(['intro', 'outro']));
+    S.markers = S.markers.filter(m => !m.auto);
+    secs.forEach(x => S.markers.push({ t: x.t, name: x.name, auto: true }));
+    if(!S.tsUser){ const c1 = secs.find(x => x.kind !== 'intro'); if(c1) setTextStart(c1.t); }
+    renderMarkers(); renderTracks(); renderPrompt(); scheduleSave();
+  };
+  $('#iCheck').onclick = () => chkStart();
+}
+/* ---------- « On vérifie ensemble » : une partie à la fois, oui ou non ---------- */
+let chk = null;
+const SEC_KINDS = [['intro', 'Intro'], ['couplet', 'Couplet'], ['refrain', 'Refrain'], ['pont', 'Pont'], ['outro', 'Outro']];
+const KIND_Q = { intro: 'l\'intro', couplet: 'un couplet', refrain: 'le refrain', pont: 'un pont', outro: 'l\'outro' };
+function secRename(list){ let n = 0, p = 0; list.forEach(x => { x.name = x.kind === 'couplet' ? 'Couplet ' + (++n) : x.kind === 'pont' ? (++p > 1 ? 'Pont ' + p : 'Pont') : x.kind === 'intro' ? 'Intro' : x.kind === 'outro' ? 'Outro' : 'Refrain'; }); }
+function chkStart(){
+  const ins = trRole('instru'); if(!ins?.buffer){ toast('Charge d\'abord ton instru.'); return; }
+  const base = instruSections(); if(!base.length){ toast('Je n\'ai pas trouvé de parties nettes dans cette instru.'); return; }
+  S.secs = base.map(x => ({ ...x, was: x.was ?? x.t })); S.secsDur = ins.buffer.duration;
+  chk = { i: 0, mode: 'ask' }; chkShow(); chkPlay(); track('verif-parties');
+  chkScroll();
+}
+/* l'aperçu de l'instru juste sous la barre du haut, visible au-dessus de la carte de questions */
+function chkScroll(){ const pan = $('#iPan'), tr = document.querySelector('.transport'); if(!pan) return; const y = pan.getBoundingClientRect().top + scrollY - (tr ? tr.getBoundingClientRect().height : 0) - 8; window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' }); }
+function chkPlay(){ const x = S.secs[chk.i]; if(!x) return; if(S.playing) pause(); S.pos = Math.max(0, x.t - 4 * 60 / S.bpm * 0.5); if(!mic) audioSessionPlay(); unlockSpeaker(); wake().then(() => play()); }
+function chkShow(){
+  let el = $('#chkCard');
+  if(!chk){ if(el) el.remove(); return; }
+  if(!el){ el = document.createElement('div'); el.id = 'chkCard'; el.className = 'chkcard'; document.body.appendChild(el); el.addEventListener('click', chkClick); }
+  const x = S.secs[chk.i] || S.secs[S.secs.length - 1], n = S.secs.length;
+  const head = `<div class="chkn">Partie ${chk.i + 1} sur ${n} · ${fmt(x.t, true)}<button class="chkx" data-c="close" aria-label="Arrêter la vérification">✕</button></div>`;
+  const moved = x.was != null && Math.abs(x.was - x.t) > 0.05 ? `<p class="chkmv">↔ Repère déplacé : ${fmt(x.was, true)} → <b>${fmt(x.t, true)}</b></p>` : '';
+  if(chk.mode === 'ask') el.innerHTML = head + `<h3>Là, c'est bien ${KIND_Q[x.kind]} ?</h3><p>Écoute : ça démarre au trait blanc.</p>${moved}<div class="chkb"><button class="sbtn primary" data-c="yes">✅ Oui</button><button class="sbtn" data-c="no">❌ Non</button></div><button class="chklink" data-c="replay">🔁 Réécouter</button>`;
+  else if(chk.mode === 'what') el.innerHTML = head + `<h3>C'est quoi alors ?</h3><div class="chkb wrap">${SEC_KINDS.filter(([k]) => k !== x.kind).map(([k, l]) => `<button class="sbtn" data-k="${k}">${l}</button>`).join('')}<button class="sbtn" data-c="when">C'est ${KIND_Q[x.kind]}, mais ça ne démarre pas là</button></div>`;
+  else if(chk.mode === 'move') el.innerHTML = head + `<h3>${x.name} démarre…</h3><p>Je décale d'une mesure et je te fais réécouter.</p>${moved}<div class="chkb"><button class="sbtn" data-c="earlier">◀ Plus tôt</button><button class="sbtn" data-c="later">Plus tard ▶</button></div><div class="chkb"><button class="sbtn primary" data-c="yes">✅ C'est bon là</button></div>`;
+  else if(chk.mode === 'end') el.innerHTML = `<div class="chkn">C'est vérifié</div><h3>Nickel 👌</h3><p>${S.secs.filter(y => y.was != null && Math.abs(y.was - y.t) > 0.05).length ? 'Les repères déplacés sont en orange sur ton instru. ' : ''}Tes sections [Couplet 1], [Refrain]… démarrent maintenant pile sur chaque partie.</p><div class="chkb"><button class="sbtn primary" data-c="close">Fermer</button></div>`;
+}
+async function chkClick(e){
+  const b = e.target.closest('button'); if(!b || !chk) return;
+  const x = S.secs[chk.i], bar = 4 * 60 / S.bpm, c = b.dataset.c, k = b.dataset.k;
+  if(c === 'replay'){ chkPlay(); return; }
+  if(c === 'yes'){ x.ok = true; chk.i++; if(chk.i >= S.secs.length){ if(S.playing) pause(); chk.mode = 'end'; window.__applySecs && window.__applySecs(); scheduleSave(); chkShow(); return; } chk.mode = 'ask'; chkShow(); chkPlay(); return; }
+  if(c === 'no'){ chk.mode = 'what'; chkShow(); return; }
+  if(k){ x.kind = k; secRename(S.secs); chk.mode = 'ask'; chkShow(); chkPlay(); return; }
+  if(c === 'when'){ chk.mode = 'move'; chkShow(); return; }
+  if(c === 'earlier' || c === 'later'){
+    const prev = S.secs[chk.i - 1], next = S.secs[chk.i + 1];
+    const nt = x.t + (c === 'earlier' ? -bar : bar);
+    if(nt < (prev ? prev.t + bar * 0.9 : 0) || (next && nt > next.t - bar * 0.9)){ toast('Je ne peux pas aller plus loin : la partie d\'à côté est là.'); return; }
+    x.t = Math.round(nt * 100) / 100; if(prev) prev.end = x.t;
+    chkShow(); chkPlay(); return;
+  }
+  if(c === 'close'){ if(S.playing) pause(); chk = null; chkShow(); }
+}
+function pickSug(o){
+  setTextStart(o.t); S.tsUser = true; renderSugs();
+  if(S.playing) pause(); S.pos = Math.max(0, o.t - 4 * 60 / S.bpm); if(!mic) audioSessionPlay(); unlockSpeaker(); wake().then(() => play());
+  toast('📍 Paroles à ' + fmt(o.t, true) + ' (' + o.why + '). Écoute la mesure d\'avant, le texte part pile là.');
+}
 /* ---------- Détection du tempo (BPM) de l'instru ---------- */
 function detectBpm(buf){
   const sr = buf.sampleRate, nc = buf.numberOfChannels, hop = Math.round(sr / 100), fps = sr / hop, win = hop * 2;
@@ -2934,6 +3172,7 @@ function setTextStart(t){
   if(!$('#viewP').hidden) renderPrompt();
 }
 function updLineUI(){
+  try{ renderSugs(); }catch(e){}
   document.querySelectorAll('[data-lb]').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.lb === (S.lineBars || 0))));
   const md = $('#tsMode'); if(md) md.textContent = S.lineBars ? ({0.5: '½ mesure', 1: '1 mesure', 2: '2 mesures'}[S.lineBars]) + ' par ligne' : 'auto';
   const bp = $('#tsBpm'); if(bp) bp.textContent = Math.round(S.bpm * 10) / 10;
@@ -2950,9 +3189,10 @@ document.querySelectorAll('[data-bx]').forEach(b => b.onclick = () => {
   $('#bpm').value = v; $('#bpm').onchange({ target: $('#bpm') }); reTempo();
   toast('Tempo passé à ' + v + ' BPM (échos et métronome suivent).');
 });
-$('#tsHere').onclick = () => { setTextStart(now()); toast('📍 Les paroles commencent à ' + fmt(S.textStart, true) + '.'); };
-$('#tsMinus').onclick = () => setTextStart((S.textStart || 0) - 4 * 60 / S.bpm);
-$('#tsPlus').onclick = () => setTextStart((S.textStart || 0) + 4 * 60 / S.bpm);
+$('#tsSug').addEventListener('click', e => { const b = e.target.closest('[data-sug]'); if(!b) return; const o = startSugs()[+b.dataset.sug]; if(o) pickSug(o); });
+$('#tsHere').onclick = () => { S.tsUser = true; setTextStart(now()); toast('📍 Les paroles commencent à ' + fmt(S.textStart, true) + '.'); };
+$('#tsMinus').onclick = () => (S.tsUser = true) && setTextStart((S.textStart || 0) - 4 * 60 / S.bpm);
+$('#tsPlus').onclick = () => (S.tsUser = true) && setTextStart((S.textStart || 0) + 4 * 60 / S.bpm);
 const normSec = x => x.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '');
 /* Calage « virtuel » quand rien n'est calé : une ligne par mesure à partir du début des paroles, chaque section sur son repère s'il existe */
 function virtualSyncs(){
@@ -2960,10 +3200,10 @@ function virtualSyncs(){
   const rate = clamp(store.get('sylRate', 5), 2.5, 9);
   /* auto : la ligne dure le temps de la dire (syllabes ÷ ton débit), arrondi au temps près pour rester sur la grille */
   const durOf = l => S.lineBars ? 4 * beat * S.lineBars : Math.max(2, Math.round(Math.max(1, syl(l)) / rate / beat)) * beat;
-  let cur = S.textStart || 0;
+  let cur = S.textStart || 0; const seen = {};
   lines.forEach((l, i) => {
     if(!l.trim()) return;
-    if(isHead(l)){ const mk = S.markers.find(x => normSec(x.name) === normSec(l.trim().slice(1, -1))); if(mk) cur = Math.max(cur, mk.t); return; }
+    if(isHead(l)){ const nm = normSec(l.trim().slice(1, -1)), k = seen[nm] = (seen[nm] || 0) + 1; const mk = S.markers.filter(x => normSec(x.name) === nm).sort((x, y) => x.t - y.t)[k - 1]; if(mk) cur = Math.max(cur, mk.t); return; }
     m[i] = cur; cur += durOf(l);
   });
   return m;
@@ -3097,7 +3337,7 @@ function updatePrompt(){
     for(const k in AS){ if(AS[k] <= p + 0.05 && AS[k] > bt){ bt = AS[k]; best = k; } }
     if(best === curLine) return; curLine = best;
     document.querySelectorAll('.pl.cur').forEach(x => x.classList.remove('cur'));
-    if(best != null){ const el = document.querySelector(`.pl[data-i="${best}"]`); if(el){ el.classList.add('cur'); el.scrollIntoView({ block:'center', behavior:'smooth' }); } }
+    if(best != null){ const el = document.querySelector(`.pl[data-i="${best}"]`); if(el){ el.classList.add('cur'); if(!chk) el.scrollIntoView({ block:'center', behavior:'smooth' }); } }
     return;
   }
   if(!Object.keys(syncs).length && S.markers.length){
@@ -3118,7 +3358,7 @@ function updatePrompt(){
   if(best === curLine) return;
   curLine = best;
   document.querySelectorAll('.pl.cur').forEach(x => x.classList.remove('cur'));
-  if(best != null){ const el = document.querySelector(`.pl[data-i="${best}"]`); if(el){ el.classList.add('cur'); el.scrollIntoView({ block:'center', behavior:'smooth' }); } }
+  if(best != null){ const el = document.querySelector(`.pl[data-i="${best}"]`); if(el){ el.classList.add('cur'); if(!chk) el.scrollIntoView({ block:'center', behavior:'smooth' }); } }
 }
 function setTab(p){
   $('#tabW').setAttribute('aria-selected', !p); $('#tabP').setAttribute('aria-selected', p);
@@ -3318,7 +3558,7 @@ async function saveSession(){
     }
     const rec = { id: sess.id, name: sess.name, link: sess.link || '', created: sess.created || Date.now(), updated: Date.now(),
       bpm: S.bpm, instruKey: S.instruKey || null, markers: S.markers, loopBars: S.loop.bars, dur: trackEnd(),
-      lyrics: ta.value, syncs, syncsAuto, syncsTid: store.get('syncsTid', null), textStart: S.textStart || 0, lineBars: S.lineBars || 0,
+      lyrics: ta.value, syncs, syncsAuto, syncsTid: store.get('syncsTid', null), textStart: S.textStart || 0, tsUser: !!S.tsUser, secs: S.secs || null, secsDur: S.secsDur || 0, lineBars: S.lineBars || 0,
       M: { preset: M.preset, low: M.low, high: M.high, glue: M.glue, target: M.target }, tracks };
     await dbDo('sessions', 'readwrite', st => st.put(JSON.parse(JSON.stringify(rec))));
     const i = sessIndex.findIndex(x => x.id === rec.id), lite = { id: rec.id, name: rec.name, link: rec.link, updated: rec.updated, dur: rec.dur };
@@ -3354,7 +3594,7 @@ async function loadSession(id){
   S.instruKey = rec.instruKey || null; S.markers = rec.markers || []; S.loop = { on: false, bars: rec.loopBars || 4, start: 0 };
   /* chaque son a son propre texte et son propre calage */
   if(rec.lyrics != null){ ta.value = rec.lyrics; syncs = rec.syncs || {}; syncsAuto = rec.syncsAuto ?? true; store.set('syncsTid', rec.syncsTid ?? null); }
-  S.textStart = rec.textStart || 0; S.lineBars = rec.lineBars || 0; try{ updLineUI(); }catch(e){}
+  S.textStart = rec.textStart || 0; S.tsUser = !!rec.tsUser; S.startSugs = null; S.secs = rec.secs || null; S.secsDur = rec.secsDur || 0; S.lineBars = rec.lineBars || 0; try{ updLineUI(); }catch(e){}
   store.set('lyrics', ta.value); store.set('syncs', syncs); store.set('syncsAuto', syncsAuto); lstat(); if(!$('#viewP').hidden) renderPrompt(); updTextStart();
   Object.assign(M, rec.M || {}); mpre.set();
   sess = { id: rec.id, name: rec.name, link: rec.link, created: rec.created }; store.set('sessId', rec.id);
@@ -3383,7 +3623,7 @@ async function newSession(){
   [['Instru', 'instru'], ['Lead', 'lead'], ['Refrain', 'lead'], ['Back', 'back'], ['Ambiance', 'ambiance']].forEach(([n, p]) => addTrack(n, p));
   defaultRefrain();
   S.markers = []; S.loop.on = false; S.instruKey = null; S.pos = 0; S.sel = null;
-  ta.value = ''; syncs = {}; syncsAuto = true; S.textStart = 0; S.lineBars = 0; store.set('lyrics', ''); store.set('syncs', {}); store.set('syncsAuto', true); store.set('syncsTid', null); lstat(); updTextStart();
+  ta.value = ''; syncs = {}; syncsAuto = true; S.textStart = 0; S.tsUser = false; S.startSugs = null; S.secs = null; S.lineBars = 0; store.set('lyrics', ''); store.set('syncs', {}); store.set('syncsAuto', true); store.set('syncsTid', null); lstat(); updTextStart();
   sess = { id: null, name: '', link: '', created: 0 }; store.set('sessId', null);
   sessReady = true;
   renderTracks(); renderMix(); renderSessBar(); renderLoopUI(); setSessState('Nouvelle session');
@@ -5079,7 +5319,7 @@ const HELP = {
     { sel: ['.secbar'], t: 'Les sections', b: 'Ajoute Intro, Couplet (numéroté tout seul), Pré-refrain, Refrain, Pont ou Outro là où est ton curseur. Un deuxième Refrain recopie le premier, tu modifies si besoin.' },
     { sel: ['#lstat'], t: 'Les syllabes', b: 'Le nombre de syllabes de la ligne où tu es, pour équilibrer tes rimes et ton flow.' },
     { sel: ['#bDict'], t: 'Dicter', b: 'Dis tes lignes a cappella, elles s\'écrivent toutes seules, une par pause. Relis : le rap piège la dictée.' },
-    { t: 'Le prompteur', b: 'Règle « Les paroles commencent à » (📍 Ici, ou ± 1 mesure) pour que l\'intro de l\'instru ne fasse pas défiler le texte. Pose des repères au nom de tes sections (+ → Repère) : chaque section démarre pile dessus. La vitesse du texte est automatique : chaque ligne dure le temps de la dire, et l\'appli apprend ton débit à chaque prise. Pour forcer, ouvre « Vitesse du texte ». Ensuite le texte se cale tout seul : sur le tempo pendant ta première prise, puis sur ta voix une fois la prise posée. Tu peux aussi caler à la main (« Caler la ligne suivante » au début de chaque ligne pendant la lecture), ou forcer « Caler sur ma prise » / « Caler sur le tempo ». Pendant REC, ton texte s\'affiche en bas tout seul.' }
+    { t: 'Le prompteur', b: 'En haut, « Ton instru » : toute ton instru en grand, avec les parties que j\'entends (intro, couplets, refrains probables), mes propositions de départ (▲) et le début de ton texte (en vert). Touche l\'onde pour te placer, ▶ pour vérifier, « 📍 Le texte démarre ici » pour choisir, « ✅ On vérifie ensemble » : je te fais écouter chaque partie et je te demande « Là, c\'est bien le refrain ? ». Oui : je verrouille 🔒. Non : tu me dis ce que c\'est, ou tu la décales d\'une mesure, et le repère déplacé reste visible en orange. À la fin, tes sections [Couplet 1], [Refrain]… démarrent pile sur chaque partie. Quand tu charges ton instru, je te propose aussi où démarrer le texte : l\'entrée de la rythmique (⭐ mon choix), quelques mesures après, un changement dans le beat, ou dès le début. Touche une proposition pour l\'écouter et la choisir. Tu peux aussi régler à la main (📍 Ici, ou ± 1 mesure). Pose des repères au nom de tes sections (+ → Repère) : chaque section démarre pile dessus. La vitesse du texte est automatique : chaque ligne dure le temps de la dire, et l\'appli apprend ton débit à chaque prise. Pour forcer, ouvre « Vitesse du texte ». Ensuite le texte se cale tout seul : sur le tempo pendant ta première prise, puis sur ta voix une fois la prise posée. Tu peux aussi caler à la main (« Caler la ligne suivante » au début de chaque ligne pendant la lecture), ou forcer « Caler sur ma prise » / « Caler sur le tempo ». Pendant REC, ton texte s\'affiche en bas tout seul.' }
   ],
   vProjets: [
     { t: 'L\'onglet Projets', b: 'Pour préparer un single, un EP ou un album.' },
@@ -5478,7 +5718,7 @@ function updStep(){
   if(want && !want.arm && !S.recording){ S.tracks.forEach(x => x.arm = false); want.arm = true; renderTracks(); }
   const idl = (st === 'arr' || st === 'export' || st === 'done') ? ideas() : [];
   const voc = vocalTracks().filter(t => t.buffer);
-  const key = [st, voc.map(t => t.id + ':' + t.vstyle + ':' + (isTuned(t) || t.atOn ? 1 : 0)).join(','), L?.buffer ? 1 : 0, R?.buffer ? 1 : 0, B?.buffer ? 1 : 0, S.playing, idl.map(i => i.id).join(','), M.preset, M.target].join('|');
+  const key = [st, voc.map(t => t.id + ':' + t.vstyle + ':' + (isTuned(t) || t.atOn ? 1 : 0)).join(','), L?.buffer ? 1 : 0, R?.buffer ? 1 : 0, B?.buffer ? 1 : 0, S.playing, idl.map(i => i.id).join(','), M.preset, M.target, S.textStart].join('|');
   if(key === stepKey) return; stepKey = key;
   const n = STEP_N[st] || 7;
   const dots = `<div class="stdots">${[1, 2, 3, 4, 5, 6, 7].map(i => `<i class="${i <= n ? 'on' : ''}"></i>`).join('')}</div>`;
@@ -5491,7 +5731,12 @@ function updStep(){
   if(st === 'rec') h = `<div class="stn">● Enregistrement</div><h3>Ça tourne, kicke 🎤</h3><p>Retouche REC (ou le bouton ici) quand tu as fini.</p><div class="stb"><button class="sbtn primary big" data-s="stop">⏹ Arrêter</button></div>`;
   else if(st === 'instru') h = head('Charge ton instru', 'Le beat sur lequel tu vas kicker (MP3 ou WAV, depuis ton téléphone).') + `<div class="stb"><button class="sbtn primary big" data-s="instru">📂 Choisir mon instru</button><button class="sbtn" data-s="noinstru">Je kicke sans instru</button></div>`;
   else if(st === 'text') h = head('Écris ton texte', 'Il défilera tout seul pendant que tu enregistres.') + `<div class="stb"><button class="sbtn primary big" data-s="write">✍️ Écrire mon texte</button><button class="sbtn" data-s="notext">Passer</button></div>`;
-  else if(st === 'lead') h = take(L, 'Pose ta lead', 'Tes couplets, la voix principale. Un décompte part, et tu kickes. Tu peux t\'arrêter et reprendre où tu veux.', null);
+  else if(st === 'lead'){
+    h = take(L, 'Pose ta lead', 'Tes couplets, la voix principale. Un décompte part, et tu kickes. Tu peux t\'arrêter et reprendre où tu veux.', null);
+    const sg = (!L?.buffer && lyr) ? startSugs() : [];
+    if(!L?.buffer && instruSections().length) h += `<div class="stb"><button class="sbtn" data-s="check">✅ On vérifie ensemble les parties de ton instru</button></div>`;
+    if(sg.length) h += `<div class="arrt"><b>🎯 Ton texte démarre à… (touche pour écouter)</b><div class="arrs">${sg.map((o, i) => `<button class="sbtn" data-sug="${i}" aria-pressed="${Math.abs((S.textStart || 0) - o.t) < 0.05}">${fmt(o.t, true)} · ${o.why}${o.best ? ' ⭐' : ''}</button>`).join('')}</div></div>`;
+  }
   else if(st === 'refrain') h = take(R, 'Ton refrain', 'Sur sa propre piste : il pourra avoir son style à lui, plus large et plus fort. Place la lecture au début du refrain, puis enregistre.', 'Pas de refrain dans ce son');
   else if(st === 'back') h = take(B, 'Tes backs', 'Les voix qui appuient tes fins de phrases et tes punchs. Pose-les par-dessus ta lead. Je les nettoie tout seul ensuite.', 'Pas de backs');
   else if(st === 'arr'){
@@ -5511,6 +5756,7 @@ function updStep(){
 }
 stepEl.addEventListener('click', async e => {
   const ib = e.target.closest('[data-idea]'); if(ib){ await ideaUse(ib.dataset.idea); stepKey = ''; updStep(); return; }
+  const sgb = e.target.closest('[data-sug]'); if(sgb){ const o = startSugs()[+sgb.dataset.sug]; if(o) pickSug(o); stepKey = ''; updStep(); return; }
   const av = e.target.closest('[data-avs]'); if(av){ const [id, k] = av.dataset.avs.split(':'); const t = trackById(id); if(t){ await applyVStyle(t, +k); ideaPlay(t); } stepKey = ''; updStep(); return; }
   const aa = e.target.closest('[data-aat]'); if(aa){ const t = trackById(aa.dataset.aat); if(t){ if(!(isTuned(t) || t.atOn)) t.at.speed = t.at.speed ?? AT_SP[0]; await toggleAT(t); ideaPlay(t); } stepKey = ''; updStep(); return; }
   const ms = e.target.closest('[data-mst]'); if(ms){ $(`#mStyle [data-p="${ms.dataset.mst}"]`)?.click(); stepKey = ''; updStep(); return; }
@@ -5528,6 +5774,7 @@ stepEl.addEventListener('click', async e => {
   else if(a === 'back2arr'){ flowSet('arr', false); }
   else if(a === 'level'){ pushUndo('le rééquilibrage'); await rebalanceAll(); toast('Niveaux recalés : voix devant, instru derrière.'); }
   else if(a === 'play'){ if(!S.playing && curStep && cur[curStep]?.buffer) S.pos = Math.max(0, cur[curStep].offset); $('#bPlay').click(); }
+  else if(a === 'check'){ document.querySelector('.nav [data-view="vTexte"]').click(); $('#tabP')?.click(); setTimeout(chkStart, 250); return; }
   else if(a === 'export') $('#bMaster').click();
   else if(a === 'share') $('#bShareMp3').click();
   else if(a === 'reel'){ document.querySelector('.nav [data-view="vPartager"]').click(); setTimeout(() => $('#rsCanvas')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 200); }
