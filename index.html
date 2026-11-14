@@ -585,6 +585,7 @@ body.ed-open .wmark{z-index:41}
       <div class="bkrow"><label class="grp">Tempo (BPM) <input type="number" id="bpm" min="40" max="220" value="90"></label>
       <button class="toggle" id="tCount" aria-pressed="true" title="1 mesure de décompte avant la prise">Décompte</button>
       <button class="toggle" id="tMetro" aria-pressed="false">Métronome</button></div>
+      <div class="bkrow"><button class="toggle" id="tDeBleed" aria-pressed="false">🧽 Retirer l'instru captée par le micro (essai)</button></div>
       <div class="bkrow"><span class="grp">Prises</span><div class="seg" id="recModeSeg" role="group" aria-label="Façon d'enregistrer"><button data-rm2="onego">🎙️ Tout d'un coup</button><button data-rm2="parts">✂️ Partie par partie</button></div></div>
       <div class="bkrow"><span class="grp">Pré-roulement</span><div class="seg" id="preSeg" role="group" aria-label="Pré-roulement"><button data-pr="0">Aucun</button><button data-pr="1">1 mesure</button><button data-pr="2">2 mesures</button></div></div>
       <p class="note">Le tempo est détecté tout seul quand tu importes ton instru. Prises (une fois tes parties calées dans Texte) : tout d'un coup, et je range couplets et refrains sur leur piste ; ou partie par partie, et ça s'arrête à la fin de chaque couplet ou refrain avec la bonne piste armée pour la suite. Le pré-roulement : quand tu refais un passage sur une piste déjà enregistrée, tu réentends ta prise d'avant juste avant, puis l'enregistrement démarre pile au bon endroit (ça remplace le décompte).</p>
@@ -614,7 +615,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 1.7.11 · Bêta</span></div>
+      <span class="grp" id="ver">Version 1.7.12 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -918,8 +919,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 116; // numéro interne (jamais affiché)
-const APP_PUB = '1.7.11';
+const APP_VER = 117; // numéro interne (jamais affiché)
+const APP_PUB = '1.7.12';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -1594,7 +1595,8 @@ async function record(){
     try{
       const blob = new Blob(chunks, { type: rec.mimeType });
       const raw = await ctx.decodeAudioData(await blob.arrayBuffer());
-      const meas = !S.casque ? (measureLatency(raw, recInfo) ?? (recInfo.b != null ? detectClickLatency(raw, recInfo) : null)) : null;
+      let meas = !S.casque ? (measureLatency(raw, recInfo) ?? (recInfo.b != null ? detectClickLatency(raw, recInfo) : null)) : null;
+      if(meas != null && (meas < 30 || meas > 500)) meas = null;
       if(meas != null){ S.latMap[recInfo.route] = meas; store.set('latMap', S.latMap); }
       const latMs = latFor(recInfo.route); showLat();
       const trim = Math.max(0, (recInfo.t0 - recInfo.recStart) + latMs / 1000);
@@ -1609,7 +1611,7 @@ async function record(){
       }
       /* sans écouteurs : on enlève l'instru captée par le micro */
       let cleaned = false;
-      if(!S.casque){ setBusy(true, 'Je nettoie l\'instru captée par le micro…'); const cl = await removeBleed(buf, recInfo.pos, recInfo.track); setBusy(false); if(cl){ buf = cl; cleaned = true; } }
+      if(!S.casque && store.get('deBleed', false)){ setBusy(true, 'Je nettoie l\'instru captée par le micro…'); const cl = await removeBleed(buf, recInfo.pos, recInfo.track); setBusy(false); if(cl){ buf = cl; cleaned = true; } }
       /* Mise à niveau automatique de la prise : crête ramenée à −1 dB */
       let pk = 0;
       for(let c = 0; c < buf.numberOfChannels; c++){ const d = buf.getChannelData(c); for(let i = 0; i < d.length; i++){ const a = Math.abs(d[i]); if(a > pk) pk = a; } }
@@ -6190,6 +6192,8 @@ stepEl.addEventListener('click', async e => {
 });
 setInterval(updStep, 500);
 applyMode();
+{ const b = $('#tDeBleed'); const up = () => b.setAttribute('aria-pressed', String(store.get('deBleed', false))); up();
+  b.onclick = () => { store.set('deBleed', !store.get('deBleed', false)); up(); toast(store.get('deBleed', false) ? '🧽 Essai activé : sans écouteurs, je retire l\'instru captée par le micro. Si ça sonne moins bien, recoupe-le.' : 'Nettoyage coupé : ta prise reste brute, comme avant.'); }; }
 function syncRecMode(){ document.querySelectorAll('#recModeSeg [data-rm2]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.rm2 === recMode()))); }
 $('#recModeSeg').addEventListener('click', e => { const b = e.target.closest('[data-rm2]'); if(!b) return; store.set('recMode', b.dataset.rm2); syncRecMode(); stepKey = ''; toast(b.dataset.rm2 === 'parts' ? '✂️ Partie par partie : ça s\'arrête à la fin de chaque couplet ou refrain.' : '🎙️ Tout d\'un coup : je range couplets et refrains sur leur piste.'); });
 syncRecMode();
