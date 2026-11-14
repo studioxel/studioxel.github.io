@@ -319,6 +319,7 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
 .wpanel{width:100%;max-width:440px;max-height:100%;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:10px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
 .wpanel h2{margin:0 0 6px;font:800 22px/1.2 var(--display)}
 .wbig{height:60px;border-radius:12px;border:0;background:var(--accent);color:#1a1405;font:800 19px var(--display)}
+.calbeat{position:relative;width:200px;height:200px;margin:8px auto}.calbeat .ring{position:absolute;inset:0;border:5px solid var(--accent);border-radius:50%;will-change:transform}.calbeat .dot{position:absolute;inset:55px;border-radius:50%;background:var(--accent);opacity:.22;transition:opacity .06s}.calbeat .dot.hit{opacity:1}.calcnt{text-align:center;font:800 22px var(--display);margin:0}
 .wsub{margin-top:8px;font:700 11px var(--display);text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
 .witem{text-align:left;background:var(--raise);border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:3px}
 .witem b{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -620,7 +621,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 1.9.3 · Bêta</span></div>
+      <span class="grp" id="ver">Version 1.9.5 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -1064,8 +1065,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 132; // numéro interne (jamais affiché)
-const APP_PUB = '1.9.3';
+const APP_VER = 134; // numéro interne (jamais affiché)
+const APP_PUB = '1.9.5';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -1906,23 +1907,26 @@ function devName(){
 function devKey(){ return routeKey() + '|' + devName().toLowerCase(); }
 function calDone(k){ return S.latDev[k || devKey()] != null; }
 function calDetect(raw, recStart, times){
-  const sr = raw.sampleRate, d = raw.getChannelData(0), a0 = Math.round(0.15 * sr), w = Math.round(0.75 * sr), sm = Math.max(1, Math.round(sr * 0.002)), res = [];
+  const sr = raw.sampleRate, d = raw.getChannelData(0), a0 = Math.round(0.2 * sr), w = Math.round(0.85 * sr), sm = Math.max(1, Math.round(sr * 0.004)), res = [];
   for(const t of times){
     const e = Math.round((t - recStart) * sr) - a0; if(e < 1 || e + w >= d.length) continue;
     const env = new Float32Array(w); let acc = 0;
-    for(let k = 0; k < w; k++){ acc += Math.abs(d[e + k]) - (k >= sm ? Math.abs(d[e + k - sm]) : 0); env[k] = acc / sm; }
-    const so = Array.from(env).sort((x, y) => x - y), floor = so[Math.floor(w * 0.3)] + 1e-6, mx = so[w - 1];
-    if(mx < floor * 8) continue;
-    const th = Math.max(mx * 0.35, floor * 6);
+    for(let k = 0; k < w; k++){ const v = d[e + k] * d[e + k], o = k >= sm ? d[e + k - sm] * d[e + k - sm] : 0; acc += v - o; env[k] = Math.sqrt(Math.max(0, acc) / sm); }
+    const so = Array.from(env).sort((x, y) => x - y), floor = so[Math.floor(w * 0.25)] + 1e-6, mx = so[w - 1];
+    if(mx < floor * 4) continue;
+    const th = Math.max(mx * 0.3, floor * 3);
     let k = 0; while(k < w && env[k] < th) k++;
     res.push((k - a0) / sr * 1000);
   }
-  if(res.length < 5) return null;
+  if(res.length < 3) return { ms: null, n: res.length };
   res.sort((x, y) => x - y);
-  const med = res[Math.floor(res.length / 2)], ok = res.filter(v => Math.abs(v - med) < 45);
-  if(ok.length < 5) return null;
-  return Math.round(ok.reduce((x, v) => x + v, 0) / ok.length);
+  /* le groupe le plus serré (±70 ms) : on ignore les claps ratés */
+  let best = [];
+  for(const c of res){ const g = res.filter(v => Math.abs(v - c) <= 70); if(g.length > best.length) best = g; }
+  const avg = Math.round(best.reduce((x, v) => x + v, 0) / best.length);
+  return { ms: best.length >= 5 ? avg : null, n: best.length, rough: avg };
 }
+let calFails = 0;
 async function calibrateLat(){
   if(calBusy || S.recording) return false; calBusy = true; S.calib = true;
   if(S.playing) pause();
@@ -1936,28 +1940,55 @@ async function calibrateLat(){
     if(devKey() !== key){ key = devKey(); if(mic && micEC !== wantEC()){ releaseMic(true); await getMic(); } }
     if(!window.MediaRecorder) throw new Error('rec');
     await wake();
-    setBusy(true, '👏 Tape dans tes mains pile sur chaque clic…');
+    /* un rond qui se resserre et s'allume pile sur le clic : on voit arriver le temps, plus de surprise */
+    const ov = document.createElement('div'); ov.className = 'welcome calrun'; ov.setAttribute('role', 'dialog');
+    ov.innerHTML = `<div class="wpanel"><h2>🎤 Dis « TA » quand le rond s'allume</h2><div class="calbeat"><i class="ring"></i><b class="dot"></b></div><p class="calcnt">Prends le rythme…</p></div>`;
+    document.body.appendChild(ov);
+    const ring = ov.querySelector('.ring'), dot = ov.querySelector('.dot'), cnt = ov.querySelector('.calcnt');
     const chunks = [], r = new MediaRecorder(mic);
     r.ondataavailable = e => { if(e.data.size) chunks.push(e.data); };
     const started = new Promise(res => r.onstart = () => res(ctx.currentTime)), stopped = new Promise(res => r.onstop = res);
     r.start(); const recStart = await started;
-    const gap = 0.75, b0 = ctx.currentTime + 0.4, times = [];
-    for(let i = 0; i < 12; i++){ click(b0 + i * gap, i % 4 === 0); if(i >= 4) times.push(b0 + i * gap); }
-    await new Promise(res => setTimeout(res, (0.4 + 12 * gap + 0.6) * 1000));
+    /* 1,5 s pour que les écouteurs Bluetooth basculent en mode micro, puis 4 clics pour prendre le rythme et 10 mesurés, tranquillement */
+    const gap = 0.9, b0 = ctx.currentTime + 1.5, times = [];
+    for(let i = 0; i < 14; i++){ click(b0 + i * gap, true); if(i >= 4) times.push(b0 + i * gap); }
+    /* le visuel suit le son tel qu'il arrive dans tes oreilles (le Bluetooth a du retard) */
+    const ol = ctx.outputLatency || 0, vlat = (ol > 0.005 ? ol : routeKey() === 'bt' ? 0.17 : 0.02) + (ctx.baseLatency || 0);
+    let anim = true, lastTxt = '';
+    (function frame(){
+      if(!anim) return;
+      const tnow = ctx.currentTime - vlat, i = Math.floor((tnow - b0) / gap + 1e-3), next = b0 + (i + 1) * gap;
+      const p = clamp(1 - (next - tnow) / gap, 0, 1), sc = 1 - 0.45 * p;
+      ring.style.transform = 'scale(' + sc.toFixed(3) + ')';
+      ring.style.opacity = i >= 13 ? '0' : '1';
+      dot.classList.toggle('hit', i >= 0 && tnow - (b0 + i * gap) < 0.14);
+      const txt = i < 3 ? 'Prends le rythme… ' + Math.max(1, i + 2) : i >= 13 ? '✓' : 'TA ! ' + Math.min(10, i - 2) + ' / 10';
+      if(txt !== lastTxt){ lastTxt = txt; cnt.textContent = txt; }
+      requestAnimationFrame(frame);
+    })();
+    await new Promise(res => setTimeout(res, (1.5 + 14 * gap + 0.8) * 1000));
+    anim = false; ov.remove();
     r.stop(); await stopped; releaseMic();
+    setBusy(true, 'Je mesure…');
     const raw = await ctx.decodeAudioData(await new Blob(chunks, { type: r.mimeType }).arrayBuffer());
-    let ms = calDetect(raw, recStart, times);
+    const R = calDetect(raw, recStart, times);
     setBusy(false);
-    if(ms == null || ms < -60 || ms > 700){
-      track('latence-ratee');
-      toast('🎯 Je n\'ai pas bien entendu tes claps. Réessaie en tapant fort et pile sur les clics.');
-    } else {
-      ms = Math.max(0, ms);
-      S.latDev[key] = ms; store.set('latDev', S.latDev); showLat(); ok = true; calDev = key;
-      track('latence-reglee-' + routeKey());
-      toast('🎯 Timing réglé : ' + ms + ' ms. C\'est retenu pour ce matériel.');
+    let ms = R.ms != null && R.ms > -80 && R.ms < 800 ? R.ms : null, rough = false;
+    if(ms == null){
+      calFails++;
+      /* 2 essais ratés : on ne bloque pas, on garde la meilleure estimation (refaisable dans Réglages) */
+      if(calFails >= 2){ ms = R.rough != null && R.n >= 3 && R.rough > -80 && R.rough < 800 ? R.rough : latFor(routeKey()); rough = true; }
     }
-  }catch(e){ setBusy(false); toast(e && e.name === 'NotAllowedError' ? 'Autorise le micro pour faire le calage.' : 'Calage impossible ici, réessaie dans Réglages.'); }
+    if(ms == null){
+      track('latence-ratee');
+      toast('🎯 Pas assez net. On recommence : dis « TA » bien fort, pile sur chaque clic.');
+    } else {
+      ms = Math.max(0, Math.round(ms)); calFails = 0;
+      S.latDev[key] = ms; store.set('latDev', S.latDev); showLat(); ok = true; calDev = key;
+      track((rough ? 'latence-approx-' : 'latence-reglee-') + routeKey());
+      toast(rough ? '🎯 Réglage approximatif gardé (' + ms + ' ms). Tu pourras le refaire au calme dans Réglages.' : '🎯 Timing réglé : ' + ms + ' ms. C\'est retenu pour ce matériel.');
+    }
+  }catch(e){ setBusy(false); document.querySelectorAll('.calrun').forEach(x => x.remove()); toast(e && e.name === 'NotAllowedError' ? 'Autorise le micro pour faire le calage.' : 'Calage impossible ici, réessaie dans Réglages.'); }
   calBusy = false; S.calib = false;
   return ok;
 }
@@ -1969,8 +2000,8 @@ function calAsk(changed, retry){
     w.className = 'welcome calw'; w.setAttribute('role', 'dialog'); w.setAttribute('aria-label', '🎯 On règle le timing');
     w.innerHTML = `<div class="wpanel">
       <h2>${changed ? '🎯 Nouveau matériel détecté : on refait le timing' : '🎯 On règle le timing'}</h2>
-      ${retry ? '<p class="note"><b>On recommence : tape fort, pile sur chaque clic.</b></p>' : ''}
-      <p class="note">Pour ce matériel (${esc(devName())}) : tape dans tes mains (ou dis « pa ») pile sur chaque clic. 10 secondes, et tes prises tomberont dans les temps.</p>
+      ${retry ? '<p class="note"><b>On recommence : dis « TA » bien fort, pile sur chaque clic.</b></p>' : ''}
+      <p class="note">Pour ce matériel (${esc(devName())}) : dis « TA » pile quand le rond s'allume, en même temps que le clic. Les 4 premiers servent à prendre le rythme. 15 secondes, et tes prises tomberont dans les temps.</p>
       <button class="wbig" data-c="go">🎯 Go</button>
     </div>`;
     document.body.appendChild(w);
@@ -4201,11 +4232,13 @@ async function newSession(){
   defaultRefrain();
   S.markers = []; S.loop.on = false; S.instruKey = null; S.pos = 0; S.sel = null;
   ta.value = ''; syncs = {}; syncsAuto = true; S.textStart = 0; S.tsUser = false; S.startSugs = null; S.secs = null; S.lineBars = 0; store.set('lyrics', ''); store.set('syncs', {}); store.set('syncsAuto', true); store.set('syncsTid', null); lstat(); updTextStart();
+  S.secsDur = 0; curLine = null; flow = { sid: undefined }; if(chk){ chk = null; try{ chkShow(); }catch(e){} } if(tap){ tap = null; try{ tapShow(); }catch(e){} }
+  try{ updLineUI(); }catch(e){} try{ renderPrompt(); }catch(e){} try{ renderMarkers(); }catch(e){}
   sess = { id: null, name: '', link: '', created: 0 }; store.set('sessId', null);
   sessReady = true;
   renderTracks(); renderMix(); renderSessBar(); renderLoopUI(); setSessState('Nouvelle session');
   await setupNew();
-  toast('Nouvelle session « ' + sess.name + ' ». Elle se sauvegarde toute seule dès le premier son.');
+  toast('Nouvelle session. Elle se sauvegarde toute seule dès le premier son.');
   startTour();
 }
 async function deleteSession(id){
@@ -4245,7 +4278,7 @@ function renderSessList(){
   if(!sessIndex.length){ box.innerHTML = '<p class="note">Aucune session sauvegardée pour l\'instant. Importe une instru ou enregistre une prise : la session se sauvegarde toute seule.</p>'; return; }
   box.innerHTML = sessIndex.slice().sort((a, b) => b.updated - a.updated).map(x => `
     <div class="sessitem ${x.id === sess.id ? 'cur' : ''}">
-      <div class="si"><b>${esc(x.name)}</b><span>${esc(linkLabel(x.link) || 'Pas liée à un projet')} · ${fmt(x.dur || 0, true)} · ${new Date(x.updated).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}</span></div>
+      <div class="si"><b data-noi18n>${esc(x.name)}</b><span>${esc(linkLabel(x.link) || 'Pas liée à un projet')} · ${fmt(x.dur || 0, true)} · ${new Date(x.updated).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}</span></div>
       ${x.id === sess.id ? '<span class="sstate">ouverte</span>' : `<button class="sbtn" data-open="${x.id}">Ouvrir</button>`}
       <button class="sbtn ${sessDelArm === x.id ? 'del confirm' : ''}" data-del="${x.id}">${sessDelArm === x.id ? 'Sûr ?' : '✕'}</button>
     </div>`).join('');
@@ -4276,7 +4309,7 @@ async function startSessions(){
 }
 /* À l'ouverture : on choisit, rien n'est rouvert d'office */
 function showWelcome(){
-  if(!sessIndex.length){ setupNew().then(startTour); return; }
+  if(!sessIndex.length){ newSession(); return; }
   const list = sessIndex.slice().sort((a, b) => b.updated - a.updated).slice(0, 4);
   const w = document.createElement('div');
   w.className = 'welcome'; w.setAttribute('role', 'dialog'); w.setAttribute('aria-label', 'Que veux-tu faire ?');
@@ -4284,7 +4317,7 @@ function showWelcome(){
     <h2>${ME.name ? 'Salut ' + esc(ME.name) + ',' : 'Salut,'} on fait quoi ?</h2>
     <button class="wbig" data-w="new">+ Nouveau son</button>
     <div class="wsub">Reprendre une session</div>
-    ${list.map(x => `<button class="witem" data-w="${x.id}"><b>${esc(x.name)}</b><span>${esc(linkLabel(x.link) || 'Pas liée à un projet')} · ${fmt(x.dur || 0, true)} · ${new Date(x.updated).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}</span></button>`).join('')}
+    ${list.map(x => `<button class="witem" data-w="${x.id}"><b data-noi18n>${esc(x.name)}</b><span>${esc(linkLabel(x.link) || 'Pas liée à un projet')} · ${fmt(x.dur || 0, true)} · ${new Date(x.updated).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}</span></button>`).join('')}
     ${sessIndex.length > 4 ? '<button class="wlink" data-w="all">Voir toutes mes sessions</button>' : ''}
     ${AUTO.bk && (backupAge() == null ? sessIndex.length >= 2 : backupAge() >= 7) ? `<div class="wbk">💾 ${backupAge() == null ? 'Tes sons ne sont gardés que dans ce téléphone.' : 'Dernière sauvegarde il y a ' + backupAge() + ' jours.'}<button class="sbtn" data-w="bk">Sauvegarder maintenant</button></div>` : ''}
   </div>`;
@@ -4297,7 +4330,7 @@ function showWelcome(){
     if(v === 'bk'){ makeBackup().then(() => showWelcome()); return; }
     if(v === 'all'){ $('#plusMenu').hidden = false; $('#plusBtn').setAttribute('aria-expanded', 'true'); renderSessBar(); $('#sessList').hidden = false; renderSessList(); return; }
     if(v !== 'new'){ await openSession(v); calDev = null; sessOn = true; }
-    else { await setupNew(); startTour(); }
+    else await newSession();
   });
 }
 
@@ -6580,7 +6613,7 @@ document.querySelectorAll('[data-auto]').forEach(b => {
 
 
 /* ---------- Page principale : effets par piste, menu « + » ---------- */
-function showSessTitle(){ const h = $('#sessTitle'); if(h) h.textContent = sess.name || 'Nouvelle session'; }
+function showSessTitle(){ const h = $('#sessTitle'); if(!h) return; if(sess.name) h.setAttribute('data-noi18n', ''); else h.removeAttribute('data-noi18n'); h.textContent = sess.name || 'Nouvelle session'; }
 list.addEventListener('click', async e => {
   const c = e.target.closest('.fxc'), d = e.target.closest('.dose button');
   if(!c && !d) return;
