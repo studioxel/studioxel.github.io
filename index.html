@@ -608,7 +608,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 1.5.3 · Bêta</span></div>
+      <span class="grp" id="ver">Version 1.6 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -846,7 +846,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
       <canvas id="iCv" aria-label="Aperçu de l'instru : touche pour te placer"></canvas>
       <div class="ilegend" id="iLeg"></div>
       <div class="tsrow"><button class="sbtn primary" id="iPlay">▶ Écouter</button><button class="sbtn" id="iHere">📍 Le texte démarre ici</button><button class="sbtn" id="iCheck">✅ On vérifie ensemble</button></div>
-      <p class="note">En haut, tout ton son : touche-le pour y aller. En dessous, le zoom qui suit la lecture : touche pour te placer, puis ▶. Les couleurs, c'est ce que j'entends : intro, couplets, refrains (probables : vérifie à l'oreille). « On vérifie ensemble » : je te fais écouter chaque partie, tu réponds oui ou non, et tes sections [Couplet 1], [Refrain]… se calent dessus.</p>
+      <p class="note">En haut, tout ton son : touche-le pour y aller. En dessous, le zoom qui suit la lecture : touche pour te placer, puis ▶. Bleu = couplets, jaune = refrains (ce que j'entends : vérifie à l'oreille). « On vérifie ensemble » : 4 questions pour découper ton son, puis tu valides chaque partie à l'oreille, et tes sections [Couplet 1], [Refrain]… se calent dessus.</p>
     </div>
     <div class="tstart"><span>Les paroles commencent à <b id="tsVal">0:00</b></span><div class="tsrow tssug" id="tsSug" hidden></div><button class="sbtn" id="tsHere">📍 Ici (tête de lecture)</button><button class="sbtn" id="tsMinus" aria-label="1 mesure plus tôt">− 1 mesure</button><button class="sbtn" id="tsPlus" aria-label="1 mesure plus tard">+ 1 mesure</button>
       <details class="tsrow tsman"><summary>Vitesse du texte : <b id="tsMode">auto</b></summary>
@@ -912,8 +912,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 98; // numéro interne (jamais affiché)
-const APP_PUB = '1.5.3';
+const APP_VER = 99; // numéro interne (jamais affiché)
+const APP_PUB = '1.6';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -2067,7 +2067,11 @@ function startSugs(){
   const list = startSuggest(ins.buffer, S.bpm);
   S.startSugs = { bid: bid(ins.buffer), list }; return list;
 }
-function instruSections(){ const ins = trRole('instru'); if(S.secs && ins?.buffer && Math.abs((S.secsDur || 0) - ins.buffer.duration) < 0.05) return S.secs; const l = startSugs(); return (l && l.sections) || []; 
+function instruSections(){
+  const ins = trRole('instru');
+  if(S.secs && ins?.buffer && Math.abs((S.secsDur || 0) - ins.buffer.duration) < 0.05) return S.secs.filter(x => x.kind === 'couplet' || x.kind === 'refrain');
+  const l = startSugs(), raw = ((l && l.sections) || []).filter(x => x.kind !== 'intro' && x.kind !== 'outro').map(x => ({ ...x, kind: x.kind === 'refrain' ? 'refrain' : 'couplet' }));
+  secRename(raw); return raw; 
 }
 function renderSugs(){
   const box = $('#tsSug'); if(!box) return;
@@ -2087,7 +2091,7 @@ function drawInstru(){
   const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
   const buf = ins.buffer, dur = ins.offset + buf.duration, bar = 4 * 60 / S.bpm;
   const secs = instruSections(), sugs = startSugs(), p = S.playing ? now() : S.pos;
-  const cur = chk && secs[chk.i];
+  const cur = chk && (chk.mode === 'start' ? { t: chk.t0, end: chk.t0 + 8 * 4 * 60 / S.bpm, name: 'Couplet 1', kind: 'couplet' } : (chk.mode === 'ask' || chk.mode === 'move') ? secs[chk.i] : null);
   /* fenêtre zoomée : 8 mesures autour de la partie vérifiée, sinon autour de la lecture (elle suit) */
   let v0, v1;
   if(cur){ v0 = Math.max(0, cur.t - 2 * bar); v1 = Math.min(dur, cur.t + 6 * bar); }
@@ -2109,13 +2113,13 @@ function drawInstru(){
   for(let x = 0; x < W; x += 2){ const t0 = v0 + x / W * (v1 - v0) - ins.offset, t1 = v0 + (x + 2) / W * (v1 - v0) - ins.offset; let m = 0; for(let i = Math.max(0, Math.floor(t0 * sr)), e = Math.min(d.length, Math.floor(t1 * sr)); i < e; i += 24){ const v = Math.abs(d[i]); if(v > m) m = v; } const h = Math.max(1, m * amp * 2); g.fillRect(x, mid - h / 2, 2, h); }
   /* débuts de parties : gros traits et noms lisibles */
   g.font = '800 13px system-ui, sans-serif';
-  secs.forEach((sc, i) => { if(sc.t < v0 - 0.01 || sc.t > v1) return; const x = X(sc.t), isCur = cur && sc === cur;
+  (cur && !secs.includes(cur) ? secs.concat([cur]) : secs).forEach((sc, i) => { if(sc.t < v0 - 0.01 || sc.t > v1) return; const x = X(sc.t), isCur = cur && sc === cur;
     g.fillStyle = isCur ? '#ffffff' : SEC_COL[sc.kind]; g.fillRect(x - (isCur ? 2 : 1), TOP, isCur ? 4 : 2, H - TOP);
     const lbl = (sc.ok ? '🔒 ' : '') + (isCur ? sc.name + ' ?' : sc.name); g.fillStyle = 'rgba(11,13,18,.75)'; const tw = g.measureText(lbl).width; g.fillRect(x + 3, TOP + 2, tw + 10, 20); g.fillStyle = isCur ? '#ffffff' : SEC_COL[sc.kind]; g.fillText(lbl, x + 8, TOP + 17); });
   /* la partie d'avant, rappelée à gauche */
   const before = secs.filter(sc => sc.t < v0 + 0.01).pop(); if(before){ g.fillStyle = SEC_COL[before.kind]; g.font = '700 12px system-ui, sans-serif'; g.fillText('◀ ' + before.name, 6, H - 8); }
   /* repères déplacés : ancien emplacement en pointillés orange + flèche */
-  secs.forEach(sc => { if(sc.was == null || Math.abs(sc.was - sc.t) < 0.05) return; const xa = X(sc.was), xb = X(sc.t); g.save(); g.setLineDash([4, 4]); g.strokeStyle = '#ff7a59'; g.lineWidth = 2; g.beginPath(); g.moveTo(xa, TOP); g.lineTo(xa, H); g.stroke(); g.setLineDash([]); g.beginPath(); g.moveTo(xa, TOP + 34); g.lineTo(xb, TOP + 34); g.stroke(); const dd = xb > xa ? 1 : -1; g.fillStyle = '#ff7a59'; g.beginPath(); g.moveTo(xb, TOP + 34); g.lineTo(xb - 7 * dd, TOP + 29); g.lineTo(xb - 7 * dd, TOP + 39); g.fill(); g.font = '700 11px system-ui'; g.fillText('avant ' + fmt(sc.was, true), Math.min(W - 80, xa + 4), H - 22); g.restore(); });
+  secs.forEach(sc => { if(sc.was == null || Math.abs(sc.was - sc.t) < 0.05) return; const xa = X(sc.was), xb = X(sc.t); if(xa < 0 || xa > W) return; g.save(); g.setLineDash([4, 4]); g.strokeStyle = '#ff7a59'; g.lineWidth = 2; g.beginPath(); g.moveTo(xa, TOP); g.lineTo(xa, H); g.stroke(); g.setLineDash([]); g.beginPath(); g.moveTo(xa, TOP + 34); g.lineTo(xb, TOP + 34); g.stroke(); const dd = xb > xa ? 1 : -1; g.fillStyle = '#ff7a59'; g.beginPath(); g.moveTo(xb, TOP + 34); g.lineTo(xb - 7 * dd, TOP + 29); g.lineTo(xb - 7 * dd, TOP + 39); g.fill(); g.font = '700 11px system-ui'; g.fillText('avant ' + fmt(sc.was, true), Math.min(W - 80, xa + 4), H - 22); g.restore(); });
   /* propositions et début du texte */
   sugs.forEach(o => { if(o.t < v0 || o.t > v1) return; const x = X(o.t); g.fillStyle = '#e7eaf0'; g.beginPath(); g.moveTo(x - 6, H); g.lineTo(x + 6, H); g.lineTo(x, H - 9); g.fill(); });
   if((S.textStart || 0) >= v0 && (S.textStart || 0) <= v1){ const xt = X(S.textStart || 0); g.fillStyle = '#2ee6a6'; g.fillRect(xt - 1, TOP, 3, H - TOP); g.font = '700 11px system-ui'; g.fillText('Texte', Math.min(W - 36, xt + 5), H - 8); }
@@ -2130,14 +2134,15 @@ function drawInstru(){
   g.restore();
   $('#iInfo').textContent = S.bpm + ' BPM · ' + fmt(p, true) + ' / ' + fmt(dur, true);
   $('#iPlay').textContent = S.playing ? '⏸ Pause' : '▶ Écouter';
-  const kinds = ['intro', 'couplet', 'refrain', 'pont', 'outro'].filter(k => secs.some(x => x.kind === k));
-  const leg = kinds.map(k => `<span><i style="background:${SEC_COL[k]}"></i>${{ intro: 'Intro', couplet: 'Couplet', refrain: S.secs ? 'Refrain' : 'Refrain probable', pont: 'Pont', outro: 'Outro' }[k]}</span>`).join('') + '<span><i style="background:#2ee6a6"></i>Début du texte</span>' + (secs.some(x => x.was != null && Math.abs(x.was - x.t) > 0.05) ? '<span style="color:#ff7a59">┆→ repère déplacé</span>' : '');
+  const kinds = ['couplet', 'refrain'].filter(k => secs.some(x => x.kind === k));
+  const leg = kinds.map(k => `<span><i style="background:${SEC_COL[k]}"></i>${{ couplet: 'Couplet', refrain: S.secs ? 'Refrain' : 'Refrain probable' }[k]}</span>`).join('') + '<span><i style="background:#2ee6a6"></i>Début du texte</span>' + (secs.some(x => x.was != null && Math.abs(x.was - x.t) > 0.05) ? '<span style="color:#ff7a59">┆→ repère déplacé</span>' : '');
   if($('#iLeg').innerHTML !== leg) $('#iLeg').innerHTML = leg;
   pan.classList.toggle('checking', !!cur); document.body.classList.toggle('checking', !!cur);
 }
 let iView = null;
 (function iLoop(){ try{ if(!$('#viewP').hidden && !document.hidden) drawInstru(); }catch(e){} requestAnimationFrame(iLoop); })();
 { const cv = $('#iCv'); let drag = false;
+  $('#iPan').addEventListener('pointerdown', () => { iTouchAt = Date.now(); }, true);
   const at = e => { const ins = trRole('instru'); if(!ins?.buffer) return 0; const r = cv.getBoundingClientRect(), dur = ins.offset + ins.buffer.duration, fx = clamp((e.clientX - r.left) / r.width, 0, 1);
     if(e.clientY - r.top < 26 || chk) { iView = null; return fx * dur; }
     const bar = 4 * 60 / S.bpm, span = Math.min(dur, 8 * bar), v0 = iView ?? 0; return v0 + fx * span; };
@@ -2166,23 +2171,33 @@ let iView = null;
 }
 /* ---------- « On vérifie ensemble » : une partie à la fois, oui ou non ---------- */
 let chk = null;
-const SEC_KINDS = [['intro', 'Intro'], ['couplet', 'Couplet'], ['refrain', 'Refrain'], ['pont', 'Pont'], ['outro', 'Outro']];
-const KIND_Q = { intro: 'l\'intro', couplet: 'un couplet', refrain: 'le refrain', pont: 'un pont', outro: 'l\'outro' };
-function secRename(list){ let n = 0, p = 0; list.forEach(x => { x.name = x.kind === 'couplet' ? 'Couplet ' + (++n) : x.kind === 'pont' ? (++p > 1 ? 'Pont ' + p : 'Pont') : x.kind === 'intro' ? 'Intro' : x.kind === 'outro' ? 'Outro' : 'Refrain'; }); }
+const KIND_Q = { couplet: 'un couplet', refrain: 'le refrain' };
+function secRename(list){ let n = 0; list.forEach(x => { x.name = x.kind === 'couplet' ? 'Couplet ' + (++n) : 'Refrain'; }); }
+const nearOpt = (v, opts) => opts.reduce((m, o) => Math.abs(o - v) < Math.abs(m - v) ? o : m, opts[0]);
 function chkStart(){
-  pushUndo('la vérification des parties');
   const ins = trRole('instru'); if(!ins?.buffer){ toast('Charge d\'abord ton instru.'); return; }
-  const base = instruSections(); if(!base.length){ toast('Je n\'ai pas trouvé de parties nettes dans cette instru.'); return; }
-  S.secs = base.map(x => ({ ...x, was: x.was ?? x.t })); S.secsDur = ins.buffer.duration;
-  chk = { i: 0, mode: 'ask' }; window.__liveSecs && window.__liveSecs(); chkShow(); chkPlay(); track('verif-parties');
-  chkScroll();
+  pushUndo('le découpage du morceau');
+  const det = instruSections(), sg = startSugs(), best = sg.find(o => o.best);
+  const first = det[0] ? det[0].t : (best ? best.t : 0);
+  const fc = det.find(x => x.kind === 'couplet'), fr = det.find(x => x.kind === 'refrain');
+  chk = { mode: 'start', t0: first, was0: first, firstKind: det[0]?.kind || 'couplet', cLen: 16, rLen: 8, sugC: fc ? nearOpt(fc.bars, [8, 12, 16, 24]) : 16, sugR: fr ? nearOpt(fr.bars, [4, 8, 12, 16]) : 8, i: 0 };
+  S.secsDur = ins.buffer.duration;
+  chkShow(); chkPlayAt(chk.t0); track('decoupage'); chkScroll();
 }
-/* l'aperçu de l'instru juste sous la barre du haut, visible au-dessus de la carte de questions */
+/* on construit le morceau : couplet, refrain, couplet, refrain… avec les longueurs que tu donnes */
+function chkBuild(){
+  const ins = trRole('instru'), dur = ins.offset + ins.buffer.duration, bar = 4 * 60 / S.bpm, out = [];
+  let t = chk.t0, kind = chk.firstKind;
+  while(t < dur - bar * 1.5){ const len = kind === 'couplet' ? chk.cLen : chk.rLen, end = Math.min(dur, t + len * bar); out.push({ t: Math.round(t * 100) / 100, end: Math.round(end * 100) / 100, bars: Math.round((end - t) / bar), kind }); t = end; kind = kind === 'couplet' ? 'refrain' : 'couplet'; }
+  secRename(out); out.forEach(x => x.was = x.t); S.secs = out;
+  window.__liveSecs && window.__liveSecs();
+}
+function chkPlayAt(t){ if(S.playing) pause(); S.pos = Math.max(0, t - 4 * 60 / S.bpm * 1.25); if(!mic) audioSessionPlay(); unlockSpeaker(); wake().then(() => play()); }
+function chkPlay(){ const x = chk.mode === 'start' ? { t: chk.t0 } : S.secs[chk.i]; if(x) chkPlayAt(x.t); }
 function chkScroll(){ const pan = $('#iPan'), tr = document.querySelector('.transport'); if(!pan) return; const y = pan.getBoundingClientRect().top + scrollY - (tr ? tr.getBoundingClientRect().height : 0) - 8; window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' }); }
-function chkPlay(){ const x = S.secs[chk.i]; if(!x) return; if(S.playing) pause(); S.pos = Math.max(0, x.t - 4 * 60 / S.bpm * 1.25); if(!mic) audioSessionPlay(); unlockSpeaker(); wake().then(() => play()); }
 /* les lignes de ton texte qui tombent sur cette partie, avec leur temps (mis à jour en direct) */
 function chkLyr(x){
-  const lines = ta.value.split('\n'), nm = normSec(x.name), occ = S.secs.filter(y => normSec(y.name) === nm).indexOf(x) + 1;
+  const lines = ta.value.split('\n'), nm = normSec(x.name), occ = (S.secs || []).filter(y => normSec(y.name) === nm).indexOf(x) + 1;
   let k = 0, start = -1;
   for(let i = 0; i < lines.length; i++){ const l = lines[i]; if(isHead(l) && normSec(l.trim().slice(1, -1)) === nm && ++k === occ){ start = i; break; } }
   if(start < 0) return '';
@@ -2194,31 +2209,43 @@ function chkShow(){
   let el = $('#chkCard');
   if(!chk){ if(el) el.remove(); return; }
   if(!el){ el = document.createElement('div'); el.id = 'chkCard'; el.className = 'chkcard'; document.body.appendChild(el); el.addEventListener('click', chkClick); }
-  const x = S.secs[chk.i] || S.secs[S.secs.length - 1], n = S.secs.length;
-  const head = `<div class="chkn">Partie ${chk.i + 1} sur ${n} · ${fmt(x.t, true)}<button class="chkx" data-c="close" aria-label="Arrêter la vérification">✕</button></div>`;
-  const moved = x.was != null && Math.abs(x.was - x.t) > 0.05 ? `<p class="chkmv">↔ Repère déplacé : ${fmt(x.was, true)} → <b>${fmt(x.t, true)}</b></p>` : '';
-  const lyr = x.kind === 'intro' || x.kind === 'outro' ? '' : chkLyr(x);
-  if(chk.mode === 'ask') el.innerHTML = head + `<h3>Là, c'est bien ${KIND_Q[x.kind]} ?</h3><p>Écoute le compte à rebours sur l'instru : ça démarre au gros trait blanc.</p>${moved}${lyr}<div class="chkb"><button class="sbtn primary" data-c="yes">✅ Oui</button><button class="sbtn" data-c="no">❌ Non</button></div><button class="chklink" data-c="replay">🔁 Réécouter</button>`;
-  else if(chk.mode === 'what') el.innerHTML = head + `<h3>C'est quoi alors ?</h3><div class="chkb wrap">${SEC_KINDS.filter(([k]) => k !== x.kind).map(([k, l]) => `<button class="sbtn" data-k="${k}">${l}</button>`).join('')}<button class="sbtn" data-c="when">C'est ${KIND_Q[x.kind]}, mais ça ne démarre pas là</button></div>`;
-  else if(chk.mode === 'move') el.innerHTML = head + `<h3>${x.name} démarre…</h3><p>Je décale d'une mesure et je te fais réécouter.</p>${moved}${lyr}<div class="chkb"><button class="sbtn" data-c="earlier">◀ Plus tôt</button><button class="sbtn" data-c="later">Plus tard ▶</button></div><div class="chkb"><button class="sbtn primary" data-c="yes">✅ C'est bon là</button></div>`;
-  else if(chk.mode === 'end') el.innerHTML = `<div class="chkn">C'est vérifié</div><h3>Nickel 👌</h3><p>${S.secs.filter(y => y.was != null && Math.abs(y.was - y.t) > 0.05).length ? 'Les repères déplacés sont en orange sur ton instru. ' : ''}Tes sections [Couplet 1], [Refrain]… démarrent maintenant pile sur chaque partie.</p><div class="chkb"><button class="sbtn primary" data-c="close">Fermer</button></div>`;
+  const x = S.secs && S.secs[chk.i], n = S.secs ? S.secs.length : 0;
+  const close = '<button class="chkx" data-c="close" aria-label="Arrêter">✕</button>';
+  const opts = (key, list, sug) => `<div class="chkb wrap">${list.map(v => `<button class="sbtn${v === sug ? ' primary' : ''}" data-${key}="${v}">${v} mesures${v === sug ? ' ⭐' : ''}</button>`).join('')}</div>`;
+  const moved = x && x.was != null && Math.abs(x.was - x.t) > 0.05 ? `<p class="chkmv">↔ Déplacé : ${fmt(x.was, true)} → <b>${fmt(x.t, true)}</b> (la suite a suivi)</p>` : '';
+  let h = '';
+  if(chk.mode === 'start') h = `<div class="chkn">Le découpage · 1/4${close}</div><h3>Ton premier couplet démarre là ?</h3><p>Écoute le compte à rebours : ça démarre au gros trait blanc (${fmt(chk.t0, true)}).</p>${Math.abs(chk.t0 - chk.was0) > 0.05 ? `<p class="chkmv">↔ Déplacé : ${fmt(chk.was0, true)} → <b>${fmt(chk.t0, true)}</b></p>` : ''}<div class="chkb"><button class="sbtn" data-c="s-earlier">◀ Plus tôt</button><button class="sbtn" data-c="s-later">Plus tard ▶</button></div><div class="chkb"><button class="sbtn primary" data-c="s-ok">✅ Oui, c'est là</button></div><button class="chklink" data-c="replay">🔁 Réécouter</button>`;
+  else if(chk.mode === 'first') h = `<div class="chkn">Le découpage · 2/4${close}</div><h3>Ton son commence par…</h3><div class="chkb"><button class="sbtn primary" data-first="couplet">Un couplet</button><button class="sbtn" data-first="refrain">Le refrain</button></div>`;
+  else if(chk.mode === 'clen') h = `<div class="chkn">Le découpage · 3/4${close}</div><h3>Un couplet, ça fait combien de mesures ?</h3><p>⭐ = ce que j'entends. Pas sûr ? Prends l'étoile, on vérifiera à l'oreille.</p>${opts('cl', [8, 12, 16, 24], chk.sugC)}`;
+  else if(chk.mode === 'rlen') h = `<div class="chkn">Le découpage · 4/4${close}</div><h3>Et ton refrain ?</h3><p>⭐ = ce que j'entends.</p>${opts('rl', [4, 8, 12, 16], chk.sugR)}`;
+  else if(chk.mode === 'ask' && x) h = `<div class="chkn">On vérifie · ${chk.i + 1}/${n} · ${fmt(x.t, true)}${close}</div><h3>Là, c'est bien ${x.kind === 'refrain' ? 'le refrain' : 'le ' + x.name.toLowerCase()} ?</h3><p>Écoute le compte à rebours : ça démarre au gros trait blanc.</p>${moved}${chkLyr(x)}<div class="chkb"><button class="sbtn primary" data-c="yes">✅ Oui</button><button class="sbtn" data-c="no">❌ Non</button></div><button class="chklink" data-c="replay">🔁 Réécouter</button>`;
+  else if(chk.mode === 'move' && x) h = `<div class="chkn">On vérifie · ${chk.i + 1}/${n} · ${fmt(x.t, true)}${close}</div><h3>${x.name} démarre plutôt…</h3><p>Je décale d'une mesure, la suite suit, et je te fais réécouter.</p>${moved}${chkLyr(x)}<div class="chkb"><button class="sbtn" data-c="earlier">◀ Plus tôt</button><button class="sbtn" data-c="later">Plus tard ▶</button></div><div class="chkb"><button class="sbtn primary" data-c="yes">✅ C'est bon là</button></div>`;
+  else if(chk.mode === 'end') h = `<div class="chkn">C'est découpé${close}</div><h3>Nickel 👌</h3><p>Tes sections [Couplet 1], [Refrain]… démarrent pile sur chaque partie. Les temps à gauche de tes paroles sont à jour.</p><div class="chkb"><button class="sbtn primary" data-c="close">Fermer</button></div>`;
+  el.innerHTML = h;
 }
 async function chkClick(e){
   const b = e.target.closest('button'); if(!b || !chk) return;
-  const x = S.secs[chk.i], bar = 4 * 60 / S.bpm, c = b.dataset.c, k = b.dataset.k;
+  const bar = 4 * 60 / S.bpm, c = b.dataset.c, ins = trRole('instru'), dur = ins ? ins.offset + ins.buffer.duration : 0;
+  if(c === 'close'){ if(S.playing) pause(); chk = null; chkShow(); return; }
   if(c === 'replay'){ chkPlay(); return; }
-  if(c === 'yes'){ x.ok = true; chk.i++; if(chk.i >= S.secs.length){ if(S.playing) pause(); chk.mode = 'end'; window.__liveSecs && window.__liveSecs(); renderTracks(); chkShow(); return; } chk.mode = 'ask'; chkShow(); chkPlay(); return; }
-  if(c === 'no'){ chk.mode = 'what'; chkShow(); return; }
-  if(k){ x.kind = k; secRename(S.secs); window.__liveSecs && window.__liveSecs(); chk.mode = 'ask'; chkShow(); chkPlay(); return; }
-  if(c === 'when'){ chk.mode = 'move'; chkShow(); return; }
+  if(c === 's-earlier' || c === 's-later'){ const nt = chk.t0 + (c === 's-earlier' ? -bar : bar); if(nt < -0.05 || nt > dur - bar * 4){ toast('Je ne peux pas aller plus loin.'); return; } chk.t0 = Math.max(0, Math.round(nt * 100) / 100); if(!S.tsUser) setTextStart(chk.t0); chkShow(); chkPlayAt(chk.t0); return; }
+  if(c === 's-ok'){ if(S.playing) pause(); chk.mode = 'first'; chkShow(); return; }
+  if(b.dataset.first){ chk.firstKind = b.dataset.first; chk.mode = 'clen'; chkShow(); return; }
+  if(b.dataset.cl){ chk.cLen = +b.dataset.cl; chk.mode = 'rlen'; chkShow(); return; }
+  if(b.dataset.rl){ chk.rLen = +b.dataset.rl; chkBuild(); chk.i = 1; if(chk.i >= S.secs.length){ chk.mode = 'end'; chkShow(); return; } chk.mode = 'ask'; chkShow(); chkPlay(); return; }
+  const x = S.secs[chk.i];
+  if(c === 'yes'){ x.ok = true; chk.i++; if(chk.i >= S.secs.length){ if(S.playing) pause(); chk.mode = 'end'; S.secs[0].ok = true; window.__liveSecs && window.__liveSecs(); renderTracks(); scheduleSave(); chkShow(); return; } chk.mode = 'ask'; chkShow(); chkPlay(); return; }
+  if(c === 'no'){ chk.mode = 'move'; chkShow(); return; }
   if(c === 'earlier' || c === 'later'){
-    const prev = S.secs[chk.i - 1], next = S.secs[chk.i + 1];
-    const nt = x.t + (c === 'earlier' ? -bar : bar);
-    if(nt < (prev ? prev.t + bar * 0.9 : 0) || (next && nt > next.t - bar * 0.9)){ toast('Je ne peux pas aller plus loin : la partie d\'à côté est là.'); return; }
-    x.t = Math.round(nt * 100) / 100; if(prev) prev.end = x.t;
+    const d = c === 'earlier' ? -bar : bar, prev = S.secs[chk.i - 1];
+    if(prev && x.t + d < prev.t + bar * 0.9){ toast('La partie d\'avant ferait moins d\'une mesure.'); return; }
+    if(x.t + d > dur - bar){ toast('Je ne peux pas aller plus loin.'); return; }
+    /* cette partie et toutes celles d'après bougent ensemble : les longueurs restent */
+    for(let j = chk.i; j < S.secs.length; j++){ const y = S.secs[j]; y.t = Math.round((y.t + d) * 100) / 100; y.end = Math.min(dur, Math.round((y.end + d) * 100) / 100); }
+    if(prev){ prev.end = x.t; prev.bars = Math.round((prev.end - prev.t) / bar); }
+    S.secs = S.secs.filter(y => y.t < dur - bar * 0.5); secRename(S.secs);
     window.__liveSecs && window.__liveSecs(); chkShow(); chkPlay(); return;
   }
-  if(c === 'close'){ if(S.playing) pause(); chk = null; chkShow(); }
 }
 function pickSug(o){
   setTextStart(o.t); S.tsUser = true; renderSugs();
@@ -3195,7 +3222,9 @@ $('#bDict').onclick = () => {
   catch(e){ toast('Dictée impossible : ' + e.message); }
 };
 ['keyup', 'click', 'select'].forEach(ev => ta.addEventListener(ev, lstat));
-let promptPrev = {}, promptChg = {};
+let promptPrev = {}, promptChg = {}, iTouchAt = 0;
+/* le texte ne défile tout seul que si tu ne travailles pas sur l'aperçu de l'instru (sauf pendant une prise) */
+const promptFollow = () => S.recording || (S.playing && Date.now() - iTouchAt > 120000);
 function renderPrompt(){
   try{ updLineUI(); }catch(e){}
   const lines = ta.value.split('\n'), box = $('#prompt');
@@ -3393,7 +3422,7 @@ function updatePrompt(){
     for(const k in AS){ if(AS[k] <= p + 0.05 && AS[k] > bt){ bt = AS[k]; best = k; } }
     if(best === curLine) return; curLine = best;
     document.querySelectorAll('.pl.cur').forEach(x => x.classList.remove('cur'));
-    if(best != null){ const el = document.querySelector(`.pl[data-i="${best}"]`); if(el){ el.classList.add('cur'); if(!chk) el.scrollIntoView({ block:'center', behavior:'smooth' }); } }
+    if(best != null){ const el = document.querySelector(`.pl[data-i="${best}"]`); if(el){ el.classList.add('cur'); if(!chk && promptFollow()) el.scrollIntoView({ block:'center', behavior:'smooth' }); } }
     return;
   }
   if(!Object.keys(syncs).length && S.markers.length){
@@ -3414,7 +3443,7 @@ function updatePrompt(){
   if(best === curLine) return;
   curLine = best;
   document.querySelectorAll('.pl.cur').forEach(x => x.classList.remove('cur'));
-  if(best != null){ const el = document.querySelector(`.pl[data-i="${best}"]`); if(el){ el.classList.add('cur'); if(!chk) el.scrollIntoView({ block:'center', behavior:'smooth' }); } }
+  if(best != null){ const el = document.querySelector(`.pl[data-i="${best}"]`); if(el){ el.classList.add('cur'); if(!chk && promptFollow()) el.scrollIntoView({ block:'center', behavior:'smooth' }); } }
 }
 function setTab(p){
   $('#tabW').setAttribute('aria-selected', !p); $('#tabP').setAttribute('aria-selected', p);
@@ -5375,7 +5404,7 @@ const HELP = {
     { sel: ['.secbar'], t: 'Les sections', b: 'Ajoute Intro, Couplet (numéroté tout seul), Pré-refrain, Refrain, Pont ou Outro là où est ton curseur. Un deuxième Refrain recopie le premier, tu modifies si besoin.' },
     { sel: ['#lstat'], t: 'Les syllabes', b: 'Le nombre de syllabes de la ligne où tu es, pour équilibrer tes rimes et ton flow.' },
     { sel: ['#bDict'], t: 'Dicter', b: 'Dis tes lignes a cappella, elles s\'écrivent toutes seules, une par pause. Relis : le rap piège la dictée.' },
-    { t: 'Le prompteur', b: 'En haut, « Ton instru » : toute ton instru en grand, avec les parties que j\'entends (intro, couplets, refrains probables), mes propositions de départ (▲) et le début de ton texte (en vert). Touche l\'onde pour te placer, ▶ pour vérifier, « 📍 Le texte démarre ici » pour choisir, « ✅ On vérifie ensemble » : je te fais écouter chaque partie et je te demande « Là, c\'est bien le refrain ? ». Oui : je verrouille 🔒. Non : tu me dis ce que c\'est, ou tu la décales d\'une mesure, et le repère déplacé reste visible en orange. À la fin, tes sections [Couplet 1], [Refrain]… démarrent pile sur chaque partie. Quand tu charges ton instru, je te propose aussi où démarrer le texte : l\'entrée de la rythmique (⭐ mon choix), quelques mesures après, un changement dans le beat, ou dès le début. Touche une proposition pour l\'écouter et la choisir. Tu peux aussi régler à la main (📍 Ici, ou ± 1 mesure). Pose des repères au nom de tes sections (+ → Repère) : chaque section démarre pile dessus. La vitesse du texte est automatique : chaque ligne dure le temps de la dire, et l\'appli apprend ton débit à chaque prise. Pour forcer, ouvre « Vitesse du texte ». Ensuite le texte se cale tout seul : sur le tempo pendant ta première prise, puis sur ta voix une fois la prise posée. Tu peux aussi caler à la main (« Caler la ligne suivante » au début de chaque ligne pendant la lecture), ou forcer « Caler sur ma prise » / « Caler sur le tempo ». Pendant REC, ton texte s\'affiche en bas tout seul.' }
+    { t: 'Le prompteur', b: 'En haut, « Ton instru » : toute ton instru en grand, avec les parties que j\'entends (intro, couplets, refrains probables), mes propositions de départ (▲) et le début de ton texte (en vert). Touche l\'onde pour te placer, ▶ pour vérifier, « 📍 Le texte démarre ici » pour choisir, « ✅ On vérifie ensemble » : tu me dis où démarre ton premier couplet, par quoi commence ton son et combien de mesures font tes couplets et tes refrains. Je découpe tout le morceau, puis je te fais écouter chaque partie : « Là, c\'est bien le refrain ? ». Oui : on passe. Non : tu la décales d\'une mesure (la suite suit), et le repère déplacé reste visible en orange. À la fin, tes sections [Couplet 1], [Refrain]… démarrent pile sur chaque partie. Quand tu charges ton instru, je te propose aussi où démarrer le texte : l\'entrée de la rythmique (⭐ mon choix), quelques mesures après, un changement dans le beat, ou dès le début. Touche une proposition pour l\'écouter et la choisir. Tu peux aussi régler à la main (📍 Ici, ou ± 1 mesure). Pose des repères au nom de tes sections (+ → Repère) : chaque section démarre pile dessus. La vitesse du texte est automatique : chaque ligne dure le temps de la dire, et l\'appli apprend ton débit à chaque prise. Pour forcer, ouvre « Vitesse du texte ». Ensuite le texte se cale tout seul : sur le tempo pendant ta première prise, puis sur ta voix une fois la prise posée. Tu peux aussi caler à la main (« Caler la ligne suivante » au début de chaque ligne pendant la lecture), ou forcer « Caler sur ma prise » / « Caler sur le tempo ». Pendant REC, ton texte s\'affiche en bas tout seul.' }
   ],
   vProjets: [
     { t: 'L\'onglet Projets', b: 'Pour préparer un single, un EP ou un album.' },
