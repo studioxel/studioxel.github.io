@@ -160,6 +160,10 @@ button{cursor:pointer}
 .prompt{max-height:60vh;overflow-y:auto;padding:10px 6px}
 .pl{display:grid;grid-template-columns:52px 1fr auto;gap:8px;align-items:baseline;padding:5px 8px;border-radius:6px;cursor:pointer;color:var(--muted);font-size:17px}
 .pl .t{font:11px var(--mono)}
+.pl.chg .t{color:#ff7a59;font-weight:800;animation:tchg 2.5s ease-out}
+@keyframes tchg{0%{background:#ff7a59;color:#1a1405}100%{background:transparent}}
+body.checking #viewP .tstart,body.checking .ipan > .note,body.checking .ipan > .tsrow,body.checking .ilegend{display:none}
+body.checking #prompt{padding-bottom:260px}
 .pl .s{font:11px var(--mono)}
 .pl.cur{background:var(--raise);color:var(--fg);font-weight:700}
 .pl.cur .t{color:var(--accent)}
@@ -488,6 +492,9 @@ body.ed-open .wmark{z-index:41}
 .chkcard .chkmv{color:#ff7a59}.chkcard .chkmv b{color:#ff7a59}
 .chkb{display:flex;gap:8px}.chkb .sbtn{flex:1 1 0;height:50px;font-size:16px;font-weight:800}.chkb.wrap{flex-wrap:wrap}.chkb.wrap .sbtn{flex:1 1 40%;height:46px;font-size:14px}
 .chkn{display:flex;align-items:center}.chkx{margin-left:auto;background:none;border:0;color:var(--muted);font-size:18px;padding:0 4px}
+.chklyr{display:flex;flex-direction:column;gap:3px;padding:8px 10px;border-radius:10px;background:var(--bg)}.chklyr small{color:var(--muted)}
+.chkl{display:flex;gap:10px;font-size:15px}.chkl span{font:12px var(--mono);color:var(--muted);min-width:52px;padding:1px 4px;border-radius:4px}
+.chkl.chg span{color:#1a1405;background:#ff7a59;font-weight:800}
 .chklink{align-self:center;background:none;border:0;color:var(--muted);text-decoration:underline;padding:4px}
 .tsrow .sbtn[aria-pressed=true]{background:var(--accent);color:#1a1405;border-color:var(--accent)}
 .pl.virt .t{opacity:.45;font-style:italic}
@@ -601,7 +608,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 1.5.2 · Bêta</span></div>
+      <span class="grp" id="ver">Version 1.5.3 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -905,8 +912,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 97; // numéro interne (jamais affiché)
-const APP_PUB = '1.5.2';
+const APP_VER = 98; // numéro interne (jamais affiché)
+const APP_PUB = '1.5.3';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -2069,7 +2076,7 @@ function renderSugs(){
   box.innerHTML = '<span>🎯 Mes propositions :</span>' + list.map((o, i) => `<button class="sbtn" data-sug="${i}" aria-pressed="${Math.abs((S.textStart || 0) - o.t) < 0.05}">${fmt(o.t, true)} · ${o.why}${o.best ? ' ⭐' : ''}</button>`).join('') + '<span class="note" style="flex-basis:100%">Touche une proposition : j\'y cale le début du texte et je te la fais écouter.</span>';
 }
 /* ---------- Aperçu de l'instru dans Texte → Prompteur ---------- */
-const SEC_COL = { intro: '#7c8597', couplet: '#4f8cff', refrain: '#f2b544', pont: '#b07cff', outro: '#7c8597' };
+const SEC_COL = { intro: '#9aa3b5', couplet: '#4f8cff', refrain: '#f2b544', pont: '#b07cff', outro: '#e06c9f' };
 const iPeaks = new WeakMap();
 function drawInstru(){
   const pan = $('#iPan'), ins = trRole('instru');
@@ -2087,12 +2094,12 @@ function drawInstru(){
   else { const span = Math.min(dur, 8 * bar); iView = iView ?? 0; if(p < iView + span * 0.1 || p > iView + span * 0.85) iView = clamp(p - span * 0.25, 0, Math.max(0, dur - span)); v0 = iView; v1 = v0 + span; }
   const OV = 22, TOP = OV + 6, X = t => (t - v0) / (v1 - v0) * W, XO = t => t / dur * W;
   /* 1. la bande du haut : tout le morceau, la zone zoomée encadrée (touche-la pour aller ailleurs) */
-  secs.forEach(sc => { g.fillStyle = SEC_COL[sc.kind] + '88'; g.fillRect(XO(sc.t), 4, Math.max(1, XO(sc.end) - XO(sc.t) - 1), OV - 8); });
+  secs.forEach(sc => { g.fillStyle = SEC_COL[sc.kind]; g.fillRect(XO(sc.t), 4, Math.max(1, XO(sc.end) - XO(sc.t) - 1), OV - 8); });
   g.strokeStyle = '#ffffff'; g.lineWidth = 2; g.strokeRect(XO(v0) + 1, 2, Math.max(4, XO(v1) - XO(v0) - 2), OV - 4);
   g.fillStyle = '#ff4b4b'; g.fillRect(XO(p) - 1, 0, 2, OV);
   /* 2. la zone zoomée */
   g.save(); g.beginPath(); g.rect(0, TOP, W, H - TOP); g.clip();
-  secs.forEach(sc => { if(sc.end < v0 || sc.t > v1) return; g.fillStyle = SEC_COL[sc.kind] + (cur && sc === cur ? '55' : '2a'); g.fillRect(X(sc.t), TOP, X(sc.end) - X(sc.t), H - TOP); });
+  secs.forEach(sc => { if(sc.end < v0 || sc.t > v1) return; g.fillStyle = SEC_COL[sc.kind] + (cur && sc === cur ? '40' : '26'); g.fillRect(X(sc.t), TOP, X(sc.end) - X(sc.t), H - TOP); g.fillStyle = SEC_COL[sc.kind]; g.fillRect(X(sc.t), TOP, X(sc.end) - X(sc.t), 6); });
   /* mesures numérotées */
   const g0 = secs.length ? secs[0].t % bar : 0;
   for(let t = Math.ceil((v0 - g0) / bar) * bar + g0; t < v1; t += bar){ const x = X(t); g.fillStyle = 'rgba(160,170,190,.25)'; g.fillRect(x, TOP, 1, H - TOP); }
@@ -2123,10 +2130,10 @@ function drawInstru(){
   g.restore();
   $('#iInfo').textContent = S.bpm + ' BPM · ' + fmt(p, true) + ' / ' + fmt(dur, true);
   $('#iPlay').textContent = S.playing ? '⏸ Pause' : '▶ Écouter';
-  const kinds = [...new Set(secs.map(x => x.kind))];
+  const kinds = ['intro', 'couplet', 'refrain', 'pont', 'outro'].filter(k => secs.some(x => x.kind === k));
   const leg = kinds.map(k => `<span><i style="background:${SEC_COL[k]}"></i>${{ intro: 'Intro', couplet: 'Couplet', refrain: S.secs ? 'Refrain' : 'Refrain probable', pont: 'Pont', outro: 'Outro' }[k]}</span>`).join('') + '<span><i style="background:#2ee6a6"></i>Début du texte</span>' + (secs.some(x => x.was != null && Math.abs(x.was - x.t) > 0.05) ? '<span style="color:#ff7a59">┆→ repère déplacé</span>' : '');
   if($('#iLeg').innerHTML !== leg) $('#iLeg').innerHTML = leg;
-  pan.classList.toggle('checking', !!cur);
+  pan.classList.toggle('checking', !!cur); document.body.classList.toggle('checking', !!cur);
 }
 let iView = null;
 (function iLoop(){ try{ if(!$('#viewP').hidden && !document.hidden) drawInstru(); }catch(e){} requestAnimationFrame(iLoop); })();
@@ -2139,6 +2146,13 @@ let iView = null;
   cv.addEventListener('pointerup', () => { drag = false; }); cv.addEventListener('pointercancel', () => { drag = false; });
   $('#iPlay').onclick = () => $('#bPlay').click();
   $('#iHere').onclick = () => { S.tsUser = true; const p = S.playing ? now() : S.pos; const b = 4 * 60 / S.bpm, sg = startSugs(), g0 = sg.length ? sg[0].t % b : 0; const snap = Math.max(0, Math.round((p - g0) / b) * b + g0); setTextStart(Math.abs(snap - p) < 0.6 ? snap : p); renderSugs(); toast('📍 Le texte démarre à ' + fmt(S.textStart, true) + (Math.abs(snap - p) < 0.6 ? ' (calé sur le 1er temps de la mesure).' : '.')); };
+  window.__liveSecs = () => {
+    const secs = instruSections().filter(x => x.kind !== 'outro');
+    S.markers = S.markers.filter(m => !m.auto);
+    secs.forEach(x => S.markers.push({ t: x.t, name: x.name, auto: true }));
+    if(!S.tsUser){ const c1 = secs.find(x => x.kind !== 'intro'); if(c1) setTextStart(c1.t); }
+    renderMarkers(); renderPrompt(); scheduleSave();
+  };
   window.__applySecs = () => {
     const secs = instruSections().filter(x => x.kind !== 'outro'); if(!secs.length){ toast('Je n\'ai pas trouvé de parties nettes dans cette instru.'); return; }
     pushUndo('les repères de parties');
@@ -2156,15 +2170,26 @@ const SEC_KINDS = [['intro', 'Intro'], ['couplet', 'Couplet'], ['refrain', 'Refr
 const KIND_Q = { intro: 'l\'intro', couplet: 'un couplet', refrain: 'le refrain', pont: 'un pont', outro: 'l\'outro' };
 function secRename(list){ let n = 0, p = 0; list.forEach(x => { x.name = x.kind === 'couplet' ? 'Couplet ' + (++n) : x.kind === 'pont' ? (++p > 1 ? 'Pont ' + p : 'Pont') : x.kind === 'intro' ? 'Intro' : x.kind === 'outro' ? 'Outro' : 'Refrain'; }); }
 function chkStart(){
+  pushUndo('la vérification des parties');
   const ins = trRole('instru'); if(!ins?.buffer){ toast('Charge d\'abord ton instru.'); return; }
   const base = instruSections(); if(!base.length){ toast('Je n\'ai pas trouvé de parties nettes dans cette instru.'); return; }
   S.secs = base.map(x => ({ ...x, was: x.was ?? x.t })); S.secsDur = ins.buffer.duration;
-  chk = { i: 0, mode: 'ask' }; chkShow(); chkPlay(); track('verif-parties');
+  chk = { i: 0, mode: 'ask' }; window.__liveSecs && window.__liveSecs(); chkShow(); chkPlay(); track('verif-parties');
   chkScroll();
 }
 /* l'aperçu de l'instru juste sous la barre du haut, visible au-dessus de la carte de questions */
 function chkScroll(){ const pan = $('#iPan'), tr = document.querySelector('.transport'); if(!pan) return; const y = pan.getBoundingClientRect().top + scrollY - (tr ? tr.getBoundingClientRect().height : 0) - 8; window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' }); }
 function chkPlay(){ const x = S.secs[chk.i]; if(!x) return; if(S.playing) pause(); S.pos = Math.max(0, x.t - 4 * 60 / S.bpm * 1.25); if(!mic) audioSessionPlay(); unlockSpeaker(); wake().then(() => play()); }
+/* les lignes de ton texte qui tombent sur cette partie, avec leur temps (mis à jour en direct) */
+function chkLyr(x){
+  const lines = ta.value.split('\n'), nm = normSec(x.name), occ = S.secs.filter(y => normSec(y.name) === nm).indexOf(x) + 1;
+  let k = 0, start = -1;
+  for(let i = 0; i < lines.length; i++){ const l = lines[i]; if(isHead(l) && normSec(l.trim().slice(1, -1)) === nm && ++k === occ){ start = i; break; } }
+  if(start < 0) return '';
+  const VS = activeSyncs(), out = [];
+  for(let i = start + 1; i < lines.length && out.length < 2; i++){ const l = lines[i]; if(isHead(l)) break; if(!l.trim()) continue; const t = VS[i], ch = promptChg[i] && Date.now() - promptChg[i] < 2500; out.push(`<div class="chkl${ch ? ' chg' : ''}"><span>${t != null ? fmt(t) : '–'}</span>${esc(l.trim())}</div>`); }
+  return out.length ? `<div class="chklyr"><small>📝 Ton texte « ${esc(x.name)} » part à :</small>${out.join('')}</div>` : `<div class="chklyr"><small>📝 Pas de section [${esc(x.name)}] dans ton texte : ajoute-la dans Écrire si tu veux qu'elle se cale ici.</small></div>`;
+}
 function chkShow(){
   let el = $('#chkCard');
   if(!chk){ if(el) el.remove(); return; }
@@ -2172,25 +2197,26 @@ function chkShow(){
   const x = S.secs[chk.i] || S.secs[S.secs.length - 1], n = S.secs.length;
   const head = `<div class="chkn">Partie ${chk.i + 1} sur ${n} · ${fmt(x.t, true)}<button class="chkx" data-c="close" aria-label="Arrêter la vérification">✕</button></div>`;
   const moved = x.was != null && Math.abs(x.was - x.t) > 0.05 ? `<p class="chkmv">↔ Repère déplacé : ${fmt(x.was, true)} → <b>${fmt(x.t, true)}</b></p>` : '';
-  if(chk.mode === 'ask') el.innerHTML = head + `<h3>Là, c'est bien ${KIND_Q[x.kind]} ?</h3><p>Écoute le compte à rebours sur l'instru : ça démarre au gros trait blanc.</p>${moved}<div class="chkb"><button class="sbtn primary" data-c="yes">✅ Oui</button><button class="sbtn" data-c="no">❌ Non</button></div><button class="chklink" data-c="replay">🔁 Réécouter</button>`;
+  const lyr = x.kind === 'intro' || x.kind === 'outro' ? '' : chkLyr(x);
+  if(chk.mode === 'ask') el.innerHTML = head + `<h3>Là, c'est bien ${KIND_Q[x.kind]} ?</h3><p>Écoute le compte à rebours sur l'instru : ça démarre au gros trait blanc.</p>${moved}${lyr}<div class="chkb"><button class="sbtn primary" data-c="yes">✅ Oui</button><button class="sbtn" data-c="no">❌ Non</button></div><button class="chklink" data-c="replay">🔁 Réécouter</button>`;
   else if(chk.mode === 'what') el.innerHTML = head + `<h3>C'est quoi alors ?</h3><div class="chkb wrap">${SEC_KINDS.filter(([k]) => k !== x.kind).map(([k, l]) => `<button class="sbtn" data-k="${k}">${l}</button>`).join('')}<button class="sbtn" data-c="when">C'est ${KIND_Q[x.kind]}, mais ça ne démarre pas là</button></div>`;
-  else if(chk.mode === 'move') el.innerHTML = head + `<h3>${x.name} démarre…</h3><p>Je décale d'une mesure et je te fais réécouter.</p>${moved}<div class="chkb"><button class="sbtn" data-c="earlier">◀ Plus tôt</button><button class="sbtn" data-c="later">Plus tard ▶</button></div><div class="chkb"><button class="sbtn primary" data-c="yes">✅ C'est bon là</button></div>`;
+  else if(chk.mode === 'move') el.innerHTML = head + `<h3>${x.name} démarre…</h3><p>Je décale d'une mesure et je te fais réécouter.</p>${moved}${lyr}<div class="chkb"><button class="sbtn" data-c="earlier">◀ Plus tôt</button><button class="sbtn" data-c="later">Plus tard ▶</button></div><div class="chkb"><button class="sbtn primary" data-c="yes">✅ C'est bon là</button></div>`;
   else if(chk.mode === 'end') el.innerHTML = `<div class="chkn">C'est vérifié</div><h3>Nickel 👌</h3><p>${S.secs.filter(y => y.was != null && Math.abs(y.was - y.t) > 0.05).length ? 'Les repères déplacés sont en orange sur ton instru. ' : ''}Tes sections [Couplet 1], [Refrain]… démarrent maintenant pile sur chaque partie.</p><div class="chkb"><button class="sbtn primary" data-c="close">Fermer</button></div>`;
 }
 async function chkClick(e){
   const b = e.target.closest('button'); if(!b || !chk) return;
   const x = S.secs[chk.i], bar = 4 * 60 / S.bpm, c = b.dataset.c, k = b.dataset.k;
   if(c === 'replay'){ chkPlay(); return; }
-  if(c === 'yes'){ x.ok = true; chk.i++; if(chk.i >= S.secs.length){ if(S.playing) pause(); chk.mode = 'end'; window.__applySecs && window.__applySecs(); scheduleSave(); chkShow(); return; } chk.mode = 'ask'; chkShow(); chkPlay(); return; }
+  if(c === 'yes'){ x.ok = true; chk.i++; if(chk.i >= S.secs.length){ if(S.playing) pause(); chk.mode = 'end'; window.__liveSecs && window.__liveSecs(); renderTracks(); chkShow(); return; } chk.mode = 'ask'; chkShow(); chkPlay(); return; }
   if(c === 'no'){ chk.mode = 'what'; chkShow(); return; }
-  if(k){ x.kind = k; secRename(S.secs); chk.mode = 'ask'; chkShow(); chkPlay(); return; }
+  if(k){ x.kind = k; secRename(S.secs); window.__liveSecs && window.__liveSecs(); chk.mode = 'ask'; chkShow(); chkPlay(); return; }
   if(c === 'when'){ chk.mode = 'move'; chkShow(); return; }
   if(c === 'earlier' || c === 'later'){
     const prev = S.secs[chk.i - 1], next = S.secs[chk.i + 1];
     const nt = x.t + (c === 'earlier' ? -bar : bar);
     if(nt < (prev ? prev.t + bar * 0.9 : 0) || (next && nt > next.t - bar * 0.9)){ toast('Je ne peux pas aller plus loin : la partie d\'à côté est là.'); return; }
     x.t = Math.round(nt * 100) / 100; if(prev) prev.end = x.t;
-    chkShow(); chkPlay(); return;
+    window.__liveSecs && window.__liveSecs(); chkShow(); chkPlay(); return;
   }
   if(c === 'close'){ if(S.playing) pause(); chk = null; chkShow(); }
 }
@@ -3169,17 +3195,19 @@ $('#bDict').onclick = () => {
   catch(e){ toast('Dictée impossible : ' + e.message); }
 };
 ['keyup', 'click', 'select'].forEach(ev => ta.addEventListener(ev, lstat));
+let promptPrev = {}, promptChg = {};
 function renderPrompt(){
   try{ updLineUI(); }catch(e){}
   const lines = ta.value.split('\n'), box = $('#prompt');
   if(!lines.some(l => l.trim() && !isHead(l))){ box.innerHTML = '<div class="hint">Écris ton texte dans l\'onglet Écrire. Ici, lance la lecture et appuie sur « Caler la ligne suivante » au début de chaque ligne : le prompteur suivra ensuite tout seul.</div>'; return; }
-  const VS = Object.keys(syncs).length ? {} : (AUTO.sync ? virtualSyncs() : {});
+  const VS = Object.keys(syncs).length ? {} : (AUTO.sync ? virtualSyncs() : {}), promptNext = {};
   box.innerHTML = lines.map((l, i) => {
     if(!l.trim()) return '';
     if(isHead(l)) return `<div class="ph">${esc(l.trim().slice(1, -1))}</div>`;
-    const t = syncs[i] ?? VS[i];
-    return `<div class="pl${syncs[i] == null && VS[i] != null ? ' virt' : ''}" data-i="${i}"><span class="t">${t != null ? fmt(t) : '–'}</span><span>${esc(l)}</span><span class="s">${syl(l)}</span></div>`;
+    const t = syncs[i] ?? VS[i]; if(t != null && promptPrev[i] != null && Math.abs(promptPrev[i] - t) > 0.05) promptChg[i] = Date.now(); const ch = promptChg[i] && Date.now() - promptChg[i] < 2500; promptNext[i] = t;
+    return `<div class="pl${syncs[i] == null && VS[i] != null ? ' virt' : ''}${ch ? ' chg' : ''}" data-i="${i}"><span class="t">${t != null ? fmt(t) : '–'}</span><span>${esc(l)}</span><span class="s">${syl(l)}</span></div>`;
   }).join('');
+  promptPrev = promptNext;
 }
 $('#prompt').addEventListener('click', e => { const r = e.target.closest('.pl'); if(!r) return; const t = activeSyncs()[r.dataset.i]; if(t != null) seek(Math.max(0, t - 0.5)); });
 function tapSync(){
