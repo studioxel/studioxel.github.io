@@ -144,7 +144,14 @@ body:not(.simple) .row .l1 .chip{flex:1 1 0}
 .mxp .mxplay{min-width:54px;background:var(--accent);color:#1a1405;border-color:var(--accent)}.mxp [data-mp=loop][aria-pressed=true]{border-color:var(--accent);color:var(--accent)}.mxp output{margin-left:auto;font:600 15px ui-monospace,monospace}
 .mxhint{margin:6px 0 0;font-size:12px}
 /* l'onde, son lecteur et la cible restent collés sous la barre du haut quand on descend dans les réglages */
-body.mix-on .transport,body.notr .transport{display:none}
+body.mix-on .transport,body.notr .transport,body.txt-on .transport{display:none}
+/* Texte : un mini-lecteur d'une ligne, pour garder la place pour écrire ; il s'efface quand le clavier est ouvert */
+.txp{display:none}body.txt-on .txp{display:flex;align-items:center;gap:6px;position:sticky;top:env(safe-area-inset-top,0px);z-index:12;padding:8px 10px;background:var(--panel);border-bottom:1px solid var(--line);border-radius:10px 10px 0 0}
+body.txt-on.kb .txp{display:none}
+.txp button{flex:none;height:34px;min-width:36px;border-radius:8px;border:1px solid var(--line);background:var(--raise);color:inherit;font-size:15px;padding:0 8px}
+.txp .txplay{background:var(--accent);color:#1a1405;border-color:var(--accent);min-width:46px}.txp [data-tx=loop][aria-pressed=true]{border-color:var(--accent);color:var(--accent)}
+.txp output{font:600 13px ui-monospace,monospace;color:var(--muted);min-width:38px}
+.txbar{flex:1;height:22px;position:relative;cursor:pointer}.txbar::before{content:'';position:absolute;left:0;right:0;top:9px;height:4px;border-radius:2px;background:var(--line)}.txbar i{position:absolute;left:0;top:9px;height:4px;border-radius:2px;background:var(--accent);width:0}
 /* les Réglages restent ouvrables partout (bouton ⚙️ dans l'en-tête) */
 body:has(#settings:not([hidden])) .transport{display:flex!important}
 .setmini{height:32px;min-width:38px;padding:0 8px}body.mix-on .mxstick{top:env(safe-area-inset-top,0px)}
@@ -663,7 +670,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.3.3 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.3.4 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -881,6 +888,7 @@ body.ed-open .wmark{z-index:41}
 
 <!-- TEXTE -->
 <section class="card view" id="vTexte" aria-label="Texte" hidden>
+  <div class="txp" id="txPlayer"><button data-tx="start" aria-label="Revenir au début">⏮</button><button data-tx="play" class="txplay" aria-label="Lecture">▶</button><button data-tx="loop" aria-pressed="false" aria-label="Boucle de 4 mesures">🔁</button><output id="txClock">0:00</output><div class="txbar" id="txBar"><i id="txFill"></i></div><button data-openset aria-label="Réglages">⚙️</button></div>
   <div class="cardhead">
     <h2>Texte</h2><span class="spacer"></span>
     <div class="tabs" role="tablist">
@@ -1118,8 +1126,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 160; // numéro interne (jamais affiché)
-const APP_PUB = '2.3.3';
+const APP_VER = 161; // numéro interne (jamais affiché)
+const APP_PUB = '2.3.4';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -3120,6 +3128,28 @@ document.querySelector('.mxp').addEventListener('click', e => {
   else if(k === 'undo'){ $('#bUndo')?.click(); }
   mxPlayerUI();
 });
+/* le mini-lecteur de l'onglet Texte */
+document.querySelector('#txPlayer').addEventListener('click', e => {
+  const b = e.target.closest('[data-tx]'); if(!b) return; const k = b.dataset.tx;
+  if(k === 'play'){ if(S.playing) pause(); else { if(!mic) audioSessionPlay(); unlockSpeaker(); wake().then(() => play()); } }
+  else if(k === 'start'){ const was = S.playing; if(was) pause(); S.pos = 0; if(was) wake().then(() => play()); }
+  else if(k === 'loop'){ if(S.rep) setRep(null); else { const p = S.playing ? now() : S.pos, bar = 4 * 60 / S.bpm, a = Math.floor(p / bar) * bar; setRep({ a, b: a + 4 * bar }); } }
+  txPlayerUI();
+});
+{ const bar = $('#txBar'); let drag = false; const at = e => { const r = bar.getBoundingClientRect(); return clamp((e.clientX - r.left) / r.width, 0, 1) * Math.max(trackEnd(), 1); };
+  bar.addEventListener('pointerdown', e => { drag = true; bar.setPointerCapture(e.pointerId); seek(at(e)); txPlayerUI(); });
+  bar.addEventListener('pointermove', e => { if(drag){ seek(at(e)); txPlayerUI(); } });
+  bar.addEventListener('pointerup', () => { drag = false; }); bar.addEventListener('pointercancel', () => { drag = false; }); }
+function txPlayerUI(){
+  const pb = document.querySelector('#txPlayer .txplay'); if(!pb) return;
+  const t = S.playing ? '⏸' : '▶'; if(pb._t !== t){ pb._t = t; pb.textContent = t; }
+  const lp = document.querySelector('#txPlayer [data-tx=loop]'), on = String(!!S.rep); if(lp.getAttribute('aria-pressed') !== on) lp.setAttribute('aria-pressed', on);
+  const p = S.playing ? now() : S.pos; setTxt($('#txClock'), fmt(p, true));
+  $('#txFill').style.width = clamp(p / Math.max(trackEnd(), 1), 0, 1) * 100 + '%';
+}
+/* clavier ouvert pendant qu'on écrit : le mini-lecteur s'efface */
+document.addEventListener('focusin', e => { if(e.target.id === 'lyrics' && matchMedia('(pointer: coarse)').matches) document.body.classList.add('kb'); });
+document.addEventListener('focusout', e => { if(e.target.id === 'lyrics') document.body.classList.remove('kb'); });
 function mxPlayerUI(){
   const pb = document.querySelector('.mxp .mxplay'); if(!pb) return;
   const t = S.playing ? '⏸' : '▶'; if(pb._t !== t){ pb._t = t; pb.textContent = t; }
@@ -7086,6 +7116,7 @@ document.querySelector('.nav').addEventListener('click', e => {
   document.body.classList.toggle('mix-on', b.dataset.view === 'vMix'); try{ trbUpd(); }catch(e){}
   /* Projets et Partager : pas besoin du lecteur, la place va au contenu */
   document.body.classList.toggle('notr', ['vProjets', 'vPartager'].includes(b.dataset.view));
+  document.body.classList.toggle('txt-on', b.dataset.view === 'vTexte');
   if(['vProjets', 'vPartager'].includes(b.dataset.view) && S.playing && !S.reelRec && !(typeof rsPlaying !== 'undefined' && rsPlaying)) pause();
   if(b.dataset.view === 'vMix'){ try{ if(!flowGet().mixed) flowSet('mixed', true); }catch(e){} mixPick(); renderMix(); }
   if(b.dataset.view === 'vMaster') renderMaster();
@@ -7219,6 +7250,7 @@ function loop(){
   setTxt(clock, fmt(p));
   updProg(p);
   if(!$('#vMix').hidden){ drawMxWave(); mxPlayerUI(); }
+  if(!$('#vTexte').hidden) txPlayerUI();
   if(S.playing && !$('#vPistes').hidden && Date.now() - userScrollAt > 2500){
     if(x > sc.scrollLeft + sc.clientWidth - 40 || x < sc.scrollLeft + HDR) sc.scrollLeft = x - HDR - 40;
   }
