@@ -228,7 +228,7 @@ body.checking #prompt{padding-bottom:260px}
 .hint{padding:16px;color:var(--muted);font-size:13px}
 .pbar{display:flex;gap:6px;padding:8px 10px;border-top:1px solid var(--line);flex-wrap:wrap}
 
-.toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--raise);border:1px solid var(--line);padding:10px 14px;border-radius:8px;z-index:20;max-width:90vw;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--raise);border:1px solid var(--line);padding:10px 14px;border-radius:8px;z-index:70;max-width:90vw;opacity:0;transition:opacity .2s;pointer-events:none}
 .toast.show{opacity:1}
 /* Projets */
 .pjgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
@@ -374,6 +374,8 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
 .sbtn.keep[aria-pressed=true]{background:var(--ok);border-color:var(--ok);color:#06231c}
 .row.kept .clip{box-shadow:inset 0 0 0 2px var(--ok)}
 .welcome{position:fixed;inset:0;z-index:30;background:rgba(5,6,10,.78);display:flex;align-items:center;justify-content:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+/* le test de latence et le choix de la sauvegarde passent devant tout, Réglages compris */
+.welcome.calw,.welcome.calrun,.welcome.bkdest{z-index:58}
 .wpanel{width:100%;max-width:440px;max-height:100%;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:10px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
 .wpanel h2{margin:0 0 6px;font:800 22px/1.2 var(--display)}
 .wbig{height:60px;border-radius:12px;border:0;background:var(--accent);color:#1a1405;font:800 19px var(--display)}
@@ -463,7 +465,7 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
 .edstick{position:sticky;top:0;z-index:3;background:var(--bg);display:flex;flex-direction:column;gap:8px;padding:max(12px,env(safe-area-inset-top,0px)) 0 8px;margin-top:calc(-1 * max(12px,env(safe-area-inset-top,0px)));box-shadow:0 10px 14px -10px rgba(0,0,0,.7)}
 #edOv{display:block;width:100%;height:38px;border:1px solid var(--line);border-radius:8px;background:var(--panel);touch-action:none;cursor:grab}
 .edcut .sbtn{flex:1 1 0;min-width:0}
-body.ed-open .toast{z-index:46}
+body.ed-open .toast{z-index:70}
 .edrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .edinfo{margin-left:auto;font:12px ui-monospace,monospace;color:var(--muted)}
 .edtools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
@@ -682,7 +684,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.4.2 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.4.3 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -1138,8 +1140,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 164; // numéro interne (jamais affiché)
-const APP_PUB = '2.4.2';
+const APP_VER = 165; // numéro interne (jamais affiché)
+const APP_PUB = '2.4.3';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -6749,7 +6751,7 @@ const BK_DEST = [
 function bkDest(file, n, mo){
   return new Promise(res => {
     const w = document.createElement('div');
-    w.className = 'welcome'; w.setAttribute('role', 'dialog'); w.setAttribute('aria-label', 'Où ranger ta sauvegarde');
+    w.className = 'welcome bkdest'; w.setAttribute('role', 'dialog'); w.setAttribute('aria-label', 'Où ranger ta sauvegarde');
     w.innerHTML = `<div class="wpanel">
       <h2>💾 Sauvegarde prête</h2>
       <p class="note">${n} son${n > 1 ? 's' : ''} · ${mo < 10 ? mo.toFixed(1) : Math.round(mo)} Mo. Où tu la ranges ?</p>
