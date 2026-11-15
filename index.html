@@ -254,6 +254,9 @@ details.adv[open] summary{color:var(--accent)}
 .sessitem span{font-size:11px;color:var(--muted)}
 .sessitem.cur{border-color:var(--accent)}
 .mkrow{display:flex;gap:6px;flex-wrap:wrap;padding:6px 10px;border-bottom:1px solid var(--line)}
+.mkdrawer{flex-basis:100%;width:100%}.mkdtog{display:flex;align-items:center;justify-content:center;gap:6px;margin:6px auto 0;height:30px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--raise);color:var(--muted);font:700 13px var(--display)}.mkdtog i{font-style:normal;transition:transform .2s}.mkdtog[aria-expanded=true] i{transform:rotate(180deg)}
+.mkwrap{display:flex;flex-direction:column;gap:6px;margin-top:8px;padding:8px;border:1px solid var(--line);border-radius:12px;background:var(--panel);animation:mkdown .18s ease-out}.mkwrap .mkrow{border:0;padding:0}.mkwrap .mkok{align-self:flex-end;height:32px}
+@keyframes mkdown{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
 .mkrow:empty{display:none}
 .mk{height:28px;padding:0 10px;border-radius:14px;border:1px solid var(--accent);background:transparent;color:var(--accent);font-size:12px;font-weight:700}
 .mkx{height:28px;width:28px;border-radius:14px;border:1px solid var(--line);background:transparent;color:var(--muted);font-size:12px;padding:0}
@@ -402,7 +405,7 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
 .edhead .sbtn,.edrow .sbtn{height:40px;padding:0 12px;font-size:14px}
 .edwave{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel)}
 #edCv{display:block;width:100%;height:min(30vh,240px);touch-action:none;cursor:crosshair}
-.edstick{position:sticky;top:-12px;z-index:3;background:var(--bg);display:flex;flex-direction:column;gap:8px;padding:6px 0 8px;margin-top:-6px;box-shadow:0 10px 14px -10px rgba(0,0,0,.7)}
+.edstick{position:sticky;top:0;z-index:3;background:var(--bg);display:flex;flex-direction:column;gap:8px;padding:12px 0 8px;margin-top:-12px;box-shadow:0 10px 14px -10px rgba(0,0,0,.7)}
 #edOv{display:block;width:100%;height:38px;border:1px solid var(--line);border-radius:8px;background:var(--panel);touch-action:none;cursor:grab}
 .edcut .sbtn{flex:1 1 0;min-width:0}
 body.ed-open .toast{z-index:46}
@@ -582,6 +585,7 @@ body.ed-open .wmark{z-index:41}
     <div class="tpbar" id="tpBar"><i id="tpFill"></i><div class="tpmk" id="tpMk"></div><b id="tpHead"></b></div>
     <span class="tpt" id="tpTot">0:00</span>
   </div>
+  <div class="mkdrawer" id="mkDrawer" hidden><button class="mkdtog" id="mkTog" aria-expanded="false" aria-controls="mkWrap"><span id="mkTogTxt">✂️ Parties de l'instru</span><i>▾</i></button><div class="mkwrap" id="mkWrap" hidden><button class="sbtn mkok" id="mkOk">✓ OK</button></div></div>
   <div class="settings" id="settings" hidden>
     <div class="sethead"><b>⚙️ Réglages</b><button class="sbtn setclose" data-setclose>✕ Fermer</button></div>
     <div class="autobox"><div class="autot">Affichage</div>
@@ -595,11 +599,11 @@ body.ed-open .wmark{z-index:41}
       <button class="toggle" id="tMetro" aria-pressed="false">Métronome</button></div>
       <div class="bkrow"><button class="toggle" id="tDeBleed" aria-pressed="true">🧽 Sans écouteurs : le téléphone retire l'instru du micro</button></div>
       <div class="bkrow"><button class="sbtn" id="bCal">🎯 Recalibrer la latence</button><span class="grp" id="latInfo"></span></div>
-      <div class="bkrow"><span class="grp">Prises</span><div class="seg" id="recModeSeg" role="group" aria-label="Façon d'enregistrer"><button data-rm2="onego">🎙️ Tout d'un coup</button><button data-rm2="parts">✂️ Partie par partie</button></div></div>
+      <div class="bkrow" hidden><span class="grp">Prises</span><div class="seg" id="recModeSeg" role="group" aria-label="Façon d'enregistrer"><button data-rm2="onego">🎙️ Tout d'un coup</button><button data-rm2="parts">✂️ Partie par partie</button></div></div>
       <div class="bkrow"><span class="grp">Pré-roulement</span><div class="seg" id="preSeg" role="group" aria-label="Pré-roulement"><button data-pr="0">Aucun</button><button data-pr="1">1 mesure</button><button data-pr="2">2 mesures</button></div></div>
-      <p class="note">Le tempo est détecté tout seul quand tu importes ton instru. Prises (une fois tes parties calées dans Texte) : tout d'un coup, et je range couplets et refrains sur leur piste ; ou partie par partie, et ça s'arrête à la fin de chaque couplet ou refrain avec la bonne piste armée pour la suite. Le pré-roulement : quand tu refais un passage sur une piste déjà enregistrée, tu réentends ta prise d'avant juste avant, puis l'enregistrement démarre pile au bon endroit (ça remplace le décompte).</p>
+      <p class="note">Le tempo est détecté tout seul quand tu importes ton instru. Le pré-roulement : quand tu refais un passage sur une piste déjà enregistrée, tu réentends ta prise d'avant juste avant, puis l'enregistrement démarre pile au bon endroit (ça remplace le décompte).</p>
     </div>
-    <div class="autobox"><div class="autot">Toi</div>
+    <div class="autobox" hidden><div class="autot">Toi</div>
       <label class="grp">Ton blaze <input id="meName" style="width:120px;height:34px;background:var(--raise);border:1px solid var(--line);border-radius:6px;padding:0 8px;text-transform:none;letter-spacing:0" placeholder="ex. Xela"></label>
     </div>
     <div class="autobox"><div class="autot">Écoute</div>
@@ -619,12 +623,11 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Aide</div>
       <div class="bkrow"><button class="toggle adv" id="bGuide">🎤 Premier son guidé</button>
-      <button class="toggle" id="bTour">📖 Revoir le tuto</button>
-      <button class="toggle" id="bAvis">💬 Donner mon avis</button></div>
+      <button class="toggle" id="bTour">📖 Revoir le tuto</button></div>
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.0.1 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.0.3 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -1071,8 +1074,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 141; // numéro interne (jamais affiché)
-const APP_PUB = '2.0.1';
+const APP_VER = 143; // numéro interne (jamais affiché)
+const APP_PUB = '2.0.3';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -4389,8 +4392,29 @@ async function startSessions(){
   renderSessBar();
   showWelcome();
 }
+/* La toute première fois : ton blaze (il signe tes pistes), demandé une seule fois */
+function blazeAsk(){
+  return new Promise(res => {
+    const w = document.createElement('div');
+    w.className = 'welcome'; w.setAttribute('role', 'dialog'); w.setAttribute('aria-label', '🎤 C\'est quoi ton blaze ?');
+    w.innerHTML = `<div class="wpanel">
+      <h2>🎤 C'est quoi ton blaze ?</h2>
+      <p class="note">Ton nom d'artiste. Il signe tes pistes quand tu partages un projet.</p>
+      <input id="sxBlaze" maxlength="30" autocomplete="off" placeholder="Ex : Xela" style="height:48px;border-radius:10px;border:1px solid var(--line);background:var(--raise);color:inherit;padding:0 12px;font-size:17px">
+      <button class="wbig" data-c="ok" disabled style="opacity:.45">C'est moi →</button>
+    </div>`;
+    document.body.appendChild(w);
+    const inp = w.querySelector('#sxBlaze'), ok = w.querySelector('[data-c=ok]');
+    const upd = () => { ok.disabled = !inp.value.trim(); ok.style.opacity = ok.disabled ? '.45' : '1'; };
+    const go = () => { const v = inp.value.trim(); if(!v){ inp.focus(); return; } w.remove();
+      ME.name = v; store.set('me', ME); try{ $('#meName').value = v; }catch(e){} S.tracks.forEach(t => { if(t.owner === ME.id) t.ownerName = v; }); res(v); };
+    inp.addEventListener('input', upd); inp.addEventListener('keydown', e => { if(e.key === 'Enter') go(); }); ok.addEventListener('click', go);
+    setTimeout(() => inp.focus(), 50);
+  });
+}
 /* À l'ouverture : on choisit, rien n'est rouvert d'office */
 function showWelcome(){
+  if(!ME.name){ blazeAsk().then(showWelcome); return; }
   if(!sessIndex.length){ newSession(); return; }
   const list = sessIndex.slice().sort((a, b) => b.updated - a.updated).slice(0, 4);
   const w = document.createElement('div');
@@ -4419,11 +4443,16 @@ function showWelcome(){
 /* ---------- Repères couplet / refrain ---------- */
 function renderMarkers(){
   const box = $('#mkRow'); if(!box) return;
+  /* les parties de l'instru vivent dans un volet sous la ligne de lecture : on le déroule quand on en a besoin */
+  const wrap = $('#mkWrap'); if(wrap && box.parentElement !== wrap) wrap.insertBefore(box, wrap.firstChild);
+  const dr = $('#mkDrawer'); if(dr){ dr.hidden = !S.markers.length; const tt = $('#mkTogTxt'); if(tt) tt.textContent = '✂️ Parties de l\'instru (' + S.markers.length + ')'; }
   box.innerHTML = S.markers.slice().sort((a, b) => a.t - b.t).map(m => {
     const i = S.markers.indexOf(m);
     return `<button class="mk" data-mk="${i}">${esc(m.name)} · ${fmt(m.t, true)}</button><button class="mkx" data-mkdel="${i}" aria-label="Supprimer le repère ${esc(m.name)}">✕</button>`;
   }).join('');
 }
+{ const tog = $('#mkTog'), wrap = $('#mkWrap'), set = o => { wrap.hidden = !o; tog.setAttribute('aria-expanded', String(o)); };
+  tog.onclick = () => set(wrap.hidden); $('#mkOk').onclick = () => set(false); }
 $('#mkAdd').onclick = () => {
   pushUndo('le repère');
   const heads = ta.value.split('\n').filter(isHead).map(l => l.trim().slice(1, -1).trim());
@@ -4770,9 +4799,10 @@ function downloadBlob(blob, name){
 }
 async function shareFiles(files, text){
   try{
-    if(navigator.canShare && navigator.canShare({ files })){ await navigator.share(text ? { files, title: 'StudioXel', text } : { files, title: 'StudioXel' }); return; }
-  }catch(e){ if(e.name === 'AbortError') return; }
+    if(navigator.canShare && navigator.canShare({ files })){ await navigator.share(text ? { files, title: 'StudioXel', text } : { files, title: 'StudioXel' }); return true; }
+  }catch(e){ if(e.name === 'AbortError') return false; }
   files.forEach(f => downloadBlob(f, f.name));
+  return true;
 }
 const baseName = () => safeName(sess.name || 'studioxel');
 $('#bMaster').onclick = async () => {
@@ -5287,7 +5317,7 @@ function openAvis(){
   });
   $('#avTxt').focus();
 }
-$('#bAvis').onclick = () => { $('#settings').hidden = true; $('#bSet').setAttribute('aria-expanded', 'false'); openAvis(); };
+
 $('#bAvis2').onclick = openAvis;
 
 $('#bStems').onclick = async () => {
@@ -5373,7 +5403,7 @@ function readSessionFile(ab){
 let sessFileOut = null;
 $('#sessSend').onclick = async () => {
   if(busy || S.recording) return;
-  if(!ME.name){ toast('Mets d\'abord ton blaze dans « Réglages » : c\'est lui qui signe tes pistes.'); $('#settings').hidden = false; $('#bSet').setAttribute('aria-expanded', 'true'); $('#meName').focus(); return; }
+  if(!ME.name){ blazeAsk(); return; }
   if(!S.tracks.some(t => t.buffer)){ toast('La session est vide : rien à envoyer.'); return; }
   setBusy(true, 'Préparation du fichier…');
   try{
@@ -5775,8 +5805,8 @@ function openEditor(t, a, b){
   ed = { tid: t.id, v0: 0, v1: dur, a: null, b: null, cur: clamp(S.pos - t.offset, 0, dur), loop: false, end: null, start: 0, soloWas: null, drag: null };
   if(a != null && b != null){ ed.a = clamp(a - t.offset, 0, dur); ed.b = clamp(b - t.offset, 0, dur); const pad = (ed.b - ed.a) * 0.4 + 0.3; ed.v0 = Math.max(0, ed.a - pad); ed.v1 = Math.min(dur, ed.b + pad); }
   const w = document.createElement('div'); w.className = 'ed'; w.setAttribute('role', 'dialog'); w.setAttribute('aria-label', 'Éditeur de prise');
-  w.innerHTML = `<div class="edhead"><button class="sbtn" id="edClose">✕ Fermer</button><b id="edName"></b><button class="sbtn" id="edUndo" aria-label="Annuler">↶ Annuler</button></div>
-    <div class="edstick">
+  w.innerHTML = `<div class="edstick">
+      <div class="edhead"><button class="sbtn" id="edClose">✕ Fermer</button><b id="edName"></b><button class="sbtn" id="edUndo" aria-label="Annuler">↶ Annuler</button></div>
       <div class="edwave"><canvas id="edCv"></canvas></div>
       <canvas id="edOv" aria-label="Toute la prise : glisse pour te déplacer"></canvas>
       <div class="edrow"><button class="sbtn" data-z="out" aria-label="Dézoomer">−</button><button class="sbtn" data-z="in" aria-label="Zoomer">+</button><button class="sbtn" data-z="all">Tout</button><button class="sbtn" data-z="sel">Sélection</button><span class="edinfo" id="edInfo"></span></div>
@@ -5811,6 +5841,8 @@ function openEditor(t, a, b){
 }
 const edT = () => ed && trackById(ed.tid);
 /* l'éditeur se cale sous la barre du haut (lecture, pause, REC restent dispo) */
+/* la barre du haut peut changer de taille (volet des parties…) : l'éditeur se recale dessous */
+try{ new ResizeObserver(() => { try{ edFit(); }catch(e){} }).observe(document.querySelector('.transport')); }catch(e){}
 function edFit(){ if(!ed) return; const tr = document.querySelector('.transport'); const h = tr ? tr.getBoundingClientRect().bottom : 0; ed.el.style.top = Math.max(0, Math.round(h)) + 'px'; ed.el.style.paddingTop = '12px'; }
 function closeEditor(){
   if(!ed) return;
@@ -6121,7 +6153,7 @@ const HELP = {
   vPistes: [
     { t: 'L\'onglet Pistes', b: 'C\'est ta table d\'enregistrement : tes pistes à gauche, la timeline à droite. Je te montre tout ce qu\'il y a ici.' },
     { sel: ['#modeBar'], t: 'Simple ou avancé', b: 'Le bandeau tout en haut : un appui pour passer en mode simple (l\'essentiel) ou avancé (tous les outils). Ça bascule direct.' },
-    { sel: ['#guideBar'], t: 'Accompagné ou manuel', b: '🧭 Je t\'accompagne : les étapes s\'affichent, la bonne piste s\'arme toute seule et tes prises sont rangées (couplets sur Couplets, refrains sur Refrain). ✋ Je gère moi-même : tu touches le R de la piste que tu veux, tu enregistres où tu veux, je ne touche à rien.' },
+    { sel: ['#guideBar'], t: 'Accompagné ou manuel', b: '🧭 Guide-moi : les étapes s\'affichent, la bonne piste s\'arme toute seule et tes prises sont rangées (couplets sur Couplets, refrains sur Refrain). ✋ Je gère moi-même : tu touches le R de la piste que tu veux, tu enregistres où tu veux, je ne touche à rien.' },
     { sel: ['#stepBar'], t: 'Les étapes', b: 'En mode simple, tout se fait ici, comme une séance studio : instru, texte, lead, refrain, backs, habillage, master et export. Le gros bouton fait l\'action pour toi. Pour tous les outils : « Mode avancé », tout en haut.' },
     { sel: ['.power'], t: 'Pour aller plus loin', b: 'Pendant l\'habillage et après : retoucher une phrase au poil, t\'entendre en direct avec tes écouteurs, faire un Reel. Tous les outils sont aussi en mode avancé.' },
     { sel: ['#sessTitle', '#sessState'], t: 'Ta session', b: 'Le nom de ton son et son état. « Sauvegardé » : tout est gardé dans le téléphone, rien à faire.' },
@@ -6282,7 +6314,7 @@ function gPlace(){
 }
 /* ---------- Sauvegarde complète : un fichier avec tous tes sons, à ranger dans iCloud / Fichiers / Drive ---------- */
 async function makeBackup(){
-  if(busy) return; track('sauvegarde'); setBusy(true, 'Préparation de ta sauvegarde…');
+  if(busy) return; track('sauvegarde'); setBusy(true, 'Préparation de ta sauvegarde…'); boot('sauvegarde');
   try{
     clearTimeout(saveTimer); if(sessReady && S.tracks.some(t => t.buffer)) await saveSession();
     const sessions = await dbDo('sessions', 'readonly', st => st.getAll()) || [];
@@ -6292,7 +6324,8 @@ async function makeBackup(){
     for(const aid of need){
       const o = await dbDo('audio', 'readonly', st => st.get(aid)); if(!o) continue;
       const meta = { aid, sr: o.sr, nc: o.ch.length, len: o.ch[0].length, off };
-      for(const c of o.ch){ const a = c instanceof Int16Array ? c : new Int16Array(c); parts.push(a); off += a.byteLength; }
+      /* chaque son passe tout de suite dans un fichier à part : on ne garde pas tout en mémoire en même temps (sinon le téléphone plante) */
+      for(const c of o.ch){ const a = c instanceof Int16Array ? c : new Int16Array(c); parts.push(new Blob([a])); off += a.byteLength; }
       audios.push(meta);
       if(++n % 5 === 0){ toast('Sauvegarde… ' + Math.round(n / need.size * 100) + ' %'); await tick(); }
     }
@@ -6304,8 +6337,9 @@ async function makeBackup(){
     store.set('lastBackup', Date.now());
     setBusy(false);
     const mo = file.size / 1048576;
+    boot('ok');
     await bkDest(file, sessions.length, mo);
-  }catch(e){ setBusy(false); toast('Sauvegarde impossible : ' + e.message); }
+  }catch(e){ setBusy(false); boot('ok'); toast('Sauvegarde impossible : ' + e.message); }
 }
 /* Où ranger la sauvegarde : chaque bouton ouvre le partage du téléphone avec la bonne astuce */
 const BK_DEST = [
@@ -6333,7 +6367,10 @@ function bkDest(file, n, mo){
       if(!b || b.dataset.d === 'close'){ w.remove(); res(); return; }
       const d = BK_DEST.find(x => x.k === b.dataset.d);
       $('#bkTip').textContent = d.i + ' ' + d.tip; toast(d.tip);
-      await shareFiles([file], '');
+      boot('sauvegarde');
+      const okShare = await shareFiles([file], '');
+      boot('ok');
+      if(okShare !== false){ w.remove(); res(); toast('✅ Sauvegarde envoyée : ' + n + ' son' + (n > 1 ? 's' : '') + ', ' + (mo < 10 ? mo.toFixed(1) : Math.round(mo)) + ' Mo. Vérifie qu\'elle est bien arrivée là où tu l\'as rangée.'); }
     });
   });
 }
@@ -6473,11 +6510,11 @@ const stepEl = document.createElement('div'); stepEl.className = 'stepbar'; step
 $('#vPistes .cardhead').after(stepEl);
 /* tes pistes : je t'accompagne (étapes, piste armée toute seule, prises rangées) ou tu gères toi-même */
 const guideEl = document.createElement('div'); guideEl.className = 'guidebar'; guideEl.id = 'guideBar';
-guideEl.innerHTML = '<button data-g="auto">🧭 Je t\'accompagne</button><button data-g="manual">✋ Je gère moi-même</button>';
+guideEl.innerHTML = '<button data-g="auto">🧭 Guide-moi</button><button data-g="manual">✋ Je gère moi-même</button>';
 $('#vPistes .cardhead').after(guideEl);
 function syncGuide(){ guideEl.querySelectorAll('[data-g]').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.g === 'auto') === guided()))); }
 guideEl.addEventListener('click', e => { const b = e.target.closest('[data-g]'); if(!b) return; store.set('guide', b.dataset.g); syncGuide(); stepKey = ''; updStep(); track('pistes-' + b.dataset.g); if(b.dataset.g === 'manual'){ const at = S.tracks.find(x => x.arm); if(at) setTimeout(() => armJump(at), 2500); }
-  toast(b.dataset.g === 'auto' ? '🧭 Je t\'accompagne : étapes, bonne piste armée toute seule, prises rangées.' : '✋ À toi de jouer : touche le R de la piste où tu veux enregistrer, puis REC. Je ne range rien tout seul.'); });
+  toast(b.dataset.g === 'auto' ? '🧭 Guide-moi : étapes, bonne piste armée toute seule, prises rangées.' : '✋ À toi de jouer : touche le R de la piste où tu veux enregistrer, puis REC. Je ne range rien tout seul.'); });
 syncGuide();
 let stepArmed = null, stepKey = '', stepSkip = { sid: null, instru: false, text: false }, stepRetake = false;
 const vocalTracks = () => S.tracks.filter(t => t.preset !== 'instru');
@@ -6603,7 +6640,7 @@ function updStep(){
     h += `<div class="arrt"><b>Volume</b><div class="arrs">${[['-14', 'Streaming'], ['-9', 'Fort']].map(([k, l]) => `<button class="sbtn" data-mtg="${k}" aria-pressed="${M.target === +k}">${l}</button>`).join('')}</div></div>`;
     h += `<div class="stb"><button class="sbtn primary big" data-s="export">📤 Exporter mon son</button>${playB}<button class="sbtn" data-s="back2arr">← Retoucher l'habillage</button></div>`;
   }
-  else h = `${dots}<div class="stn">C'est fini</div><h3>Ton son est prêt 🔥</h3><p>Envoie-le où tu veux, ou fais-en un Reel.</p><div class="stb"><button class="sbtn primary big" data-s="share">📲 Partager mon son</button><button class="sbtn" data-s="reel">🎬 Faire un Reel</button><button class="sbtn" data-s="back2arr">🎛️ Retoucher</button></div>`;
+  else h = `${dots}<div class="stn">C'est fini</div><h3>Ton son est prêt 🔥</h3><p>Envoie-le où tu veux, ou fais-en un Reel.</p><div class="stb"><button class="sbtn primary big" data-s="share">📲 Partager mon son</button><button class="sbtn" data-s="reel">🎬 Faire un Reel</button><button class="sbtn" data-s="back2arr">🎛️ Retoucher</button></div><p class="sttip">Un avis sur l'appli ? <button class="stlink" data-s="avis">💬 Dis-moi tout</button>, je lis tout.</p>`;
   stepEl.innerHTML = h + ideasHTML(idl);
   if(st === 'arr' && !f.arrInit) setTimeout(() => arrangeAuto().then(() => { stepKey = ''; updStep(); }), 50);
 }
@@ -6632,6 +6669,7 @@ stepEl.addEventListener('click', async e => {
   else if(a === 'check'){ document.querySelector('.nav [data-view="vTexte"]').click(); $('#tabP')?.click(); setTimeout(tapStart, 250); return; }
   else if(a === 'export') $('#bMaster').click();
   else if(a === 'share') $('#bShareMp3').click();
+  else if(a === 'avis') openAvis();
   else if(a === 'reel'){ document.querySelector('.nav [data-view="vPartager"]').click(); setTimeout(() => $('#rsCanvas')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 200); }
   stepKey = ''; updStep();
 });
@@ -6651,11 +6689,12 @@ $('#recModeSeg').addEventListener('click', e => { const b = e.target.closest('[d
 syncRecMode();
 setTimeout(showBeta, 300);
 { const b = $('#tNoTrack'); b.setAttribute('aria-pressed', String(store.get('noTrack', false)));
-  if(store.get('noTrack', false)) b.hidden = false;
+  b.hidden = !store.get('noTrackShow', false);
   let taps = 0, tapT = 0;
-  $('#ver').addEventListener('click', () => { const now = Date.now(); taps = now - tapT < 800 ? taps + 1 : 1; tapT = now; if(taps >= 5){ taps = 0; b.hidden = !b.hidden; } });
+  $('#ver').addEventListener('click', () => { const now = Date.now(); taps = now - tapT < 800 ? taps + 1 : 1; tapT = now; if(taps >= 5){ taps = 0; b.hidden = !b.hidden; store.set('noTrackShow', !b.hidden); } });
   b.onclick = () => { const v = !store.get('noTrack', false); if(!v) store.set('noTrack', false); else track('compteur-coupe'); if(v) store.set('noTrack', true); b.setAttribute('aria-pressed', String(v)); toast(v ? 'Tes visites ne sont plus comptées sur cet appareil.' : 'Tes visites sont de nouveau comptées.'); }; }
 setTimeout(() => { if(window.SX_PREV && window.SX_PREV !== 'ok') track('plantage-' + window.SX_PREV + '-v' + APP_PUB); }, 1600);
+if(window.SX_PREV === 'sauvegarde') setTimeout(() => toast('⚠️ Ta dernière sauvegarde ne s\'est pas terminée : le téléphone a manqué de mémoire, donc elle n\'a pas été faite. Réessaie depuis Réglages.'), 2500);
 setTimeout(() => { if(!S.recording) boot('ok'); }, 8000);
 document.addEventListener('visibilitychange', () => { if(document.hidden) boot('ok'); });
 addEventListener('pagehide', () => boot('ok'));
