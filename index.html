@@ -133,6 +133,19 @@ body:not(.simple) .row .l1 .chip{flex:1 1 0}
 /* Mixage & Master */
 .pad{padding:12px;display:flex;flex-direction:column;gap:14px}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
+.mxw{position:relative;margin-top:10px;border:1px solid var(--line);border-radius:10px;background:var(--raise);overflow:hidden;touch-action:none}.mxw canvas{display:block;width:100%;height:84px}
+.mxhint{margin:6px 0 0;font-size:12px}
+.mxtarget{display:flex;align-items:center;gap:8px;margin-top:10px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--panel);font-size:14px}
+.mxtarget.sel{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--panel))}.mxtarget b{color:var(--accent)}.mxtarget small{display:block;color:var(--muted)}
+.mxtarget .x{margin-left:auto;flex:none;width:32px;height:32px;border-radius:50%;border:1px solid var(--line);background:var(--raise);color:inherit}
+details.mxacc{border:1px solid var(--line);border-radius:12px;background:var(--panel);margin-top:8px}details.mxacc[open]{border-color:var(--accent)}
+details.mxacc>summary{list-style:none;cursor:pointer;padding:14px;font-weight:800;display:flex;align-items:center;gap:8px}details.mxacc>summary::-webkit-details-marker{display:none}
+details.mxacc>summary::after{content:'▾';margin-left:auto;color:var(--muted)}details.mxacc[open]>summary::after{content:'▴'}
+details.mxacc>summary .st{margin-left:auto;color:var(--muted);font-weight:600;font-size:12px}details.mxacc>summary .st+*{display:none}
+.mxbody{padding:0 14px 14px;display:flex;flex-direction:column;gap:10px}
+.mxsl{display:flex;align-items:center;gap:10px;font-size:14px}.mxsl b{width:78px;font-weight:600;color:var(--muted)}.mxsl input{flex:1}.mxsl output{width:56px;text-align:right;color:var(--muted);font-size:13px}
+.mxnote{margin:0;font-size:12px;color:var(--muted)}.mxbtns{display:flex;gap:8px;margin-top:10px}.mxbtns .sbtn{flex:1;height:44px}
+.row .fxzone{display:none!important}
 .tchip{height:32px;padding:0 12px;border-radius:16px;border:1px solid var(--line);background:transparent;display:inline-flex;align-items:center;gap:6px;font-weight:600}
 .tchip i{width:8px;height:8px;border-radius:50%}
 .tchip[aria-pressed=true]{background:var(--raise);border-color:var(--muted)}
@@ -635,7 +648,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.0.8 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.1 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -719,6 +732,12 @@ body.ed-open .wmark{z-index:41}
 <section class="card view" id="vMix" aria-label="Mixage" hidden>
   <div class="cardhead"><h2>Mixage</h2><span class="spacer"></span><button class="sbtn" id="bLevel">Rééquilibrer les niveaux</button><button class="qhelp" data-help="vMix" aria-label="Aide de cet onglet">?</button></div>
   <div class="pad">
+    <div class="chips" id="mixChips"></div>
+    <div class="mxw" id="mxW"><canvas id="mxWave" aria-label="L'onde de la piste : glisse le doigt pour choisir un bout"></canvas></div>
+    <p class="note mxhint">👆 Glisse le doigt sur l'onde pour choisir un bout (un mot, une phrase…). Le violet = un bout déjà réglé à part : touche-le pour le reprendre.</p>
+    <div class="mxtarget" id="mxTarget"></div>
+    <div id="strip" class="pad" style="padding:0"></div>
+    <details class="mxacc" data-acc="zone"><summary>🔁 Zone à écouter en boucle</summary><div class="mxbody">
     <div class="zone" id="zone">
       <div class="zhead"><b>Zone à écouter en boucle</b><span class="spacer"></span><button class="sbtn" id="zAll">Tout le son</button><button class="sbtn" id="zClear" aria-label="Effacer la zone">✕</button></div>
       <div class="zbar" id="zBar"><div class="zrows" id="zRows"></div><div class="zsel" id="zSel" hidden><i class="zh" data-h="a"></i><i class="zh" data-h="b"></i></div><div class="zph" id="zPh"></div></div>
@@ -726,8 +745,7 @@ body.ed-open .wmark{z-index:41}
       <button class="sbtn primary" id="zPlay">🔁 Écouter la zone en boucle</button>
     </div>
     <div class="mixfol"><button class="toggle" id="mixFollow" aria-pressed="true">🎯 Suit le chant</button><span class="note">La piste qui chante est choisie toute seule pendant la lecture.</span></div>
-    <div class="chips" id="mixChips"></div>
-    <div id="strip" class="pad" style="padding:0"></div>
+    </div></details>
   </div>
 </section>
 
@@ -1082,8 +1100,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 148; // numéro interne (jamais affiché)
-const APP_PUB = '2.0.8';
+const APP_VER = 149; // numéro interne (jamais affiché)
+const APP_PUB = '2.1';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -1386,7 +1404,10 @@ function makeChain(ac, b){
     if(dblN) dblN.g0.gain.value = amt * [1, 0.75, 0.5][dblN.lv];
   };
   c.set = (t, on, live) => {
-    const dry = fxOff(t), f = dry ? FX.neutre : t.fx;
+    const dry = fxOff(t), f0 = dry ? FX.neutre : t.fx;
+    /* bouts réglés à part : on branche réverbe / écho / doubler au niveau le plus fort demandé, les dosages suivent ensuite le temps */
+    const rg = dry ? [] : (t.regs || []), mx = k => rg.reduce((m, r) => Math.max(m, r.fx[k] ?? 0), f0[k] || 0);
+    const f = rg.length ? { ...f0, rev: mx('rev'), dly: mx('dly'), dbl: mx('dbl') } : f0;
     c.hp.frequency.value = f.hp; c.low.gain.value = f.low; c.mid.gain.value = f.mid; c.mid.frequency.value = f.midF; c.high.gain.value = f.high;
     if(f.ratio > 1){ c.comp.threshold.value = f.thr; c.comp.ratio.value = f.ratio; }
     setComp(f.ratio > 1);
@@ -1395,13 +1416,16 @@ function makeChain(ac, b){
     const fv = on ? t.vol : 0;
     if(live) c.fader.gain.setTargetAtTime(fv, ac.currentTime, 0.015); else c.fader.gain.value = fv;
     c.panner.pan.value = t.pan;
-    c.rev.gain.value = f.rev / 100; c.dly.gain.value = f.dly / 100;
+    c.rev.gain.value = (f0.rev || 0) / 100; c.dly.gain.value = (f0.dly || 0) / 100;
     setRev(f.rev > 0 ? lvOf(FXL.rev, f.rev) : -1); setDly(f.dly > 0 ? lvOf(FXL.dly, f.dly) : -1);
     const v = dry ? 0 : (t.vr || 0) / 100;
     setVr(v > 0); if(vr){ vr.dry.gain.value = 1 - v; vr.wet.gain.value = v; }
     c.input.gain.value = t.trim ?? 1;
     setDbl((f.dbl || 0) / 100, (f.dbl || 0) > 0 ? lvOf(FXL.dbl, f.dbl) : 0);
+    if(dblN) dblN.g0.gain.value = ((f0.dbl || 0) / 100) * [1, 0.75, 0.5][dblN.lv];
+    if(live && rg.length && S.playing && ac === ctx){ try{ schedRegs(t, c, ctx.currentTime, now()); }catch(e){} }
   };
+  c.params = () => ({ rev: c.rev.gain, dly: c.dly.gain, dbl: dblN ? dblN.g0.gain : null, dblMul: dblN ? [1, 0.75, 0.5][dblN.lv] : 1, vol: c.fader.gain, low: c.low.gain, mid: c.mid.gain, high: c.high.gain });
   c.sends = () => ({ rev: revLv, dly: dlyLv });
   c.kill = () => {
     setDbl(0, 0);
@@ -1437,6 +1461,22 @@ async function wake(){
   }
   return ctx.state === 'running';
 }
+/* ---------- Bouts réglés à part : un mot, une phrase… avec plus d'écho, de réverbe, de volume ou un autre égaliseur ---------- */
+const REG_K = ['rev', 'dly', 'dbl', 'vol', 'low', 'mid', 'high'];
+const regBase = (t, k) => k === 'vol' ? t.vol : (t.fx[k] || 0);
+function regVal(t, k, pos){ let v = regBase(t, k); for(const r of t.regs || []) if(pos >= r.a && pos < r.b && r.fx[k] != null) v = r.fx[k]; return v; }
+function schedRegs(t, c, at, pos){
+  if(!t.regs?.length || fxOff(t)) return;
+  const P = c.params(), on = audible(t);
+  const conv = { rev: v => v / 100, dly: v => v / 100, dbl: v => v / 100 * P.dblMul, vol: v => on ? v : 0, low: v => v, mid: v => v, high: v => v };
+  const bounds = [...new Set(t.regs.flatMap(r => [r.a, r.b]))].filter(x => x > pos).sort((x, y) => x - y);
+  REG_K.forEach(k => {
+    const p = P[k]; if(!p || !t.regs.some(r => r.fx[k] != null)) return;
+    try{ p.cancelScheduledValues(at); p.setValueAtTime(conv[k](regVal(t, k, pos)), at); }catch(e){ return; }
+    bounds.forEach(b => { try{ p.setTargetAtTime(conv[k](regVal(t, k, b + 1e-4)), at + (b - pos), 0.012); }catch(e){} });
+  });
+}
+function unschedRegs(){ S.tracks.forEach(t => { if(!t.regs?.length) return; const P = t.chain.params(); REG_K.forEach(k => { try{ P[k] && P[k].cancelScheduledValues(0); }catch(e){} }); t.chain.set(t, audible(t), false); }); }
 function audible(t){ const solo = S.tracks.some(x => x.solo); return !t.mute && (!solo || t.solo); }
 /* Mode simple : voix brutes pendant qu'on pose (prise propre, on juge la voix telle qu'elle est). Les effets arrivent à l'habillage. */
 function rawPhase(){ try{ return isSimple() && guided() && !flowGet().arrInit; }catch(e){ return false; } }
@@ -1469,6 +1509,7 @@ function play(at){
     if(preOnly) s.stop(playStartCtx + recInfo.pre);
     sources.push(s);
   });
+  S.tracks.forEach(t => { try{ schedRegs(t, t.chain, playStartCtx, playStartPos); }catch(e){} });
   S.playing = true;
   startMetro(); setPlayIcon();
 }
@@ -1477,6 +1518,7 @@ function pause(){
   S.pos = now();
   sources.forEach(s => { try{ s.stop(); }catch(e){} });
   sources = []; S.playing = false;
+  try{ unschedRegs(); }catch(e){}
   clearInterval(metroTimer); setPlayIcon();
   if(S.recording) finishRec();
 }
@@ -2145,7 +2187,7 @@ let undoAt = 0, undoLbl = '';
 function snapTrack(t){
   return { id: t.id, name: t.name, color: t.color, preset: t.preset, vstyle: t.vstyle, fx: { ...t.fx }, vr: t.vr, vol: t.vol, pan: t.pan,
     mute: t.mute, solo: t.solo, arm: t.arm, offset: t.offset, buffer: t.buffer, take: t.take, takes: t.takes.map(k => ({ ...k })),
-    trim: t.trim, atOn: t.atOn, at: { ...t.at }, lv: t.lv ? { ...t.lv } : undefined, vp: t.vp, adapted: t.adapted, semi: t.semi, bpmOrig: t.bpmOrig, origTake: t.origTake, uid: t.uid, owner: t.owner, ownerName: t.ownerName, keep: t.keep, label: t.label, srcName: t.srcName };
+    trim: t.trim, atOn: t.atOn, at: { ...t.at }, lv: t.lv ? { ...t.lv } : undefined, vp: t.vp, adapted: t.adapted, semi: t.semi, bpmOrig: t.bpmOrig, origTake: t.origTake, uid: t.uid, owner: t.owner, ownerName: t.ownerName, keep: t.keep, label: t.label, srcName: t.srcName, regs: t.regs ? JSON.parse(JSON.stringify(t.regs)) : undefined };
 }
 function pushUndo(label, coalesce, force){
   if(S.recording && !force) return;
@@ -2172,7 +2214,7 @@ function undo(){
   S.tracks = u.tracks.map(sn => {
     let t = old.get(sn.id);
     if(!t){ t = {}; t.chain = makeChain(ctx, bus); }
-    Object.assign(t, sn, { fx: { ...sn.fx }, at: { ...sn.at }, takes: sn.takes.map(k => ({ ...k })), lv: sn.lv ? { ...sn.lv } : undefined });
+    Object.assign(t, sn, { regs: sn.regs ? JSON.parse(JSON.stringify(sn.regs)) : undefined, fx: { ...sn.fx }, at: { ...sn.at }, takes: sn.takes.map(k => ({ ...k })), lv: sn.lv ? { ...sn.lv } : undefined });
     return t;
   });
   if(!trackById(S.sel)) S.sel = S.tracks[0]?.id ?? null;
@@ -2914,48 +2956,143 @@ function fxRowHTML(t, k, label, hint){
     ${on && hint ? `<div class="fxhint">${hint}</div>` : ''}
   </div>`;
 }
+/* ---------- Mix : une piste, puis des titres qui se déroulent. Avec une sélection sur l'onde, les réglages ne touchent que ce bout ---------- */
+let mxSel = null; const mxOpen = new Set(store.get('mxOpen', []));
+const mxAcc = (k, title, body, st) => `<details class="mxacc" data-acc="${k}" ${mxOpen.has(k) ? 'open' : ''}><summary>${title}${st ? `<span class="st">${st}</span>` : ''}</summary><div class="mxbody">${body}</div></details>`;
+const mxSlider = (k, label, min, max, step, v, fmtV) => `<div class="mxsl"><b>${label}</b><input type="range" data-rk="${k}" min="${min}" max="${max}" step="${step}" value="${v}"><output>${fmtV(v)}</output></div>`;
+const fmtDb = v => (v > 0 ? '+' : '') + (+v).toFixed(1) + ' dB', fmtVol = v => Math.round(v * 100) + ' %';
+function mxRegOf(t){ return mxSel && mxSel.tid === t.id && mxSel.ri != null ? (t.regs || [])[mxSel.ri] : null; }
 function renderMix(){
   try{ renderZone(); }catch(e){}
   const cur = selTrack(); S.sel = cur?.id ?? null;
+  if(mxSel && (!cur || mxSel.tid !== cur.id)) mxSel = null;
   $('#mixChips').innerHTML = S.tracks.map(t =>
     `<button class="tchip" data-id="${t.id}" aria-pressed="${t === cur}"><i style="background:${t.color}"></i>${esc(t.name)}</button>`).join('');
-  const st = $('#strip');
-  if(!cur){ st.innerHTML = '<p class="note">Ajoute une piste dans l\'onglet Pistes.</p>'; return; }
-  const tuned = isTuned(cur) || !!cur.atOn, ai = nearest(AT_SP, cur.at.speed);
-  let html = `<div class="field"><label for="fxPreset">Style de piste</label><select id="fxPreset">${
-    Object.keys(FXNAMES).filter(k => k !== 'perso' || cur.preset === 'perso')
-      .map(k => `<option value="${k}" ${k === cur.preset ? 'selected' : ''}>${FXNAMES[k]}</option>`).join('')}</select></div>
-    ${cur.adapted ? `<p class="note" style="color:var(--ok)">✓ Égaliseur et compression réglés sur ta voix${cur.vp?.f0med ? (cur.vp.f0med < 165 ? ' (voix grave)' : cur.vp.f0med < 255 ? ' (voix médium)' : ' (voix aiguë)') : ''}${cur.vp?.dr > 12 ? ', très dynamique' : ''}.</p>` : ''}
-    ${cur.preset !== 'instru' || cur.vstyle != null ? `<div class="field"><label>Style de voix en un appui</label><div class="vsgrid">${VSTYLES.map((v, i) => `<button class="sbtn" data-vsm="${i}" aria-pressed="${cur.vstyle === i}"><b>${v.n}</b><span>${v.d}</span></button>`).join('')}</div></div>` : ''}
-    <div class="fxlist">
-      ${fxRowHTML(cur, 'rev', 'Reverb')}
-      ${fxRowHTML(cur, 'dly', 'Écho')}
-      ${fxRowHTML(cur, 'dbl', 'Doubler')}
-      <div class="fxrow">
-        <button class="fxbtn" data-fx="at" aria-pressed="${tuned}">Auto-tune</button>
-        ${tuned ? `<div class="notch" data-fx="at" role="group" aria-label="Style d'auto-tune">${AT_N.map((n, i) => `<button data-l="${i}" aria-pressed="${i === ai}">${n}</button>`).join('')}</div>
-        <div class="atkey"><select id="atKey" aria-label="Tonalité">${NOTES.map((n, i) => `<option value="${i}" ${i === cur.at.key ? 'selected' : ''}>${n}</option>`).join('')}</select>
-          <select id="atScale" aria-label="Gamme">${Object.keys(SCALES).map(k => `<option value="${k}" ${k === cur.at.scale ? 'selected' : ''}>${SCALES[k].name}</option>`).join('')}</select></div>` : ''}
-      </div>
-      ${fxRowHTML(cur, 'sat', 'Chaleur', 'Saturation à lampe : donne du grain et de la présence. Brûlant = voix qui arrache.')}
-      ${fxRowHTML(cur, 'rad', 'Radio', 'Voix filtrée façon vieux poste, téléphone ou lo-fi. Parfait pour une intro ou des ad-libs.')}
-      ${fxRowHTML(cur, 'vr', 'Retirer la voix', 'Pour un son du commerce en stéréo : enlève la voix au centre, garde basse et kick.')}
-      ${cur.buffer && (cur.preset === 'instru' || cur.bpmOrig) ? `
-      <div class="fxrow"><span class="fxlab">Tonalité de l'instru</span>
-        <div class="stepper" data-xf="semi"><button data-d="-1" aria-label="Un demi-ton plus bas">−</button><output>${(cur.semi || 0) > 0 ? '+' : ''}${cur.semi || 0} demi-ton${Math.abs(cur.semi || 0) > 1 ? 's' : ''}</output><button data-d="1" aria-label="Un demi-ton plus haut">+</button></div></div>
-      <div class="fxrow"><span class="fxlab">Vitesse de l'instru</span>
-        <div class="stepper" data-xf="bpm"><button data-d="-2" aria-label="Plus lent">−</button><output>${S.bpm} BPM</output><button data-d="2" aria-label="Plus rapide">+</button></div></div>` : ''}
-    </div>
-    <details class="adv"><summary>Avancé : égaliseur et compression</summary>
-      <div class="advbody"><canvas id="eq" aria-label="Courbe d'égalisation"></canvas>
-        <div class="sls">${TDEFS.map(d => sliderHTML(d, cur.fx[d.k], 'fx_')).join('')}</div>
-        <div class="grrow"><span>Réduction</span><div class="meter wide gr"><i id="trGr"></i></div><output id="trGrDb">0 dB</output></div>
-      </div>
-    </details>`;
+  const st = $('#strip'), tg = $('#mxTarget');
+  drawMxWave();
+  if(!cur){ st.innerHTML = '<p class="note">Ajoute une piste dans l\'onglet Pistes.</p>'; tg.hidden = true; return; }
+  tg.hidden = false;
+  tg.className = 'mxtarget' + (mxSel ? ' sel' : '');
+  tg.innerHTML = mxSel ? `<span>🎯 Réglages appliqués à <b>ta sélection</b><small>${fmt(mxSel.a)} → ${fmt(mxSel.b)}</small></span><button class="x" data-mx="clear" aria-label="Enlever la sélection">✕</button>`
+    : `<span>🎯 Réglages appliqués à <b style="color:inherit">toute la piste</b><small>${esc(cur.name)}${cur.regs?.length ? ' · ' + cur.regs.length + ' bout' + (cur.regs.length > 1 ? 's' : '') + ' réglé' + (cur.regs.length > 1 ? 's' : '') + ' à part' : ''}</small></span>`;
+  let html;
+  if(mxSel){
+    /* réglages du bout choisi */
+    const r = mxRegOf(cur), mid = (mxSel.a + mxSel.b) / 2, val = k => r && r.fx[k] != null ? r.fx[k] : regVal(cur, k, mid);
+    const notch = (k, label) => { const v = val(k), li = v > 0 ? nearest(LV[k], v) : -1;
+      return `<div class="fxrow"><span class="fxlab">${label}</span><div class="notch" role="group" aria-label="${label}"><button data-rfx="${k}" data-l="-1" aria-pressed="${li < 0}">Sans</button>${LVN[k].map((n, i) => `<button data-rfx="${k}" data-l="${i}" aria-pressed="${i === li}">${n}</button>`).join('')}</div></div>`; };
+    html = mxAcc('vol', '🎚️ Volume', mxSlider('vol', 'Volume', 0, 2, 0.01, val('vol'), fmtVol))
+      + mxAcc('fx', '🌊 Effets', notch('rev', 'Reverb') + notch('dly', 'Écho') + notch('dbl', 'Doubler') + '<p class="mxnote">L\'écho et la reverb continuent de traîner juste après le bout, comme en studio.</p>')
+      + mxAcc('eq', '🎛️ Égaliseur', mxSlider('low', 'Graves', -12, 12, 0.5, val('low'), fmtDb) + mxSlider('mid', 'Médiums', -12, 12, 0.5, val('mid'), fmtDb) + mxSlider('high', 'Aigus', -12, 12, 0.5, val('high'), fmtDb))
+      + `<p class="mxnote">Style, chaleur, radio, auto-tune et compression se règlent sur toute la piste : touche ✕ pour enlever la sélection.</p>
+        <div class="mxbtns"><button class="sbtn primary" data-mx="hear">▶ Écouter le bout</button>${r ? '<button class="sbtn" data-mx="reset">↺ Remettre</button>' : ''}</div>`;
+  } else {
+    const tuned = isTuned(cur) || !!cur.atOn, ai = nearest(AT_SP, cur.at.speed);
+    html = mxAcc('vol', '🎚️ Volume et placement', mxSlider('tvol', 'Volume', 0, 2, 0.01, cur.vol, fmtVol) + mxSlider('tpan', 'Gauche ↔ Droite', -1, 1, 0.05, cur.pan, v => v == 0 ? 'Centre' : (v < 0 ? 'G ' : 'D ') + Math.round(Math.abs(v) * 100)))
+      + mxAcc('style', '✨ Style', `<div class="field"><label for="fxPreset">Style de piste</label><select id="fxPreset">${
+        Object.keys(FXNAMES).filter(k => k !== 'perso' || cur.preset === 'perso')
+          .map(k => `<option value="${k}" ${k === cur.preset ? 'selected' : ''}>${FXNAMES[k]}</option>`).join('')}</select></div>
+        ${cur.adapted ? `<p class="note" style="color:var(--ok)">✓ Égaliseur et compression réglés sur ta voix${cur.vp?.f0med ? (cur.vp.f0med < 165 ? ' (voix grave)' : cur.vp.f0med < 255 ? ' (voix médium)' : ' (voix aiguë)') : ''}${cur.vp?.dr > 12 ? ', très dynamique' : ''}.</p>` : ''}
+        ${cur.preset !== 'instru' || cur.vstyle != null ? `<div class="field"><label>Style de voix en un appui</label><div class="vsgrid">${VSTYLES.map((v, i) => `<button class="sbtn" data-vsm="${i}" aria-pressed="${cur.vstyle === i}"><b>${v.n}</b><span>${v.d}</span></button>`).join('')}</div></div>` : ''}`, FXNAMES[cur.preset] || '')
+      + mxAcc('fx', '🌊 Effets', `<div class="fxlist">
+          ${fxRowHTML(cur, 'rev', 'Reverb')}
+          ${fxRowHTML(cur, 'dly', 'Écho')}
+          ${fxRowHTML(cur, 'dbl', 'Doubler')}
+          ${fxRowHTML(cur, 'sat', 'Chaleur', 'Saturation à lampe : donne du grain et de la présence. Brûlant = voix qui arrache.')}
+          ${fxRowHTML(cur, 'rad', 'Radio', 'Voix filtrée façon vieux poste, téléphone ou lo-fi. Parfait pour une intro ou des ad-libs.')}
+          ${fxRowHTML(cur, 'vr', 'Retirer la voix', 'Pour un son du commerce en stéréo : enlève la voix au centre, garde basse et kick.')}</div>`)
+      + (cur.preset !== 'instru' ? mxAcc('at', '🤖 Auto-tune', `<div class="fxlist"><div class="fxrow">
+          <button class="fxbtn" data-fx="at" aria-pressed="${tuned}">Auto-tune</button>
+          ${tuned ? `<div class="notch" data-fx="at" role="group" aria-label="Style d'auto-tune">${AT_N.map((n, i) => `<button data-l="${i}" aria-pressed="${i === ai}">${n}</button>`).join('')}</div>
+          <div class="atkey"><select id="atKey" aria-label="Tonalité">${NOTES.map((n, i) => `<option value="${i}" ${i === cur.at.key ? 'selected' : ''}>${n}</option>`).join('')}</select>
+            <select id="atScale" aria-label="Gamme">${Object.keys(SCALES).map(k => `<option value="${k}" ${k === cur.at.scale ? 'selected' : ''}>${SCALES[k].name}</option>`).join('')}</select></div>` : ''}
+        </div></div>`, tuned ? 'Allumé' : 'Éteint') : '')
+      + mxAcc('eq', '🎛️ Égaliseur et compression', `<details class="adv" open><summary hidden></summary><div class="advbody"><canvas id="eq" aria-label="Courbe d'égalisation"></canvas>
+          <div class="sls">${TDEFS.map(d => sliderHTML(d, cur.fx[d.k], 'fx_')).join('')}</div>
+          <div class="grrow"><span>Réduction</span><div class="meter wide gr"><i id="trGr"></i></div><output id="trGrDb">0 dB</output></div></div></details>`)
+      + (cur.buffer && (cur.preset === 'instru' || cur.bpmOrig) ? mxAcc('ins', '🎵 Tonalité et vitesse de l\'instru', `<div class="fxlist">
+          <div class="fxrow"><span class="fxlab">Tonalité de l'instru</span>
+            <div class="stepper" data-xf="semi"><button data-d="-1" aria-label="Un demi-ton plus bas">−</button><output>${(cur.semi || 0) > 0 ? '+' : ''}${cur.semi || 0} demi-ton${Math.abs(cur.semi || 0) > 1 ? 's' : ''}</output><button data-d="1" aria-label="Un demi-ton plus haut">+</button></div></div>
+          <div class="fxrow"><span class="fxlab">Vitesse de l'instru</span>
+            <div class="stepper" data-xf="bpm"><button data-d="-2" aria-label="Plus lent">−</button><output>${S.bpm} BPM</output><button data-d="2" aria-label="Plus rapide">+</button></div></div></div>`) : '');
+  }
   st.innerHTML = isLocked(cur) ? `<p class="note lknote">🔒 Piste de ${esc(cur.ownerName)} : verrouillée. Tu peux l'écouter, la couper (M) ou l'isoler (S), mais seul ${esc(cur.ownerName)} peut la modifier.</p><fieldset class="lk" disabled>${html}</fieldset>` : html;
-  renderQuick();
-  const adv = st.querySelector('details.adv');
-  adv.addEventListener('toggle', () => { if(adv.open) drawEQ(); });
+  try{ renderQuick(); }catch(e){}
+  if(mxOpen.has('eq')) setTimeout(drawEQ, 0);
+}
+/* les titres ouverts restent ouverts */
+document.addEventListener('toggle', e => { const d = e.target; if(!d.classList || !d.classList.contains('mxacc')) return; const k = d.dataset.acc; if(d.open) mxOpen.add(k); else mxOpen.delete(k); store.set('mxOpen', [...mxOpen]); if(k === 'eq' && d.open) setTimeout(drawEQ, 0); }, true);
+/* réglages de la piste entière (volume, placement) et du bout choisi */
+$('#strip').addEventListener('input', e => {
+  const k = e.target.dataset.rk; if(!k) return;
+  const t = selTrack(); if(!t || isLocked(t)) return;
+  const v = +e.target.value; const out = e.target.nextElementSibling;
+  if(k === 'tvol' || k === 'tpan'){ pushUndo(k === 'tvol' ? 'le volume' : 'le placement', true); if(k === 'tvol') t.vol = v; else t.pan = v; if(out) out.textContent = k === 'tvol' ? fmtVol(v) : (v == 0 ? 'Centre' : (v < 0 ? 'G ' : 'D ') + Math.round(Math.abs(v) * 100)); applyMix(); scheduleSave(); return; }
+  mxSetReg(t, k, v, true); if(out) out.textContent = k === 'vol' ? fmtVol(v) : fmtDb(v);
+});
+function mxSetReg(t, k, v, coalesce){
+  if(!mxSel) return;
+  pushUndo('le réglage du bout', coalesce);
+  t.regs = t.regs || [];
+  if(mxSel.ri == null){ t.regs.push({ a: mxSel.a, b: mxSel.b, fx: {} }); mxSel.ri = t.regs.length - 1; }
+  t.regs[mxSel.ri].fx[k] = v;
+  t.chain.set(t, audible(t), true); drawMxWave(); scheduleSave();
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-rfx],[data-mx]'); if(!b || !b.closest('#vMix')) return;
+  const t = selTrack(); if(!t) return;
+  if(b.dataset.rfx){ if(isLocked(t)) return; const k = b.dataset.rfx, l = +b.dataset.l; mxSetReg(t, k, l < 0 ? 0 : LV[k][l]); renderMix(); return; }
+  const a = b.dataset.mx;
+  if(a === 'clear'){ mxSel = null; renderMix(); return; }
+  if(a === 'reset' && mxSel?.ri != null){ pushUndo('le bout réglé'); t.regs.splice(mxSel.ri, 1); mxSel = null; t.chain.set(t, audible(t), true); scheduleSave(); renderMix(); toast('↺ Bout remis comme le reste de la piste.'); return; }
+  if(a === 'hear' && mxSel){ if(S.playing) pause(); S.pos = Math.max(0, mxSel.a - 0.6); S.listenEnd = mxSel.b + 1.6; if(!mic) audioSessionPlay(); unlockSpeaker(); wake().then(() => play()); }
+});
+/* l'onde de la piste : 10 s autour de la lecture, glisse pour choisir un bout */
+const mxView = () => { const p = S.playing ? now() : S.pos, w = 10; let a0 = Math.max(0, p - 3); if(mxSel && (mxSel.a < a0 || mxSel.b > a0 + w)) a0 = Math.max(0, (mxSel.a + mxSel.b) / 2 - w / 2); return [a0, a0 + w]; };
+function drawMxWave(){
+  const cv = $('#mxWave'); if(!cv || $('#vMix').hidden) return;
+  const t = selTrack(), dpr = window.devicePixelRatio || 1, W = cv.clientWidth, H = cv.clientHeight; if(!W) return;
+  if(cv.width !== Math.round(W * dpr)){ cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
+  const [v0, v1] = mxView(), X = x => (x - v0) / (v1 - v0) * W;
+  g.fillStyle = cssVar('--muted') || '#888'; g.font = '10px system-ui'; g.globalAlpha = 0.6;
+  for(let s2 = Math.ceil(v0); s2 <= v1; s2++){ g.fillRect(X(s2), 0, 1, 5); if(s2 % 2 === 0) g.fillText(fmt(s2, true), X(s2) + 2, 12); }
+  g.globalAlpha = 1;
+  if(!t?.buffer){ g.fillStyle = cssVar('--muted') || '#888'; g.font = '13px system-ui'; g.fillText('Piste vide', 10, H / 2 + 4); return; }
+  (t.regs || []).forEach(r => { g.fillStyle = 'rgba(124,92,255,.25)'; g.fillRect(X(r.a), 0, X(r.b) - X(r.a), H); g.fillStyle = '#7c5cff'; g.fillRect(X(r.a), 0, X(r.b) - X(r.a), 3); });
+  const env = envOf(t.buffer); let pk = 0; for(let i = 0; i < env.length; i += 4) if(env[i] > pk) pk = env[i]; pk = pk || 1;
+  g.fillStyle = t.color || '#f2b544';
+  for(let x = 0; x < W; x += 2){ const tt = v0 + x / W * (v1 - v0) - t.offset, f = Math.floor(tt * 100); if(f < 0 || f >= env.length) continue; const h = Math.max(1, env[f] / pk * (H - 18) * 0.95); g.fillRect(x, (H + 10) / 2 - h / 2, 1.5, h); }
+  if(mxSel){ const a = X(mxSel.a), b = X(mxSel.b); g.fillStyle = 'rgba(242,181,68,.28)'; g.fillRect(a, 0, b - a, H); g.fillStyle = '#f2b544'; g.fillRect(a - 1.5, 0, 3, H); g.fillRect(b - 1.5, 0, 3, H); }
+  const p = S.playing ? now() : S.pos; g.fillStyle = '#e7eaf0'; g.fillRect(X(p) - 1, 0, 2, H);
+}
+{ const cv = $('#mxWave'); let drag = null;
+  const tAt = e => { const r = cv.getBoundingClientRect(), [v0, v1] = mxView(); return v0 + clamp((e.clientX - r.left) / r.width, 0, 1) * (v1 - v0); };
+  cv.addEventListener('pointerdown', e => {
+    const t = selTrack(); if(!t?.buffer) return;
+    cv.setPointerCapture(e.pointerId); const x = tAt(e), [v0, v1] = mxView(), tol = (v1 - v0) * 0.03;
+    if(mxSel && Math.abs(x - mxSel.a) < tol) drag = { h: 'a' }; else if(mxSel && Math.abs(x - mxSel.b) < tol) drag = { h: 'b' };
+    else drag = { h: 'n', x0: x, moved: false };
+    e.preventDefault();
+  });
+  cv.addEventListener('pointermove', e => {
+    if(!drag) return; const t = selTrack(), x = clamp(tAt(e), t.offset, t.offset + t.buffer.duration);
+    if(drag.h === 'n'){ if(Math.abs(x - drag.x0) > 0.04){ drag.moved = true; mxSel = { tid: t.id, a: Math.min(drag.x0, x), b: Math.max(drag.x0, x), ri: null }; } }
+    else if(mxSel){ mxSel[drag.h] = x; if(mxSel.a > mxSel.b) [mxSel.a, mxSel.b] = [mxSel.b, mxSel.a], drag.h = drag.h === 'a' ? 'b' : 'a'; if(mxSel.ri != null){ const r = selTrack().regs[mxSel.ri]; r.a = mxSel.a; r.b = mxSel.b; } }
+    drawMxWave();
+  });
+  const up = () => {
+    if(!drag) return; const d = drag; drag = null; const t = selTrack();
+    if(d.h === 'n' && !d.moved){
+      /* simple toucher : sur un bout violet = on le reprend ; ailleurs = on se place là */
+      const ri = (t.regs || []).map((r, i) => [r, i]).reverse().find(([r]) => d.x0 >= r.a && d.x0 <= r.b);
+      if(ri){ mxSel = { tid: t.id, a: ri[0].a, b: ri[0].b, ri: ri[1] }; } else { mxSel = null; seek(d.x0); }
+    }
+    if(mxSel && mxSel.ri != null){ t.chain.set(t, audible(t), true); scheduleSave(); }
+    renderMix();
+  };
+  cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+  window.addEventListener('resize', () => drawMxWave());
 }
 $('#mixChips').addEventListener('click', e => {
   const b = e.target.closest('.tchip'); if(!b) return;
@@ -3201,7 +3338,7 @@ function updRowFx(t){
   if(z) z.innerHTML = fxZoneHTML(t);
 }
 function renderQuick(){ S.tracks.forEach(updRowFx); }
-$('#strip').addEventListener('click', e => { const b = e.target.closest('[data-vsm]'); if(b){ applyVStyle(selTrack(), +b.dataset.vsm); return; } fxAction(e, selTrack()); });
+$('#strip').addEventListener('click', e => { if(e.target.closest('[data-rfx],[data-mx]')) return; const b = e.target.closest('[data-vsm]'); if(b){ applyVStyle(selTrack(), +b.dataset.vsm); return; } fxAction(e, selTrack()); });
 
 $('#strip').addEventListener('change', e => {
   const t0 = selTrack();
@@ -3535,7 +3672,7 @@ async function renderRaw(withMaster){
   else b.masterIn.connect(off.destination);
   S.tracks.forEach(t => {
     if(!t.buffer || !audible(t)) return;
-    const c = makeChain(off, b); c.set(t, true, false);
+    const c = makeChain(off, b); c.set(t, true, false); try{ schedRegs(t, c, 0, 0); }catch(e){}
     const s = off.createBufferSource(); s.buffer = t.buffer; s.connect(c.input); s.start(t.offset);
   });
   return off.startRendering();
@@ -4242,7 +4379,7 @@ async function saveSession(){
     showSessTitle();
     const tracks = S.tracks.map(t => ({
       name: t.name, color: t.color, preset: t.preset, fx: t.fx, vr: t.vr, vol: t.vol, pan: t.pan, mute: t.mute, solo: t.solo,
-      uid: t.uid, owner: t.owner, ownerName: t.ownerName, label: t.label ?? null, lbl2: true, srcName: t.srcName || '', keep: !!t.keep, take: t.take, trim: t.trim, atOn: t.atOn, at: t.at, lv: t.lv, vp: t.vp, adapted: t.adapted, semi: t.semi, bpmOrig: t.bpmOrig, origTake: t.origTake,
+      uid: t.uid, owner: t.owner, ownerName: t.ownerName, label: t.label ?? null, lbl2: true, srcName: t.srcName || '', regs: t.regs?.length ? t.regs : undefined, keep: !!t.keep, take: t.take, trim: t.trim, atOn: t.atOn, at: t.at, lv: t.lv, vp: t.vp, adapted: t.adapted, semi: t.semi, bpmOrig: t.bpmOrig, origTake: t.origTake,
       takes: t.takes.map(k => ({ aid: bufAid(k.buffer), offset: k.offset, tuned: k.tuned, src: k.src, xf: k.xf, punch: k.punch }))
     }));
     for(const t of S.tracks) for(const k of t.takes){
@@ -4271,7 +4408,7 @@ async function loadSession(id){
   undoStack.length = 0; updUndo();
   for(const tr of rec.tracks){
     const t = addTrack(tr.name, FX[tr.preset] ? tr.preset : 'neutre'); t.preset = tr.preset;
-    Object.assign(t, { keep: !!tr.keep, srcName: tr.srcName || '', label: tr.lbl2 ? (tr.label ?? null) : (tr.label || null), uid: tr.uid || t.uid, owner: tr.owner || null, ownerName: tr.ownerName || '', color: tr.color, fx: { ...FX.neutre, ...tr.fx }, vr: tr.vr || 0, vol: tr.vol, pan: tr.pan, mute: tr.mute, solo: tr.solo,
+    Object.assign(t, { keep: !!tr.keep, srcName: tr.srcName || '', regs: tr.regs ? JSON.parse(JSON.stringify(tr.regs)) : undefined, label: tr.lbl2 ? (tr.label ?? null) : (tr.label || null), uid: tr.uid || t.uid, owner: tr.owner || null, ownerName: tr.ownerName || '', color: tr.color, fx: { ...FX.neutre, ...tr.fx }, vr: tr.vr || 0, vol: tr.vol, pan: tr.pan, mute: tr.mute, solo: tr.solo,
       trim: tr.trim, atOn: tr.atOn, at: { ...t.at, ...tr.at }, lv: tr.lv, vp: tr.vp, adapted: tr.adapted, semi: tr.semi, bpmOrig: tr.bpmOrig, origTake: tr.origTake });
     t.takes = [];
     /* on ne recharge que les prises utiles (la prise en cours, sa version d'origine, et les dernières prises) : tout l'historique d'une longue séance
@@ -4773,7 +4910,7 @@ let lastMaster = null, lastMp3 = null, lastVideo = null, lastStems = null, lameP
 /* Empreinte du son : si tu touches au Mix après un export, l'ancien fichier n'est plus proposé */
 const bufIds = new WeakMap(); let bufSeq = 0;
 const bid = b => b ? (bufIds.get(b) || (bufIds.set(b, ++bufSeq), bufSeq)) : 0;
-const mixSig = () => { try{ return JSON.stringify([S.tracks.map(t => [t.id, bid(t.buffer), t.offset, t.vol, t.pan, !!t.mute, !!t.solo, t.trim, t.vr, t.fx, t.preset]), M.low, M.high, M.glue, M.target, M.preset, M.bypass, S.bpm]); }catch(e){ return String(Math.random()); } };
+const mixSig = () => { try{ return JSON.stringify([S.tracks.map(t => [t.id, bid(t.buffer), t.offset, t.vol, t.pan, !!t.mute, !!t.solo, t.trim, t.vr, t.fx, t.preset, t.regs || null]), M.low, M.high, M.glue, M.target, M.preset, M.bypass, S.bpm]); }catch(e){ return String(Math.random()); } };
 let masterSig = '', stemsSig = '';
 function checkStale(){
   const sig = mixSig();
@@ -5345,7 +5482,7 @@ $('#bStems').onclick = async () => {
     for(let i = 0; i < tr.length; i++){
       const t = tr[i], off = new OfflineAudioContext(2, len, sr), b = makeBus(off);
       b.masterIn.connect(off.destination);
-      const c = makeChain(off, b); c.set(t, true, false);
+      const c = makeChain(off, b); c.set(t, true, false); try{ schedRegs(t, c, 0, 0); }catch(e){}
       const s2 = off.createBufferSource(); s2.buffer = t.buffer; s2.connect(c.input); s2.start(t.offset);
       const r = await off.startRendering();
       files.push(new File([wav(r)], (i + 1) + '-' + safeName(t.name) + '.wav', { type: 'audio/wav' }));
@@ -6224,15 +6361,12 @@ const HELP = {
     { t: 'L\'éditeur de prise', b: 'Dans l\'éditeur : pour couper pile au bon moment, lance l\'écoute et touche « Début ici » puis « Fin ici ». Tu peux aussi sélectionner au doigt et ajuster avec les poignées. Zoomé, glisse la bande sous l\'onde pour aller à droite ou à gauche. Chaque retouche s\'allume sur l\'onde. Tu écoutes en boucle ou la piste seule. Outils : supprimer, garder que la sélection, −3/+3 dB, fondus, répéter, à l\'envers, plus tôt/plus tard de 10 ms, niveau max, et « Couper les blancs » qui met en silence tout ce qui n\'est pas ta voix sans rien décaler (top pour les backs). Sans sélection, ça s\'applique à toute la prise. La barre du haut reste dispo : lecture, pause, REC.' }
   ],
   vMix: [
-    { t: 'L\'onglet Mix', b: 'Ici tu règles chaque piste en détail.' },
-    { sel: ['#zone'], t: 'Zone à écouter', b: 'Tous tes passages chantés, piste par piste. Touche ceux que tu veux (autant que tu veux) : la zone va du premier au dernier. Tire les poignées jaunes pour ajuster, « Tout le son » pour tout prendre, puis « Écouter la zone en boucle ». Ça tourne pendant que tu règles tes effets.' },
-    { sel: ['#bRep'], t: 'Répéter en boucle', b: 'Le 🔁 en haut met en boucle le passage chanté où tu es (ou la phrase sélectionnée). Il tourne pendant que tu règles tes effets ici. ⏮ ⏭ passent au passage d\'avant ou d\'après, ✕ arrête.' },
-    { sel: ['#mixFollow'], t: 'Suit le chant', b: 'Allumé, la piste qui chante à l\'endroit de la lecture s\'affiche toute seule : tu lances ▶ et tu règles la voix que tu entends, sans chercher.' },
-    { sel: ['#mixChips'], t: 'Choisir la piste', b: 'Touche une piste pour afficher ses réglages en dessous. Choisir toi-même coupe le suivi du chant.' },
-    { sel: ['#bLevel'], t: 'Rééquilibrer', b: 'Remet tous les niveaux d\'aplomb d\'un coup : l\'instru, le lead, les backs et l\'ambiance à leur juste place.' },
-    { sel: ['#fxPreset'], t: 'Style de piste', b: 'Voix lead, Back, Ambiance, Instru ou Neutre : change d\'un coup l\'égaliseur, la compression et les effets de base.' },
-    { sel: ['#strip .fxlist'], t: 'Les effets en grand', b: 'Les mêmes effets que sur la piste, avec leurs doses. Pour l\'auto-tune, tu choisis aussi la tonalité et la gamme. « Retirer la voix » enlève la voix d\'un son du commerce. Sur l\'instru : tonalité (demi-tons) et vitesse (BPM).' },
-    { sel: ['#strip details.adv'], t: 'Avancé', b: 'L\'égaliseur (graves, médiums, aigus) et la compression pour ceux qui veulent aller au fond des choses. La courbe montre ce que tu fais au son.' }
+    { t: 'L\'onglet Mix', b: 'Ici tu règles chaque piste, ou juste un bout : un mot, une phrase, un couplet.' },
+    { sel: ['#mixChips'], t: '1 · Choisis ta piste', b: 'Touche une piste : tout ce qui est en dessous la concerne.' },
+    { sel: ['#mxW'], t: '2 · Choisis un bout (si tu veux)', b: 'Glisse le doigt sur l\'onde pour sélectionner un mot ou une phrase. Les bouts déjà réglés à part sont en violet : touche-les pour les reprendre. Sans sélection, tu règles toute la piste.' },
+    { sel: ['#mxTarget'], t: 'À qui s\'appliquent tes réglages', b: 'Ici c\'est écrit : toute la piste, ou ta sélection. Le ✕ enlève la sélection.' },
+    { sel: ['#strip'], t: '3 · Règle', b: 'Ouvre un titre (Volume, Style, Effets, Auto-tune, Égaliseur…), règle, referme. Sur une sélection : volume, reverb, écho, doubler et égaliseur, rien que pour ce bout. « ▶ Écouter le bout » pour entendre, « ↺ Remettre » pour annuler ce bout.' },
+    { sel: ['#bLevel'], t: 'Rééquilibrer', b: 'Remet tous les niveaux d\'aplomb d\'un coup : l\'instru, le lead, les backs et l\'ambiance à leur juste place.' }
   ],
   vMaster: [
     { t: 'L\'onglet Master', b: 'La touche finale de ta maquette : la couleur et le volume de l\'ensemble.' },
@@ -6961,6 +7095,7 @@ function loop(){
   ph.style.left = x + 'px';
   setTxt(clock, fmt(p));
   updProg(p);
+  if(!$('#vMix').hidden) drawMxWave();
   if(S.playing && !$('#vPistes').hidden && Date.now() - userScrollAt > 2500){
     if(x > sc.scrollLeft + sc.clientWidth - 40 || x < sc.scrollLeft + HDR) sc.scrollLeft = x - HDR - 40;
   }
