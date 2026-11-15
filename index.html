@@ -651,7 +651,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.1.3 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.1.4 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -1106,8 +1106,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 152; // numéro interne (jamais affiché)
-const APP_PUB = '2.1.3';
+const APP_VER = 153; // numéro interne (jamais affiché)
+const APP_PUB = '2.1.4';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -1496,7 +1496,8 @@ function setBypass(on){
   $('#bAB').setAttribute('aria-pressed', on);
   $('#bAB').textContent = on ? 'Remettre le master' : 'Écouter sans master';
 }
-function now(){ return S.playing ? Math.max(0, playStartPos + (ctx.currentTime - playStartCtx)) : S.pos; }
+/* en lecture simple, la tête de lecture ne recule jamais avant le point de départ (le son démarre une fraction de seconde après l'appui) ; pendant un REC on garde le décompte */
+function now(){ if(!S.playing) return S.pos; const d = ctx.currentTime - playStartCtx; return Math.max(0, playStartPos + (S.recording ? d : Math.max(0, d))); }
 
 /* ---------- Transport ---------- */
 function play(at){
