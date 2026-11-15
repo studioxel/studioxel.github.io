@@ -624,7 +624,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 1.9.9 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.0 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -1068,8 +1068,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 138; // numéro interne (jamais affiché)
-const APP_PUB = '1.9.9';
+const APP_VER = 140; // numéro interne (jamais affiché)
+const APP_PUB = '2.0';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -1130,7 +1130,7 @@ const LAT_DEF = { speaker: 120, wired: 110, bt: 260 };
 const S0 = 1;
 const S = {
   tracks: [], pps: 40, pos: 0, playing: false, recording: false, sel: null,
-  bpm: store.get('bpm', 90), casque: false, outMode: store.get('outMode', 'auto'), headset: false, markers: [], loop: { on: false, bars: 4, start: 0 }, latMap: store.get('latMap', {}), latDev: store.get('latDev3', {}), mon: false, metro: false, countIn: store.get('countIn', true), lat: store.get('lat', 120)
+  bpm: store.get('bpm', 90), casque: false, outMode: store.get('outMode', 'auto'), headset: false, markers: [], loop: { on: false, bars: 4, start: 0 }, latMap: store.get('latMap', {}), latDev: store.get('latDev4', {}), mon: false, metro: false, countIn: store.get('countIn', true), lat: store.get('lat', 120)
 };
 const M = Object.assign({ preset:'rap', low:2.5, high:2, glue:45, target:-14, bypass:false, gain:0 }, store.get('master', {}));
 M.bypass = false;
@@ -1757,6 +1757,7 @@ async function record(){
   ensureCtx();
   await detectHeadset(true);
   if(!calDone()){ await forceCal(false); await detectHeadset(true); }
+  if(S.mon && routeKey() === 'bt'){ S.monAuto = false; monOff(); toast('🎧 Retour voix coupé : en Bluetooth ta voix te revient en retard dans les oreilles et te fait rapper en retard.'); }
   if(mic && micEC !== wantEC() && !S.mon) releaseMic(true);
   try{ await getMic(); }
   catch(e){ toast(e.name === 'NotAllowedError' ? 'Accès au micro refusé. Il faut ouvrir la page en ligne (https) et autoriser le micro.' : (e.message || 'Micro introuvable.')); return; }
@@ -1774,7 +1775,8 @@ async function record(){
   if(silentEl) try{ silentEl.pause(); }catch(e){}
   const chunks = [];
   if(!window.MediaRecorder){ releaseMic(true); toast('Ce navigateur ne sait pas enregistrer : mets à jour ton téléphone (iOS 14.3 ou plus) ou ouvre StudioXel dans Chrome / Safari.'); return; }
-  rec = new MediaRecorder(mic);
+  const RG = recGraph();
+  rec = RG ? RG.r : new MediaRecorder(mic);
   rec.ondataavailable = e => { if(e.data.size) chunks.push(e.data); };
   const started = new Promise(r => rec.onstart = () => r(ctx.currentTime));
   rec.onstop = async () => {
@@ -1782,10 +1784,15 @@ async function record(){
     setTimeout(cleanupLive, 1500);
     try{
       const blob = new Blob(chunks, { type: rec.mimeType });
-      const raw = await ctx.decodeAudioData(await blob.arrayBuffer());
+      try{ RG && RG.close(); }catch(e){}
+      let raw = await ctx.decodeAudioData(await blob.arrayBuffer());
+      /* calage par le top : le vrai départ, au lieu de croire Safari */
+      const mk = RG && RG.tm != null ? findMark(raw, RG.tm - recInfo.recStart) : null;
+      if(mk != null){ recInfo.recStart = RG.tm - mk; recInfo.marked = true; }
+      if(RG) raw = voiceOnly(raw);
       let meas = (!S.casque && !recEC) ? (measureLatency(raw, recInfo) ?? (recInfo.b != null ? detectClickLatency(raw, recInfo) : null)) : null;
       if(meas != null && (meas < 30 || meas > 500)) meas = null;
-      if(meas != null){ S.latMap[recInfo.route] = meas; store.set('latMap', S.latMap); if(!calDone(recInfo.dev)){ S.latDev[recInfo.dev] = meas; store.set('latDev3', S.latDev); } }
+      if(meas != null){ S.latMap[recInfo.route] = meas; store.set('latMap', S.latMap); if(!calDone(recInfo.dev)){ S.latDev[recInfo.dev] = meas; store.set('latDev4', S.latDev); } }
       const latMs = latFor(recInfo.route, recInfo.dev); showLat();
       const trim = Math.max(0, (recInfo.t0 - recInfo.recStart) + latMs / 1000);
       const from = Math.floor(trim * raw.sampleRate), len = raw.length - from;
@@ -1831,11 +1838,12 @@ async function record(){
   };
   rec.start();
   const recStart = await started;
+  if(RG) RG.mark(ctx.currentTime + 0.08);
   S.recording = true; boot('rec'); track('enregistrement'); setRecUI(); if(AUTO.lyr) showRecLyrics();
   const beat = 60 / S.bpm;
-  let t0 = ctx.currentTime + 0.15;
+  let t0 = ctx.currentTime + 0.35;
   const cIn = S.countIn && !usePre;
-  if(cIn){ const b = ctx.currentTime + 0.1; for(let i = 0; i < 4; i++) click(b + i * beat, i === 0); t0 = b + 4 * beat; }
+  if(cIn){ const b = ctx.currentTime + 0.3; for(let i = 0; i < 4; i++) click(b + i * beat, i === 0); t0 = b + 4 * beat; }
   recInfo = { autoEnd: part ? part.sec.end - 15 / S.bpm : null, partsNext: part ? part.next : null, partName: part ? part.sec.name : null, punch: S.loop.on, end: S.loop.on ? loopEnd() : null, track: t, recStart, t0, pos: punchAt, playFrom: S.pos, pre: usePre ? punchAt - S.pos : 0, b: cIn ? t0 - 4 * beat : null, beat, route: routeKey(), dev: devKey() };
   if(usePre) toast('⏪ Pré-roulement : écoute ta prise, l\'enregistrement démarre à ' + fmt(punchAt, true) + '.');
   play(t0);
@@ -1898,6 +1906,45 @@ function detectClickLatency(raw, info){
   return Math.round((res[1] + res[2]) / 2);
 }
 
+/* ---------- Enregistrement avec « top » muet ----------
+   Le micro passe par le moteur audio, et une 2e piste cachée reçoit un top au moment exact choisi.
+   En retrouvant ce top dans l'enregistrement, on sait au millième où tombe l'instru : on ne dépend plus
+   du signal « l'enregistrement a commencé » de Safari, qui arrive en retard sur iPhone (surtout avec les AirPods). */
+function recGraph(){
+  try{
+    const src = ctx.createMediaStreamSource(mic), mg = ctx.createChannelMerger(2), dst = ctx.createMediaStreamDestination();
+    try{ dst.channelCount = 2; dst.channelCountMode = 'explicit'; dst.channelInterpretation = 'discrete'; }catch(e){}
+    src.connect(mg, 0, 0); mg.connect(dst);
+    const r = new MediaRecorder(dst.stream);
+    const g = { r, tm: null, nodes: [src, mg, dst] };
+    g.mark = t => {
+      const n = Math.round(ctx.sampleRate * 0.01), b = ctx.createBuffer(1, n, ctx.sampleRate), d = b.getChannelData(0);
+      for(let i = 0; i < n; i++) d[i] = 0.9;
+      const s = ctx.createBufferSource(); s.buffer = b; s.connect(mg, 0, 1); s.start(t); g.tm = t;
+    };
+    g.close = () => g.nodes.forEach(x => { try{ x.disconnect(); }catch(e){} });
+    return g;
+  }catch(e){ return null; }
+}
+/* où est le top dans l'enregistrement (en secondes) : seulement si la 2e piste est bien là */
+function findMark(raw, guess){
+  const sr = raw.sampleRate;
+  if(raw.numberOfChannels >= 2){
+    const d = raw.getChannelData(1), n = Math.min(d.length, sr * 8);
+    for(let i = 0; i < n; i++) if(Math.abs(d[i]) > 0.3) return i / sr;
+    return null;
+  }
+  /* téléphone qui a tout mis en mono : on cherche le top près de l'endroit attendu, et on l'efface de la voix */
+  const d = raw.getChannelData(0), a = Math.max(0, Math.round((guess - 0.6) * sr)), z = Math.min(d.length, Math.round((guess + 0.6) * sr));
+  for(let i = a; i < z; i++) if(Math.abs(d[i]) > 0.6){ const e = Math.min(d.length, i + Math.round(sr * 0.04)); for(let k = Math.max(0, i - Math.round(sr * 0.005)); k < e; k++) d[k] = 0; return i / sr; }
+  return null;
+}
+/* la voix seule (piste 1), sans la piste du top */
+function voiceOnly(raw){
+  if(raw.numberOfChannels < 2) return raw;
+  const b = ctx.createBuffer(1, raw.length, raw.sampleRate); b.copyToChannel(raw.getChannelData(0), 0); return b;
+}
+
 /* ---------- Calage de la latence, pour n'importe quel matériel (haut-parleur, filaire, AirPods, Bluetooth…) ----------
    On joue des clics, tu tapes dans tes mains dessus : on mesure le retard réel entre ce que tu entends et ce que le micro capte.
    C'est exactement la situation d'une prise, donc ça marche avec tout. Fait une fois par matériel, retenu ensuite. */
@@ -1953,10 +2000,11 @@ async function calibrateLat(){
     ov.innerHTML = `<div class="wpanel"><h2>🎤 Dis « TA » quand le point touche la ligne</h2><div class="callane"><i class="calhit"></i></div><p class="calcnt">Prends le rythme…</p></div>`;
     document.body.appendChild(ov);
     const lane = ov.querySelector('.callane'), hit = ov.querySelector('.calhit'), cnt = ov.querySelector('.calcnt');
-    const chunks = [], r = new MediaRecorder(mic);
+    const RG = recGraph(), chunks = [], r = RG ? RG.r : new MediaRecorder(mic);
     r.ondataavailable = e => { if(e.data.size) chunks.push(e.data); };
     const started = new Promise(res => r.onstart = () => res(ctx.currentTime)), stopped = new Promise(res => r.onstop = res);
-    r.start(); const recStart = await started;
+    r.start(); let recStart = await started;
+    if(RG) RG.mark(ctx.currentTime + 0.08);
     await new Promise(res => setTimeout(res, 300));
     /* le son met « ol » secondes à arriver dans tes oreilles (le Bluetooth beaucoup plus) : on joue chaque clic en avance d'autant,
        pour que tu l'entendes pile quand le point touche la ligne */
@@ -1992,7 +2040,11 @@ async function calibrateLat(){
     anim = false; ov.remove();
     r.stop(); await stopped; releaseMic();
     setBusy(true, 'Je mesure…');
-    const raw = await ctx.decodeAudioData(await new Blob(chunks, { type: r.mimeType }).arrayBuffer());
+    try{ RG && RG.close(); }catch(e){}
+    let raw = await ctx.decodeAudioData(await new Blob(chunks, { type: r.mimeType }).arrayBuffer());
+    const mk = RG && RG.tm != null ? findMark(raw, RG.tm - recStart) : null;
+    if(mk != null) recStart = RG.tm - mk;
+    if(RG) raw = voiceOnly(raw);
     const R = calDetect(raw, recStart, times);
     setBusy(false);
     let ms = R.ms != null && R.ms > -80 && R.ms < 800 ? R.ms : null, rough = false;
@@ -2006,7 +2058,7 @@ async function calibrateLat(){
       toast('🎯 J\'ai capté ' + R.n + ' « TA » sur 10. ' + (R.n <= 2 ? 'Le micro ne t\'entend presque pas : parle plus fort, plus près du micro.' : 'Ils n\'étaient pas assez réguliers : garde bien le rythme des clics.') + ' On recommence.');
     } else {
       ms = Math.max(0, Math.round(ms)); calFails = 0;
-      S.latDev[key] = ms; store.set('latDev3', S.latDev); showLat(); ok = true; calDev = key;
+      S.latDev[key] = ms; store.set('latDev4', S.latDev); showLat(); ok = true; calDev = key;
       track((rough ? 'latence-approx-' : 'latence-reglee-') + routeKey());
       toast(rough ? '🎯 Réglage approximatif gardé (' + ms + ' ms). Tu pourras le refaire au calme dans Réglages.' : '🎯 Timing réglé : ' + ms + ' ms. C\'est retenu pour ce matériel.');
     }
@@ -5601,7 +5653,9 @@ async function detectHeadset(silent){
 /* écouteurs détectés = retour voix allumé tout seul (pas de larsen possible). Il se coupe quand on les enlève. */
 function autoMon(kind, before){
   if(S.outMode !== 'auto' || !AUTO.mon) return;
-  if(kind === 'ecouteurs' && !S.mon && !S.monUserOff && !S.monStarting && !S.monAuto){
+  /* en Bluetooth (AirPods…), ta voix te reviendrait avec ~0,3 s de retard : ça fait décaler quand tu rappes, donc pas de retour automatique */
+  if(kind === 'ecouteurs' && S.routeInfo?.wireless && S.monAuto && S.mon){ S.monAuto = false; monOff(); }
+  if(kind === 'ecouteurs' && !S.routeInfo?.wireless && !S.mon && !S.monUserOff && !S.monStarting && !S.monAuto){
     const go = () => { S.monAuto = true; monOn(true).then(() => { if(S.mon) toast('🎧 Écouteurs détectés : retour voix allumé tout seul. Touche 🎧 Retour pour le couper.'); else S.monAuto = false; }); };
     if(ctx && ctx.state === 'running') go();
     else document.addEventListener('pointerdown', function once(){ document.removeEventListener('pointerdown', once, true); if(!S.mon && S.route === 'ecouteurs') go(); }, true);
