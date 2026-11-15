@@ -376,6 +376,7 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
 .tbub .tw img{width:28px;height:28px;border-radius:8px}
 .tbub h3{margin:0;font:800 19px/1.2 var(--display)}
 .tbub p{margin:0;font-size:15px;line-height:1.5;color:var(--fg)}
+.tbub .twho{display:flex;flex-direction:column;gap:10px;margin-top:10px}.tbub .twho label{display:flex;flex-direction:column;gap:4px;font:700 13px var(--display);color:var(--muted)}.tbub .twho input{height:44px;border-radius:10px;border:1px solid var(--line);background:var(--raise);color:var(--fg);padding:0 12px;font:400 16px var(--body,inherit)}
 .tbub .toff{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted)}
 .tbub .toff input{width:18px;height:18px;accent-color:var(--accent)}
 .tnav{display:flex;gap:8px;align-items:center;margin-top:4px}
@@ -588,7 +589,7 @@ body.ed-open .wmark{z-index:41}
   <div class="mkdrawer" id="mkDrawer" hidden><button class="mkdtog" id="mkTog" aria-expanded="false" aria-controls="mkWrap"><span id="mkTogTxt">✂️ Parties de l'instru</span><i>▾</i></button><div class="mkwrap" id="mkWrap" hidden><button class="sbtn mkok" id="mkOk">✓ OK</button></div></div>
   <div class="settings" id="settings" hidden>
     <div class="sethead"><b>⚙️ Réglages</b><button class="sbtn setclose" data-setclose>✕ Fermer</button></div>
-    <div class="autobox"><div class="autot">Affichage</div>
+    <div class="autobox" hidden><div class="autot">Affichage</div>
       <div class="seg" id="modeSeg"><button class="toggle" data-mode="simple" aria-pressed="true">🟢 Simple</button><button class="toggle" data-mode="adv" aria-pressed="false">🧰 Avancé (tous les outils)</button></div>
       <p class="note">Simple : l'essentiel, étape par étape. Avancé : toutes les pistes, effets, Mix, Master, éditeur, projets.</p>
       <label class="grp langrow">🌍 Langue <select id="selLang" aria-label="🌍 Langue"><option value="auto">Automatique (langue du téléphone)</option><option value="fr">Français</option><option value="en">English</option><option value="es">Español</option><option value="pt">Português</option><option value="de">Deutsch</option><option value="it">Italiano</option><option value="nl">Nederlands</option><option value="tr">Türkçe</option><option value="pl">Polski</option><option value="ru">Русский</option><option value="ar">العربية</option><option value="hi">हिन्दी</option><option value="zh">中文</option><option value="ja">日本語</option><option value="ko">한국어</option></select></label>
@@ -603,8 +604,9 @@ body.ed-open .wmark{z-index:41}
       <div class="bkrow"><span class="grp">Pré-roulement</span><div class="seg" id="preSeg" role="group" aria-label="Pré-roulement"><button data-pr="0">Aucun</button><button data-pr="1">1 mesure</button><button data-pr="2">2 mesures</button></div></div>
       <p class="note">Le tempo est détecté tout seul quand tu importes ton instru. Le pré-roulement : quand tu refais un passage sur une piste déjà enregistrée, tu réentends ta prise d'avant juste avant, puis l'enregistrement démarre pile au bon endroit (ça remplace le décompte).</p>
     </div>
-    <div class="autobox" hidden><div class="autot">Toi</div>
+    <div class="autobox"><div class="autot">Toi</div>
       <label class="grp">Ton blaze <input id="meName" style="width:120px;height:34px;background:var(--raise);border:1px solid var(--line);border-radius:6px;padding:0 8px;text-transform:none;letter-spacing:0" placeholder="ex. Xela"></label>
+      <label class="grp">D'où tu viens <input id="meFrom" maxlength="40" style="width:140px;height:34px;background:var(--raise);border:1px solid var(--line);border-radius:6px;padding:0 8px;text-transform:none;letter-spacing:0" placeholder="Ville ou département"></label>
     </div>
     <div class="autobox"><div class="autot">Écoute</div>
       <div class="seg" id="outSeg" role="group" aria-label="Écoute"><button data-o="auto" aria-pressed="false">Auto</button><button data-o="casque" aria-pressed="false">Casque</button><button data-o="hp" aria-pressed="false">Haut-parleur</button></div>
@@ -614,7 +616,7 @@ body.ed-open .wmark{z-index:41}
       <p class="note">Tous tes sons (audio, texte, réglages) dans un seul fichier. Range-le dans iCloud Drive, Google Drive, Dropbox ou OneDrive : tu le récupères sur n'importe quel téléphone.</p>
       <div class="bkrow"><button class="toggle" data-bk="save">💾 Sauvegarder tous mes sons</button><button class="toggle" data-bk="load">♻️ Restaurer une sauvegarde</button></div>
     </div>
-    <div class="autobox"><div class="autot">Automatique ou manuel</div>
+    <div class="autobox" hidden><div class="autot">Automatique ou manuel</div>
       <button class="toggle" data-auto="mon" aria-pressed="true">🎧 Retour voix auto avec écouteurs</button>
       <button class="toggle" data-auto="lyr" aria-pressed="true">📝 Texte affiché pendant la prise</button>
       <button class="toggle" data-auto="sync" aria-pressed="true">🎯 Texte calé tout seul</button>
@@ -627,7 +629,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.0.3 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.0.6 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -1074,8 +1076,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 143; // numéro interne (jamais affiché)
-const APP_PUB = '2.0.3';
+const APP_VER = 146; // numéro interne (jamais affiché)
+const APP_PUB = '2.0.6';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -1504,7 +1506,8 @@ function startMetro(){
 
 /* ---------- Enregistrement ---------- */
 /* ce que l'appli fait toute seule : chaque automatisme peut être coupé dans Réglages */
-const AUTO = Object.assign({ mon: true, lyr: true, sync: true, level: true, bk: true }, store.get('auto', {}));
+/* tout est automatique ; chaque chose se coupe sur place (✕ du texte, bouton Retour, Annuler…). Seul le rappel de sauvegarde se coupe depuis le rappel lui-même */
+const AUTO = { mon: true, lyr: true, sync: true, level: true, bk: store.get('bkRemind', true) };
 let micP = null;
 let micEC = false;
 const wantEC = () => !S.casque && store.get('spkClean', true);
@@ -2209,6 +2212,8 @@ function trackEnd(){ return S.tracks.reduce((m, t) => t.buffer ? Math.max(m, t.o
 function timelineW(){ return Math.ceil(Math.max(90, trackEnd() + 20) * S.pps); }
 function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
+/* sous Couplets (et ses copies), ton blaze par défaut ; modifiable, et vidé si tu l'effaces */
+const tLabel = t => t.label != null ? t.label : (roleOf(t) === 'lead' && ME.name ? ME.name : '');
 let rtPending = false;
 function renderTracks(){
   /* pendant que tu tapes ton nom de piste, on ne redessine pas (sinon le clavier se ferme) */
@@ -2232,7 +2237,7 @@ function renderTracks(){
           <button class="chip mute" data-act="mute" aria-pressed="${t.mute}" title="Muet">M</button>
           <button class="chip solo" data-act="solo" aria-pressed="${t.solo}" title="Solo">S</button>
         </div>
-        <input class="tlabel" data-act="label" value="${esc(t.label || '')}" maxlength="40" placeholder="Ton nom (facultatif)" aria-label="Ton nom pour cette piste (facultatif)" ${lk ? 'disabled' : ''}>
+        <input class="tlabel" data-act="label" value="${esc(tLabel(t))}" maxlength="40" placeholder="Ton nom (facultatif)" aria-label="Ton nom pour cette piste (facultatif)" ${lk ? 'disabled' : ''}>
         ${colorOpen === t.id ? `<div class="pal" role="group" aria-label="Couleurs">${PALETTE.map(c => `<button data-act="setcolor" data-c="${c}" style="background:${c}" aria-pressed="${c.toLowerCase() === String(t.color).toLowerCase()}" aria-label="Couleur ${c}"></button>`).join('')}</div>` : ''}
         <div class="l2">
           <span>Vol</span><input type="range" min="0" max="2" step="0.01" value="${t.vol}" data-act="vol" aria-label="Volume" ${lk ? 'disabled' : ''}><button class="mv" data-act="up" aria-label="Monter la piste" title="Monter" ${S.tracks[0] === t ? 'disabled' : ''}>↑</button>
@@ -4230,7 +4235,7 @@ async function saveSession(){
     showSessTitle();
     const tracks = S.tracks.map(t => ({
       name: t.name, color: t.color, preset: t.preset, fx: t.fx, vr: t.vr, vol: t.vol, pan: t.pan, mute: t.mute, solo: t.solo,
-      uid: t.uid, owner: t.owner, ownerName: t.ownerName, label: t.label || '', keep: !!t.keep, take: t.take, trim: t.trim, atOn: t.atOn, at: t.at, lv: t.lv, vp: t.vp, adapted: t.adapted, semi: t.semi, bpmOrig: t.bpmOrig, origTake: t.origTake,
+      uid: t.uid, owner: t.owner, ownerName: t.ownerName, label: t.label ?? null, lbl2: true, keep: !!t.keep, take: t.take, trim: t.trim, atOn: t.atOn, at: t.at, lv: t.lv, vp: t.vp, adapted: t.adapted, semi: t.semi, bpmOrig: t.bpmOrig, origTake: t.origTake,
       takes: t.takes.map(k => ({ aid: bufAid(k.buffer), offset: k.offset, tuned: k.tuned, src: k.src, xf: k.xf, punch: k.punch }))
     }));
     for(const t of S.tracks) for(const k of t.takes){
@@ -4259,7 +4264,7 @@ async function loadSession(id){
   undoStack.length = 0; updUndo();
   for(const tr of rec.tracks){
     const t = addTrack(tr.name, FX[tr.preset] ? tr.preset : 'neutre'); t.preset = tr.preset;
-    Object.assign(t, { keep: !!tr.keep, label: tr.label || '', uid: tr.uid || t.uid, owner: tr.owner || null, ownerName: tr.ownerName || '', color: tr.color, fx: { ...FX.neutre, ...tr.fx }, vr: tr.vr || 0, vol: tr.vol, pan: tr.pan, mute: tr.mute, solo: tr.solo,
+    Object.assign(t, { keep: !!tr.keep, label: tr.lbl2 ? (tr.label ?? null) : (tr.label || null), uid: tr.uid || t.uid, owner: tr.owner || null, ownerName: tr.ownerName || '', color: tr.color, fx: { ...FX.neutre, ...tr.fx }, vr: tr.vr || 0, vol: tr.vol, pan: tr.pan, mute: tr.mute, solo: tr.solo,
       trim: tr.trim, atOn: tr.atOn, at: { ...t.at, ...tr.at }, lv: tr.lv, vp: tr.vp, adapted: tr.adapted, semi: tr.semi, bpmOrig: tr.bpmOrig, origTake: tr.origTake });
     t.takes = [];
     /* on ne recharge que les prises utiles (la prise en cours, sa version d'origine, et les dernières prises) : tout l'historique d'une longue séance
@@ -4414,7 +4419,8 @@ function blazeAsk(){
 }
 /* À l'ouverture : on choisit, rien n'est rouvert d'office */
 function showWelcome(){
-  if(!ME.name){ blazeAsk().then(showWelcome); return; }
+  if(!ME.name){ startTour(true, null, showWelcome); return; }
+  if(!ME.from){ startTour(true, [WHO, HELLO], showWelcome); return; }
   if(!sessIndex.length){ newSession(); return; }
   const list = sessIndex.slice().sort((a, b) => b.updated - a.updated).slice(0, 4);
   const w = document.createElement('div');
@@ -4425,13 +4431,14 @@ function showWelcome(){
     <div class="wsub">Reprendre une session</div>
     ${list.map(x => `<button class="witem" data-w="${x.id}"><b data-noi18n>${esc(x.name)}</b><span>${esc(linkLabel(x.link) || 'Pas liée à un projet')} · ${fmt(x.dur || 0, true)} · ${new Date(x.updated).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}</span></button>`).join('')}
     ${sessIndex.length > 4 ? '<button class="wlink" data-w="all">Voir toutes mes sessions</button>' : ''}
-    ${AUTO.bk && (backupAge() == null ? sessIndex.length >= 2 : backupAge() >= 7) ? `<div class="wbk">💾 ${backupAge() == null ? 'Tes sons ne sont gardés que dans ce téléphone.' : 'Dernière sauvegarde il y a ' + backupAge() + ' jours.'}<button class="sbtn" data-w="bk">Sauvegarder maintenant</button></div>` : ''}
+    ${AUTO.bk && (backupAge() == null ? sessIndex.length >= 2 : backupAge() >= 7) ? `<div class="wbk">💾 ${backupAge() == null ? 'Tes sons ne sont gardés que dans ce téléphone.' : 'Dernière sauvegarde il y a ' + backupAge() + ' jours.'}<button class="sbtn" data-w="bk">Sauvegarder maintenant</button><button class="wlink" data-w="bkno">Ne plus me le rappeler</button></div>` : ''}
   </div>`;
   document.body.appendChild(w);
   w.querySelector('.wbig').focus();
   w.addEventListener('click', async e => {
     const b = e.target.closest('[data-w]'); if(!b && e.target !== w) return;
     const v = b ? b.dataset.w : 'new';
+    if(v === 'bkno'){ store.set('bkRemind', false); AUTO.bk = false; b.closest('.wbk')?.remove(); toast('C\'est noté : plus de rappel de sauvegarde. Elle reste dans Réglages.'); return; }
     w.remove();
     if(v === 'bk'){ makeBackup().then(() => showWelcome()); return; }
     if(v === 'all'){ $('#plusMenu').hidden = false; $('#plusBtn').setAttribute('aria-expanded', 'true'); renderSessBar(); $('#sessList').hidden = false; renderSessList(); return; }
@@ -5351,6 +5358,8 @@ const ME = (() => {
   return m;
 })();
 $('#meName').value = ME.name || '';
+$('#meFrom').value = ME.from || '';
+$('#meFrom').addEventListener('input', e => { ME.from = e.target.value.trim(); store.set('me', ME); });
 $('#meName').addEventListener('input', e => {
   ME.name = e.target.value.trim(); store.set('me', ME);
   S.tracks.forEach(t => { if(t.owner === ME.id) t.ownerName = ME.name; });
@@ -5762,6 +5771,23 @@ $('#selListen').onclick = () => {
 };
 
 /* ---------- Tuto : le Xel présente le studio aux kickeurs ---------- */
+let tourOnEnd = null, tourDoneRun = false;
+/* d'où tu viens → « tu représentes le 8.6 » */
+const DEPTS = { paris: '75', marseille: '13', lyon: '69', villeurbanne: '69', toulouse: '31', nice: '06', nantes: '44', strasbourg: '67', montpellier: '34', bordeaux: '33', lille: '59', roubaix: '59', tourcoing: '59', rennes: '35', reims: '51', 'le havre': '76', rouen: '76', 'saint-etienne': '42', toulon: '83', grenoble: '38', dijon: '21', angers: '49', nimes: '30', 'clermont-ferrand': '63', 'le mans': '72', 'aix-en-provence': '13', brest: '29', tours: '37', amiens: '80', limoges: '87', perpignan: '66', metz: '57', besancon: '25', orleans: '45', mulhouse: '68', caen: '14', nancy: '54', poitiers: '86', chatellerault: '86', 'la rochelle': '17', niort: '79', angouleme: '16', 'saint-denis': '93', montreuil: '93', bobigny: '93', sevran: '93', 'aulnay-sous-bois': '93', aulnay: '93', aubervilliers: '93', 'la courneuve': '93', bondy: '93', creteil: '94', vitry: '94', 'vitry-sur-seine': '94', ivry: '94', champigny: '94', argenteuil: '95', sarcelles: '95', cergy: '95', evry: '91', 'grigny': '91', nanterre: '92', boulogne: '92', 'boulogne-billancourt': '92', colombes: '92', versailles: '78', 'mantes-la-jolie': '78', trappes: '78', meaux: '77', melun: '77', avignon: '84', pau: '64', bayonne: '64', ajaccio: '2A', bastia: '2B', 'seine-saint-denis': '93', 'val-de-marne': '94', 'hauts-de-seine': '92', essonne: '91', "val-d'oise": '95', yvelines: '78', 'seine-et-marne': '77', vienne: '86', 'bouches-du-rhone': '13', nord: '59', gironde: '33', rhone: '69' };
+const PAYS = { france: '🇫🇷', belgique: '🇧🇪', suisse: '🇨🇭', canada: '🇨🇦', quebec: '🇨🇦', luxembourg: '🇱🇺', maroc: '🇲🇦', algerie: '🇩🇿', tunisie: '🇹🇳', senegal: '🇸🇳', mali: '🇲🇱', "cote d'ivoire": '🇨🇮', cameroun: '🇨🇲', congo: '🇨🇬', rdc: '🇨🇩', guinee: '🇬🇳', gabon: '🇬🇦', haiti: '🇭🇹', comores: '🇰🇲', madagascar: '🇲🇬', 'burkina faso': '🇧🇫', togo: '🇹🇬', benin: '🇧🇯', niger: '🇳🇪', mauritanie: '🇲🇷', guadeloupe: '🇬🇵', martinique: '🇲🇶', guyane: '🇬🇫', reunion: '🇷🇪', mayotte: '🇾🇹', usa: '🇺🇸', 'etats-unis': '🇺🇸', angleterre: '🇬🇧', espagne: '🇪🇸', portugal: '🇵🇹', italie: '🇮🇹', allemagne: '🇩🇪', bresil: '🇧🇷', turquie: '🇹🇷' };
+function fromLine(o){
+  const raw = String(o || '').trim(), k = raw.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ');
+  const dot = d => String(d).toUpperCase().split('').join('.');
+  const vibe = ['Ça kicke fort là-bas.', 'Big up à tout le département.', 'On va faire trembler le coin.', 'Le quartier peut être fier.', 'Respect à tous ceux de là-bas.'][Math.floor(Math.random() * 5)];
+  if(PAYS[k]) return 'Big up ' + raw + ' ' + PAYS[k] + ' ! 🔥 ' + vibe;
+  /* un numéro = un département seulement si le téléphone est réglé sur la France (ailleurs, ça peut être autre chose) */
+  const reg = ((navigator.language || 'fr').split('-')[1] || 'FR').toUpperCase(), fr = ['FR', 'RE', 'GP', 'MQ', 'GF', 'YT'].includes(reg);
+  let d = (fr && /^(\d{2,3}|2a|2b)$/.test(k)) ? k : DEPTS[k] || DEPTS[k.replace(/ /g, '-')];
+  if(d) return 'Ah yes, tu représentes le ' + dot(d) + ' ! 🔥 ' + vibe;
+  return raw + ' dans la place ! 🔥 ' + vibe;
+}
+const WHO = { who: true, t: '🎤 Présente-toi', b: 'Avant tout, dis-moi qui tu es. Tout le tuto sera pour toi.' };
+const HELLO = { t: () => 'Bienvenue ' + ME.name + ' 🙌', b: () => fromLine(ME.from) + '\n\nOn fait le tour du studio ensemble, et après tu enchaînes sur ton premier son.' };
 const TOUR = [
   { t: 'Yo les kickeurs 👊', b: 'C\'est le Xel. Avant de kicker, on remet les pieds sur terre : le matos.\nLe micro de ton tel suffit pour maquetter. Pour un son au top :\n• Écouteurs filaires sur les oreilles : tu entends l\'instru et elle ne repart pas dans le micro. Le Bluetooth, évite-le pendant que tu poses ta voix.\n• Un petit micro qui se branche sur le tel, c\'est le vrai saut de qualité.\n• Une pièce calme et pleine de tissu (rideaux, lit, vêtements), pas une salle de bain.\n• Ta bouche à 15–20 cm du micro, et le tel en mode avion pour pas qu\'une notif gâche la prise.\n\nEt soyons vrais : StudioXel, c\'est ton carnet de brouillon. Tu poses tes idées, tu testes tes flows, tu maquettes. Le son final, lui, se fait chez un ingé son, dans un vrai studio équipé. Arrive chez lui avec ta maquette, tu gagnes du temps, il gagne du temps, et ton son gagne tout court.' },
   { t: 'Comme une vraie appli 📲', b: ((navigator.standalone || matchMedia('(display-mode: standalone)').matches) ? 'Toi c\'est déjà fait ✅ Montre-le à tes potes kickeurs.\n\n' : '') + (/Android/i.test(navigator.userAgent)
@@ -5783,7 +5809,7 @@ const TOUR = [
   { sel: ['#zOut', '#zIn'], t: 'Le zoom', b: 'Les loupes zooment et dézooment la timeline. Zoome pour couper une phrase au poil près.' },
   { sel: ['#plusBtn'], t: 'Le bouton +', b: 'Ajoute une piste, pose un repère (couplet, refrain), lance une boucle pour refaire juste une phrase, et retrouve toutes tes sessions. Tout se sauvegarde tout seul.' },
   { sel: ['#modeBar'], t: 'Simple ou avancé', b: 'Le bandeau tout en haut : « Mode simple » cache les outils pour aller à l\'essentiel, étape par étape. « Mode avancé », c\'est tout ce que tu vois là. Un appui, ça bascule direct.' },
-  { sel: ['#bSet'], t: 'Réglages', b: 'Ils s\'ouvrent en plein écran ; « ✕ Fermer » (en haut ou tout en bas) te ramène où tu étais. Le choix Simple / Avancé est aussi tout en haut de l\'écran principal. Mets ton blaze : il signe tes pistes. Tout est rangé par rubriques : enregistrement (tempo, décompte, métronome), écoute (Auto, Casque ou Haut-parleur) si la pastille d\'écoute se trompe. Dans « Automatique ou manuel », tu choisis ce que je fais tout seul : retour voix, texte pendant la prise, calage du texte, réglage des niveaux. Et si tu veux refaire ton premier son pas à pas : « 🎤 Premier son guidé ».' },
+  { sel: ['#bSet'], t: 'Réglages', b: 'Ils s\'ouvrent en plein écran ; « ✕ Fermer » (en haut ou tout en bas) te ramène où tu étais. Tout est rangé par rubriques : enregistrement (tempo, décompte, métronome, latence), écoute (Auto, Casque ou Haut-parleur) si la pastille d\'écoute se trompe, et ta sauvegarde. Le reste se fait tout seul, et chaque chose se coupe sur place. Et si tu veux refaire ton premier son pas à pas : « 🎤 Premier son guidé ».' },
   { sel: ['.nav [data-view=vMix]'], t: 'Mix', b: 'Ici tu peaufines ta voix. En haut, la zone à écouter : touche un ou plusieurs passages chantés (ou tire les poignées) et lance-les en boucle pendant que tu règles. « 🎯 Suit le chant » affiche tout seul la piste qui chante. Ensuite : les styles de voix en un appui, les effets en grand, l\'égaliseur et la compression pour aller loin. « Rééquilibrer » remet les niveaux d\'aplomb.' },
   { sel: ['.nav [data-view=vMaster]'], t: 'Master', b: 'La touche finale de ta maquette : un style et un volume (Streaming ou Fort). Ton son sort propre et fort, sans jamais saturer.' },
   { sel: ['.nav [data-view=vTexte]'], t: 'Texte', b: 'Écris tes lyrics ici, ou touche « 🎙️ Dicter mon texte » et dis-les : ils s\'écrivent tout seuls (relis, la dictée se trompe sur le rap). Le prompteur les fait défiler pendant que tu kickes. Je cale le texte tout seul : sur le tempo pendant ta première prise, puis pile sur ta voix une fois la prise posée. Tu peux toujours caler à la main. Le calage sort aussi en sous-titres dans tes Reels.' },
@@ -5793,7 +5819,7 @@ const TOUR = [
   { sel: ['.nav [data-view=vPartager]'], t: 'Ne perds jamais tes sons', b: 'Tes sons sont gardés dans ton téléphone. Pour ne rien perdre : Partager → « 💾 Sauvegarder tous mes sons », et range le fichier dans iCloud Drive, Google Drive ou Dropbox. Sur un nouveau téléphone, « ♻️ Restaurer » et tout revient.' },
   { sel: ['#vPistes .qhelp'], t: 'Le ? de chaque onglet', b: 'En haut de chaque onglet, le petit ? jaune te fait le tour détaillé de tout ce qu\'il y a dedans. Perdu ? Touche-le.' },
   { sel: ['#bSet'], t: 'Ton avis', b: 'Un bug, une idée, un kif ? Dans Réglages ou en bas de Partager, touche « Donner mon avis » : ça m\'arrive direct, je lis tout. C\'est comme ça que l\'appli avance.' },
-  { t: 'À toi de kicker 🎤', b: 'C\'est tout bon. Importe ton instru, arme Couplets pour tes couplets, Refrain pour ton refrain, et envoie. On se retrouve dans tes Reels. — Le Xel' }
+  { t: () => 'À toi de kicker' + (ME.name ? ', ' + ME.name : '') + ' 🎤', b: 'C\'est tout bon. Importe ton instru, arme Couplets pour tes couplets, Refrain pour ton refrain, et envoie. On se retrouve dans tes Reels. — Le Xel' }
 ];
 /* ---------- Éditeur de prise : la piste en grand, sélection au poil, outils de retouche ---------- */
 let ed = null;
@@ -6081,9 +6107,10 @@ function edOp(op){
 }
 
 let tourI = -1, tourEl = null, TSTEPS = null;
-function startTour(force, steps){
+function startTour(force, steps, onEnd){
   if(tourEl) return;
-  if(!steps && !force && store.get('tourOff', false)) return;
+  if(!steps && !force && (store.get('tourOff', false) || tourDoneRun)) return;
+  tourOnEnd = onEnd || null;
   if(steps) steps = steps.filter(st => !st.sel || tourEls(st).length);
   TSTEPS = steps || (isSimple() ? SIMPLE_TOUR : TOUR);
   if(!steps) document.querySelector('.nav [data-view="vPistes"]').click();
@@ -6102,10 +6129,17 @@ function startTour(force, steps){
   document.body.appendChild(tourEl);
   tourEl.addEventListener('click', e => {
     const b = e.target.closest('[data-t]'); if(!b) return;
-    if(b.dataset.t === 'skip') return endTour();
+    /* « Passer » saute le tuto, jamais la présentation : blaze et d'où tu viens sont obligatoires */
+    if(b.dataset.t === 'skip'){ if(!ME.name || !ME.from){ const w = TSTEPS.indexOf(WHO); if(w >= 0){ tourI = w; showStep(); return; } } return endTour(); }
     if(b.dataset.t === 'guide'){ endTour(); return startGuide(); }
     if(b.dataset.t === 'prev' && tourI > 0){ tourI--; showStep(); }
-    if(b.dataset.t === 'next'){ if(tourI >= TSTEPS.length - 1) return endTour(); tourI++; showStep(); }
+    if(b.dataset.t === 'next'){
+      if(TSTEPS[tourI] === WHO){
+        const n = $('#tWhoN').value.trim(), f = $('#tWhoF').value.trim(); if(!n || !f) return;
+        ME.name = n; ME.from = f; store.set('me', ME); try{ $('#meName').value = n; $('#meFrom').value = f; }catch(e){}
+        S.tracks.forEach(t => { if(t.owner === ME.id) t.ownerName = n; }); track('presentation');
+      }
+      if(tourI >= TSTEPS.length - 1) return endTour(); tourI++; showStep(); }
   });
   window.addEventListener('resize', placeStep); window.addEventListener('scroll', placeStep, { passive: true });
   tourI = 0; showStep();
@@ -6116,13 +6150,27 @@ function endTour(){
   if(TSTEPS === TOUR || TSTEPS === SIMPLE_TOUR) store.set('tourOff', !!$('#tOff')?.checked);
   window.removeEventListener('resize', placeStep); window.removeEventListener('scroll', placeStep);
   const wasMain = TSTEPS === TOUR || TSTEPS === SIMPLE_TOUR;
+  if(wasMain) tourDoneRun = true;
   tourEl.remove(); tourEl = null; tourI = -1;
+  const cb = tourOnEnd; tourOnEnd = null; if(cb) setTimeout(cb, 50);
   if(wasMain) window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 const tourEls = st => (st.sel || []).flatMap(q => [...document.querySelectorAll(q)]).filter(el => el.getClientRects().length);
 function showStep(){
   const st = TSTEPS[tourI];
-  $('#tTitle').textContent = st.t; $('#tBody').textContent = st.b;
+  $('#tTitle').textContent = typeof st.t === 'function' ? st.t() : st.t; $('#tBody').textContent = typeof st.b === 'function' ? st.b() : st.b;
+  /* la présentation : 2 cases à remplir, impossible de passer sans */
+  const isWho = st === WHO, nx = tourEl.querySelector('.tnav [data-t=next]');
+  tourEl.querySelector('[data-t=skip]').hidden = isWho;
+  if(isWho){
+    const box = document.createElement('div'); box.className = 'twho';
+    box.innerHTML = `<label>Ton blaze<input id="tWhoN" maxlength="30" autocomplete="off" placeholder="Ex : Xela"></label><label>D'où tu viens ?<input id="tWhoF" maxlength="40" autocomplete="off" placeholder="Ta ville ou ton département (ex : 86)"></label>`;
+    $('#tBody').appendChild(box);
+    const N = $('#tWhoN'), F = $('#tWhoF'); N.value = ME.name || ''; F.value = ME.from || '';
+    const upd = () => { nx.disabled = !(N.value.trim() && F.value.trim()); }; N.oninput = upd; F.oninput = upd;
+    F.onkeydown = e => { if(e.key === 'Enter' && !nx.disabled) nx.click(); };
+    setTimeout(upd, 0); setTimeout(() => (N.value ? F : N).focus(), 80);
+  } else nx.disabled = false;
   $('#tStepN').textContent = (tourI + 1) + ' / ' + TSTEPS.length;
   tourEl.querySelector('[data-t=prev]').disabled = tourI === 0;
   tourEl.querySelector('.tnav [data-t=next]').textContent = tourI === TSTEPS.length - 1 ? (TSTEPS === TOUR || TSTEPS === SIMPLE_TOUR ? 'C\'est parti 🎤' : 'Compris 👍') : 'Suivant →';
@@ -6274,7 +6322,8 @@ function gStep(i){
   gI = Math.min(i, GUIDE.length - 1); gDone = false;
   const st = GUIDE[gI];
   if(st.start) st.start();
-  $('#gTitle').textContent = st.t; $('#gBody').textContent = st.b;
+  const sT = typeof st.t === 'function' ? st.t() : st.t, sB = typeof st.b === 'function' ? st.b() : st.b;
+  $('#gTitle').textContent = sT; $('#gBody').textContent = sB;
   $('#gCount').textContent = st.end ? '' : (gI === 0 ? '' : gI + ' / ' + (GUIDE.length - 2));
   const nb = gEl.querySelector('[data-g=next]');
   nb.textContent = gI === 0 ? 'C\'est parti →' : st.end ? 'Terminer 🎤' : 'Passer cette étape';
@@ -6294,7 +6343,7 @@ function gTick(){
   gPlace();
   if(!gDone && st.wait && st.wait()){
     gDone = true;
-    $('#gTitle').textContent = '✅ ' + st.t;
+    $('#gTitle').textContent = '✅ ' + (typeof st.t === 'function' ? st.t() : st.t);
     setTimeout(() => { if(gEl && GUIDE[gI] === st) gStep(gI + 1); }, 700);
   }
 }
@@ -6481,11 +6530,12 @@ function showBeta(){
 }
 /* ---------- Mode simple : les étapes d'un son, une à la fois ---------- */
 const isSimple = () => store.get('uiMode', 'simple') === 'simple';
+TOUR.splice(1, 0, WHO, HELLO);
 const SIMPLE_TOUR = [
-  TOUR[0], TOUR[1],
-  { sel: ['#stepBar'], t: 'Suis les étapes 👇', b: 'Tout se fait ici, comme une vraie séance studio : instru, texte, lead, refrain, backs, habillage (styles, auto-tune, niveaux), master et export. Le gros bouton fait l\'action pour toi. Pas de refrain ou pas de backs ? Un appui pour passer.' },
+  TOUR[0], WHO, HELLO, TOUR[3],
+  { sel: ['#stepBar'], t: () => (ME.name ? ME.name + ', suis' : 'Suis') + ' les étapes 👇', b: 'Tout se fait ici, comme une vraie séance studio : instru, texte, lead, refrain, backs, habillage (styles, auto-tune, niveaux), master et export. Le gros bouton fait l\'action pour toi. Pas de refrain ou pas de backs ? Un appui pour passer.' },
   { sel: ['#modeBar'], t: 'Simple ou avancé', b: 'Tout en haut : « Mode simple » montre l\'essentiel, étape par étape. « Mode avancé » sort tous les outils : effets détaillés, Mix, Master, éditeur de prise, projets. Un appui et ça bascule direct, dans les deux sens.' },
-  { t: 'À toi de kicker 🎤', b: 'C\'est parti : suis les étapes en haut de l\'écran. — Le Xel' }
+  { t: () => 'À toi de kicker' + (ME.name ? ', ' + ME.name : '') + ' 🎤', b: 'C\'est parti : suis les étapes en haut de l\'écran. — Le Xel' }
 ];
 function applyMode(){
   const simple = isSimple();
