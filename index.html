@@ -94,6 +94,8 @@ button{cursor:pointer}
 .ruler .hdr{padding:4px 8px;justify-content:center;font-size:11px;color:var(--muted)}
 .ruler canvas{display:block;cursor:pointer}
 .l1{display:flex;align-items:center;gap:4px}
+/* prompteur : on ne garde que « Caler mes parties en écoutant » (le reste se règle tout seul) */
+#iHere,#viewP .tstart,#viewP .pbar{display:none!important}
 #rulerHdr{flex-direction:row;align-items:center;gap:6px;padding:3px 8px}#rulerHdr .rzl{font-size:11px;color:var(--muted);flex:1}#rulerHdr .zoom{height:30px;min-width:38px;padding:0 6px}#rulerHdr .zoom svg{width:18px;height:18px}
 .row .l3{flex-wrap:nowrap;gap:4px}.row .l3 .sbtn{padding:0 7px;min-width:0}.row .l3 [data-act=import]{font-size:16px}.row .l3 .sbtn{white-space:nowrap}
 #modeBar{display:none!important}
@@ -658,7 +660,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.3.1 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.3.2 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -904,7 +906,7 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
       <canvas id="iCv" aria-label="Aperçu de l'instru : touche pour te placer"></canvas>
       <div class="ilegend" id="iLeg"></div>
       <div class="tsrow"><button class="sbtn primary" id="iPlay">▶ Écouter</button><button class="sbtn" id="iHere">📍 Le texte démarre ici</button><button class="sbtn" id="iCheck">👆 Caler mes parties en écoutant</button></div>
-      <p class="note">En haut, tout ton son : touche-le pour y aller. En dessous, le zoom qui suit la lecture : touche pour te placer, puis ▶. Bleu = couplets, jaune = refrains (ce que j'entends : vérifie à l'oreille). « Caler mes parties en écoutant » : l'instru se lance, un gros bouton affiche ta prochaine section, tu touches quand elle commence. Je recale chaque appui sur le début de la mesure la plus proche.</p>
+      <p class="note">Touche « 👆 Caler mes parties en écoutant » : l'instru démarre, et tu tapes pile au début de chaque couplet et de chaque refrain. Ton texte défilera calé dessus, sur toutes tes pistes.</p>
     </div>
     <div class="tstart"><span>Les paroles commencent à <b id="tsVal">0:00</b></span><div class="tsrow tssug" id="tsSug" hidden></div><button class="sbtn" id="tsHere">📍 Ici (tête de lecture)</button><button class="sbtn" id="tsMinus" aria-label="1 mesure plus tôt">− 1 mesure</button><button class="sbtn" id="tsPlus" aria-label="1 mesure plus tard">+ 1 mesure</button>
       <details class="tsrow tsman"><summary>Vitesse du texte : <b id="tsMode">auto</b></summary>
@@ -1113,8 +1115,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 158; // numéro interne (jamais affiché)
-const APP_PUB = '2.3.1';
+const APP_VER = 159; // numéro interne (jamais affiché)
+const APP_PUB = '2.3.2';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -2518,7 +2520,7 @@ $('#file').addEventListener('change', async e => {
       S.bpm = bpm; $('#bpm').value = bpm; store.set('bpm', bpm); bus.setBpm(bpm); renderTracks();
       let stTxt = '';
       if(isInstru){ S.startSugs = null; S.secs = null; const sg = startSugs(), bs = sg.find(o => o.best); if(bs && !S.tsUser){ setTextStart(bs.t); stTxt = ' · paroles à ' + fmt(bs.t, true) + ' (' + bs.why + ')'; } }
-      toast('« ' + f.name + ' » chargé · ' + bpm + ' BPM' + keyTxt + stTxt + '. ' + (stTxt ? 'Autres choix dans Texte → Prompteur.' : 'Niveau calé.'));
+      toast('« ' + f.name + ' » chargé · ' + bpm + ' BPM' + keyTxt + stTxt + '. ' + (stTxt ? 'Pour caler tes parties : Texte → Prompteur.' : 'Niveau calé.'));
     } else toast('« ' + f.name + ' » chargé' + keyTxt + ' · niveau calé.');
     scheduleSave();
   }catch(err){ toast('Format non lu. Essaie un MP3 ou un WAV.'); }
@@ -6485,7 +6487,7 @@ const HELP = {
     { sel: ['.secbar'], t: 'Les sections', b: 'Ajoute Intro, Couplet (numéroté tout seul), Pré-refrain, Refrain, Pont ou Outro là où est ton curseur. Un deuxième Refrain recopie le premier, tu modifies si besoin.' },
     { sel: ['#lstat'], t: 'Les syllabes', b: 'Le nombre de syllabes de la ligne où tu es, pour équilibrer tes rimes et ton flow.' },
     { sel: ['#bDict'], t: 'Dicter', b: 'Dis tes lignes a cappella, elles s\'écrivent toutes seules, une par pause. Relis : le rap piège la dictée.' },
-    { t: 'Le prompteur', b: 'En haut, « Ton instru » : toute ton instru en grand, avec les parties que j\'entends (intro, couplets, refrains probables), mes propositions de départ (▲) et le début de ton texte (en vert). Touche l\'onde pour te placer, ▶ pour vérifier, « 📍 Le texte démarre ici » pour choisir, « 👆 Caler mes parties en écoutant » : l\'instru se lance et un gros bouton affiche ta prochaine section ([Couplet 1], [Refrain]…). Tu touches quand elle commence, je recale sur le début de la mesure la plus proche, et le temps de tes paroles change direct. Ce calage sert ensuite à toutes tes pistes, et si tu enregistres tout d\'un coup, je range les refrains sur la piste Refrain et les couplets sur Couplets. Un silence entre deux parties ? Touche « 🔇 Blanc » quand la partie s\'arrête. Autant de couplets et de refrains que tu veux : après les sections de ton texte, ça continue tout seul (et « c\'est un refrain ? » inverse si je me trompe). « ↶ Oups » efface le dernier appui. À la fin, tes sections [Couplet 1], [Refrain]… démarrent pile sur chaque partie. Quand tu charges ton instru, je te propose aussi où démarrer le texte : l\'entrée de la rythmique (⭐ mon choix), quelques mesures après, un changement dans le beat, ou dès le début. Touche une proposition pour l\'écouter et la choisir. Tu peux aussi régler à la main (📍 Ici, ou ± 1 mesure). Pose des repères au nom de tes sections (+ → Repère) : chaque section démarre pile dessus. Le texte défile une phrase par mesure : chaque ligne tombe pile sur le 1er temps d\'une mesure, grâce au BPM de ton instru (une ligne par demi-mesure si une partie est trop remplie). Et ça reste pareil sur toutes tes pistes. Pour forcer, ouvre « Vitesse du texte ». Ensuite le texte défile une phrase par mesure, pareil sur toutes tes pistes. Tu peux aussi caler à la main (« Caler la ligne suivante » au début de chaque ligne pendant la lecture), ou forcer « Caler sur ma prise » / « Caler sur le tempo ». Pendant REC, ton texte s\'affiche en bas tout seul.' }
+    { t: 'Le prompteur', b: 'En haut, ton instru en grand. Touche « 👆 Caler mes parties en écoutant » : l\'instru démarre, un gros bouton affiche ta prochaine partie ([Couplet 1], [Refrain]…), tu le tapes pile quand elle commence. « 🔇 Blanc » pour un silence, « ↶ Oups » pour annuler le dernier appui. Ton texte défile ensuite calé dessus, sur toutes tes pistes, et pendant le REC il s\'affiche tout seul en bas.' },
   ],
   vProjets: [
     { t: 'L\'onglet Projets', b: 'Pour préparer un single, un EP ou un album.' },
