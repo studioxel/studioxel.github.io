@@ -624,7 +624,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.0 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.0.1 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -935,11 +935,14 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
     for(var i = 0; i < ls.length; i++){ var b = String(ls[i] || '').toLowerCase().split('-')[0]; if(SUP.indexOf(b) >= 0) return b; }
     return 'en';
   }
-  var lang = (pick && pick !== 'auto' && SUP.indexOf(pick) >= 0) ? pick : detect();
+  /* Langues en pause : tout reste prêt (moteur + fichiers lang-xx.json), on remet OFF = false quand l'appli sera prête */
+  var OFF = true;
+  var lang = OFF ? 'fr' : (pick && pick !== 'auto' && SUP.indexOf(pick) >= 0) ? pick : detect();
   window.SX_LANG = lang;
   try{ document.documentElement.lang = lang; }catch(e){}
   /* Sélecteur de langue (Réglages → Affichage) */
   var sel = document.getElementById('selLang');
+  if(sel && OFF){ try{ (sel.closest('.langrow') || sel).style.display = 'none'; }catch(e){} sel = null; }
   if(sel){
     sel.value = (pick && SUP.indexOf(pick) >= 0) ? pick : 'auto';
     sel.addEventListener('change', function(){
@@ -1068,8 +1071,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 140; // numéro interne (jamais affiché)
-const APP_PUB = '2.0';
+const APP_VER = 141; // numéro interne (jamais affiché)
+const APP_PUB = '2.0.1';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
