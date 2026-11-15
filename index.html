@@ -454,6 +454,7 @@ body.simple #viewP .pbar,body.simple #viewP .tsman,body.simple #tsMinus,body.sim
 .modebar button[aria-pressed=true]{background:var(--accent);color:#1a1405}
 .guidebar{display:flex;gap:4px;padding:6px 10px;border-bottom:1px solid var(--line)}.guidebar button{flex:1 1 0;min-width:0;height:40px;border:1px solid var(--line);border-radius:10px;background:var(--raise);color:var(--muted);font:700 14px var(--display)}.guidebar button[aria-pressed=true]{background:var(--accent);color:#1a1405;border-color:var(--accent)}
 .stepbar{display:flex;flex-direction:column;gap:10px;padding:14px;border-bottom:1px solid var(--line);background:var(--panel);background:color-mix(in srgb,var(--accent) 8%,var(--panel))}
+.stepbar .stprev{margin-left:10px;text-transform:none;letter-spacing:0;font-size:13px;color:var(--muted)}
 .stepbar .stn{font:800 12px var(--display);letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
 .stepbar h3{margin:0;font:800 20px var(--display)}
 .stepbar p{margin:0;color:var(--muted);line-height:1.4}
@@ -654,7 +655,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.2 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.2.1 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -1109,8 +1110,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 155; // numéro interne (jamais affiché)
-const APP_PUB = '2.2';
+const APP_VER = 156; // numéro interne (jamais affiché)
+const APP_PUB = '2.2.1';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -6858,6 +6859,8 @@ function updStep(){
   else if(!f.arr) st = 'arr';
   else if(!exported) st = 'export';
   else st = 'done';
+  /* retour sur une étape d'avant (charger l'instru, le texte, l'export) : on l'affiche jusqu'à « Suite » */
+  if(f.goBack && !S.recording) st = f.goBack;
   const want = { lead: L, refrain: R, back: B }[st];
   if(st !== stepArmed){ stepArmed = st; if(want && !want.arm && !S.recording && !S.markers.some(m => m.auto)){ S.tracks.forEach(x => x.arm = false); want.arm = true; renderTracks(); } }
   const idl = (st === 'arr' || st === 'export' || st === 'done') ? ideas() : [];
@@ -6866,7 +6869,9 @@ function updStep(){
   if(key === stepKey) return; stepKey = key;
   const n = STEP_N[st] || 7;
   const dots = `<div class="stdots">${[1, 2, 3, 4, 5, 6, 7].map(i => `<i class="${i <= n ? 'on' : ''}"></i>`).join('')}</div>`;
-  const head = (t, d) => `${dots}<div class="stn">Étape ${n} sur 7</div><h3>${t}</h3><p>${d}</p>`;
+  const backB = n > 1 && st !== 'rec' ? '<button class="stlink stprev" data-s="prev">← Étape d\'avant</button>' : '';
+  const fwdB = f.goBack ? '<button class="sbtn primary" data-s="fwd">Suite →</button>' : '';
+  const head = (t, d) => `${dots}<div class="stn">Étape ${n} sur 7 ${backB}</div><h3>${t}</h3><p>${d}</p>`;
   const playB = `<button class="sbtn" data-s="play">${S.playing ? '⏸ Pause' : '▶ Écouter'}</button>`;
   const take = (t, label, d, skip) => t?.buffer
     ? head(label + ' ✓', 'Écoute, et refais-la si elle ne te plaît pas.') + `<div class="stb"><button class="sbtn primary big" data-s="ok">C'est bon, suite →</button>${playB}<button class="sbtn" data-s="rec">🎤 Refaire</button></div>`
@@ -6874,8 +6879,8 @@ function updStep(){
   let h = '';
   const rawTip = '<p class="sttip">🎙️ Pendant que tu poses, ta voix reste brute : les effets arrivent à l\'habillage, une fois tout enregistré.</p>';
   if(st === 'rec') h = `<div class="stn">● Enregistrement</div><h3>Ça tourne, kicke 🎤</h3><p>Retouche REC (ou le bouton ici) quand tu as fini.</p><div class="stb"><button class="sbtn primary big" data-s="stop">⏹ Arrêter</button></div>`;
-  else if(st === 'instru') h = head('Charge ton instru', 'Le beat sur lequel tu vas kicker (MP3 ou WAV, depuis ton téléphone).') + `<div class="stb"><button class="sbtn primary big" data-s="instru">📂 Choisir mon instru</button><button class="sbtn" data-s="noinstru">Je kicke sans instru</button></div>`;
-  else if(st === 'text') h = head('Écris ton texte', 'Il défilera tout seul pendant que tu enregistres.') + `<div class="stb"><button class="sbtn primary big" data-s="write">✍️ Écrire mon texte</button><button class="sbtn" data-s="notext">Passer</button></div>`;
+  else if(st === 'instru') h = head('Charge ton instru', 'Le beat sur lequel tu vas kicker (MP3 ou WAV, depuis ton téléphone).') + `<div class="stb"><button class="sbtn primary big" data-s="instru">📂 ${ins?.buffer ? 'Changer d\'instru' : 'Choisir mon instru'}</button>${ins?.buffer ? fwdB : '<button class="sbtn" data-s="noinstru">Je kicke sans instru</button>' + fwdB}</div>`;
+  else if(st === 'text') h = head('Écris ton texte', 'Il défilera tout seul pendant que tu enregistres.') + `<div class="stb"><button class="sbtn primary big" data-s="write">✍️ ${lyr ? 'Retoucher mon texte' : 'Écrire mon texte'}</button>${f.goBack ? fwdB : '<button class="sbtn" data-s="notext">Passer</button>'}</div>`;
   else if(st === 'lead'){
     h = take(L, 'Pose tes couplets', S.markers.some(m => m.auto) ? 'Tes parties sont calées : pose tout d\'un coup, couplets et refrains. Je range chaque refrain tout seul sur la piste Refrain.' : 'Tes couplets, la voix principale. Un décompte part, et tu kickes. Tu peux t\'arrêter et reprendre où tu veux.', null);
     if(S.markers.some(m => m.auto)) h += `<div class="arrt"><b>Comment tu enregistres ?</b><div class="arrs"><button class="sbtn" data-rm="onego" aria-pressed="${recMode() === 'onego'}">🎙️ Tout d'un coup</button><button class="sbtn" data-rm="parts" aria-pressed="${recMode() === 'parts'}">✂️ Partie par partie</button></div><p class="sttip">${recMode() === 'parts' ? 'Ça s\'arrête tout seul à la fin de chaque couplet ou refrain, et la bonne piste s\'arme pour la suite.' : 'Tu poses tout d\'une traite : à l\'arrêt, je range les couplets sur Couplets et les refrains sur Refrain.'}</p></div>`;
@@ -6893,7 +6898,7 @@ function updStep(){
     h = head('Le master et l\'export', 'La touche finale sur tout le son, puis ton fichier MP3 est prêt.');
     h += `<div class="arrt"><b>Couleur</b><div class="arrs">${[['naturel', 'Naturel'], ['rap', 'Rap moderne'], ['chaud', 'Chaud']].map(([k, l]) => `<button class="sbtn" data-mst="${k}" aria-pressed="${M.preset === k}">${l}</button>`).join('')}</div></div>`;
     h += `<div class="arrt"><b>Volume</b><div class="arrs">${[['-14', 'Streaming'], ['-9', 'Fort']].map(([k, l]) => `<button class="sbtn" data-mtg="${k}" aria-pressed="${M.target === +k}">${l}</button>`).join('')}</div></div>`;
-    h += `<div class="stb"><button class="sbtn primary big" data-s="export">📤 Exporter mon son</button>${playB}<button class="sbtn" data-s="back2arr">← Retoucher l'habillage</button></div>`;
+    h += `<div class="stb"><button class="sbtn primary big" data-s="export">📤 Exporter mon son</button>${playB}${fwdB || '<button class="sbtn" data-s="back2arr">← Retoucher l\'habillage</button>'}</div>`;
   }
   else h = `${dots}<div class="stn">C'est fini</div><h3>Ton son est prêt 🔥</h3><p>Envoie-le où tu veux, ou fais-en un Reel.</p><div class="stb"><button class="sbtn primary big" data-s="share">📲 Partager mon son</button><button class="sbtn" data-s="reel">🎬 Faire un Reel</button><button class="sbtn" data-s="back2arr">🎛️ Retoucher</button></div><p class="sttip">Un avis sur l'appli ? <button class="stlink" data-s="avis">💬 Dis-moi tout</button>, je lis tout.</p>`;
   stepEl.innerHTML = h + ideasHTML(idl);
@@ -6911,9 +6916,17 @@ stepEl.addEventListener('click', async e => {
   const f = flowGet(), cur = { lead: trRole('lead'), refrain: trRole('refrain'), back: trRole('back') };
   const curStep = !f.lead ? 'lead' : (cur.refrain && !f.refrain) ? 'refrain' : (cur.back && !f.back) ? 'back' : null;
   if(a === 'instru'){ const ins = trRole('instru'); if(ins){ importFor = ins; $('#file').click(); } }
+  else if(a === 'prev'){
+    const L2 = trRole('lead'), R2 = trRole('refrain'), B2 = trRole('back'), ins2 = trRole('instru');
+    const order = ['instru', 'text', 'lead', R2 ? 'refrain' : null, B2 ? 'back' : null, 'arr', 'export', 'done'].filter(Boolean);
+    const cur2 = f.goBack || stepArmed, i2 = order.indexOf(cur2), to = order[Math.max(0, i2 - 1)];
+    if(to === 'instru' || to === 'text' || to === 'export') flowSet('goBack', to);
+    else { flowSet('goBack', null); if(to === 'arr') flowSet('arr', false); else flowSet(to, false); }
+  }
+  else if(a === 'fwd'){ flowSet('goBack', null); if(S.playing) pause(); }
   else if(a === 'noinstru') flowSet('instru', true);
   else if(a === 'write'){ document.querySelector('.nav [data-view="vTexte"]').click(); setTimeout(() => ta.focus(), 150); }
-  else if(a === 'notext') flowSet('text', true);
+  else if(a === 'notext'){ flowSet('text', true); flowSet('goBack', null); }
   else if(a === 'rec' || a === 'stop'){ if(a === 'rec' && curStep && cur[curStep]) armTrack(cur[curStep]); record(); }
   else if(a === 'ok' || a === 'skip'){ if(curStep) flowSet(curStep, true); if(S.playing) pause(); }
   else if(a === 'arrok'){ flowSet('arr', true); if(S.playing) pause(); }
