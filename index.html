@@ -493,6 +493,8 @@ body.simple #viewP .pbar,body.simple #viewP .tsman,body.simple #tsMinus,body.sim
 .stepbar .stb .sbtn.big{flex:1 1 100%;height:54px;font-size:17px}
 .stepbar .stchips{display:flex;gap:6px;flex-wrap:wrap}
 .stepbar .stchips .sbtn[aria-pressed=true]{background:var(--accent);color:#1a1405;border-color:var(--accent)}
+#msGuide:not([hidden]) + #masterPad > .note:first-child{display:none}
+.mxguide{padding:12px 14px;gap:8px}.mxguide h3{font-size:18px}.mxguide p{font-size:14px}
 .stepbar .stdots{display:flex;gap:6px}.stepbar .stdots i{flex:1;height:4px;border-radius:2px;background:var(--line)}.stepbar .stdots i.on{background:var(--accent)}
 .stepbar .sttip{margin:0;font-size:14px;color:var(--muted)}.stepbar .stlink{background:none;border:0;padding:0;color:var(--accent);font-weight:800;text-decoration:underline;font-size:14px}
 .stepbar .stadv{align-self:flex-start;background:none;border:0;color:var(--muted);text-decoration:underline;padding:2px 0;font-size:13px}
@@ -684,7 +686,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.4.5 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.4.6 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -1140,8 +1142,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 167; // numéro interne (jamais affiché)
-const APP_PUB = '2.4.5';
+const APP_VER = 168; // numéro interne (jamais affiché)
+const APP_PUB = '2.4.6';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -6574,7 +6576,7 @@ const HELP = {
   vPistes: [
     { t: 'L\'onglet Pistes', b: 'C\'est ta table d\'enregistrement : tes pistes à gauche, la timeline à droite. Je te montre tout ce qu\'il y a ici.' },
     { sel: ['#guideBar'], t: 'Accompagné ou manuel', b: '🧭 Guide-moi : les étapes s\'affichent, la bonne piste s\'arme toute seule et tes prises sont rangées (couplets sur Couplets, refrains sur Refrain). ✋ Je gère moi-même : tu touches le R de la piste que tu veux, tu enregistres où tu veux, je ne touche à rien.' },
-    { sel: ['#stepBar'], t: 'Les étapes', b: 'Avec « Guide-moi », tout se fait ici, comme une séance studio : instru, texte, lead, refrain, backs, habillage, master et export. Le gros bouton fait l\'action pour toi, « ← Étape d\'avant » te fait revenir en arrière.' },
+    { sel: ['#stepBar'], t: 'Les étapes', b: 'Avec « Guide-moi », c\'est une séance studio : instru, texte, lead, refrain et backs se posent ici, puis je t\'emmène dans Mix pour l\'habillage et dans Master pour la touche finale et l\'export. Le gros bouton fait l\'action pour toi, « ← Étape d\'avant » te fait revenir en arrière.' },
     { sel: ['.power'], t: 'Pour aller plus loin', b: 'Pendant l\'habillage et après : retoucher une phrase au poil, t\'entendre en direct avec tes écouteurs, faire un Reel.' },
     { sel: ['#sessTitle', '#sessState'], t: 'Ta session', b: 'Le nom de ton son et son état. « Sauvegardé » : tout est gardé dans le téléphone, rien à faire.' },
     { sel: ['#zOut', '#zIn'], t: 'Zoom', b: 'Les loupes resserrent ou élargissent la timeline. Zoome pour bosser une phrase, dézoome pour voir tout le morceau.' },
@@ -6928,6 +6930,47 @@ document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => {
 });
 const stepEl = document.createElement('div'); stepEl.className = 'stepbar'; stepEl.id = 'stepBar';
 $('#vPistes .cardhead').after(stepEl);
+/* « Guide-moi » : l'habillage se fait dans Mix, le guide l'y accompagne */
+const mxGuideEl = document.createElement('div'); mxGuideEl.className = 'stepbar mxguide'; mxGuideEl.id = 'mxGuide'; mxGuideEl.hidden = true;
+$('#vMix .cardhead').after(mxGuideEl);
+const goView = v => document.querySelector(`.nav [data-view="${v}"]`)?.click();
+function mxGuideUI(st){
+  const on = guided() && st === 'arr'; mxGuideEl.hidden = !on; if(!on){ mxGuideEl._k = ''; return; }
+  const k = 'arr'; if(mxGuideEl._k === k) return; mxGuideEl._k = k;
+  mxGuideEl.innerHTML = `<div class="stdots">${[1, 2, 3, 4, 5, 6, 7].map(i => `<i class="${i <= 6 ? 'on' : ''}"></i>`).join('')}</div>
+    <div class="stn">Étape 6 sur 7 <button class="stlink stprev" data-mg="prev">← Étape d'avant</button></div><h3>Habille ton son</h3>
+    <p>Déjà habillé comme en studio. Choisis une piste, ouvre un titre et change ce que tu veux. Pour un mot ou une phrase : glisse sur l'onde.</p>
+    <div class="stb"><button class="sbtn primary" data-mg="ok">C'est bon, suite →</button></div>`;
+}
+const msGuideEl = document.createElement('div'); msGuideEl.className = 'stepbar mxguide'; msGuideEl.id = 'msGuide'; msGuideEl.hidden = true;
+$('#vMaster .cardhead').after(msGuideEl);
+function msGuideUI(st){
+  const on = guided() && (st === 'export' || st === 'done'); msGuideEl.hidden = !on; if(!on){ msGuideEl._k = ''; return; }
+  if(msGuideEl._k === st) return; msGuideEl._k = st;
+  const dots = `<div class="stdots">${[1, 2, 3, 4, 5, 6, 7].map(() => '<i class="on"></i>').join('')}</div>`;
+  msGuideEl.innerHTML = st === 'export'
+    ? `${dots}<div class="stn">Étape 7 sur 7 <button class="stlink stprev" data-mg="prev">← Étape d'avant</button></div><h3>Le master et l'export</h3>
+      <p>La touche finale sur tout le son. Choisis le style et le volume juste en dessous, écoute, puis exporte.</p>
+      <div class="stb"><button class="sbtn primary" data-mg="export">📤 Exporter mon son</button></div>`
+    : `${dots}<div class="stn">C'est fini</div><h3>Ta maquette est prête 🔥</h3>
+      <p>Ça reste ton brouillon : partage-la, fais-en un Reel, et amène-la chez ton ingé son pour le son final.</p>
+      <div class="stb"><button class="sbtn primary" data-mg="share">📲 Partager mon son</button><button class="sbtn" data-mg="reel">🎬 Faire un Reel</button><button class="sbtn" data-mg="back2arr">← Retoucher l'habillage</button></div>`;
+}
+msGuideEl.addEventListener('click', e => {
+  const a = e.target.closest('[data-mg]')?.dataset.mg; if(!a) return;
+  if(a === 'prev' || a === 'back2arr'){ if(S.playing) pause(); flowSet('goBack', null); flowSet('arr', false); goView('vMix'); }
+  else if(a === 'export') $('#bMaster').click();
+  else if(a === 'share') $('#bShareMp3').click();
+  else if(a === 'reel'){ goView('vPartager'); setTimeout(() => $('#rsCanvas')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 200); }
+  stepKey = ''; updStep();
+});
+mxGuideEl.addEventListener('click', e => {
+  const a = e.target.closest('[data-mg]')?.dataset.mg; if(!a) return;
+  if(S.playing) pause();
+  if(a === 'ok'){ flowSet('arr', true); goView('vMaster'); }
+  else if(a === 'prev'){ const order = ['lead', trRole('refrain') ? 'refrain' : null, trRole('back') ? 'back' : null].filter(Boolean); flowSet(order[order.length - 1], false); goView('vPistes'); }
+  stepKey = ''; updStep();
+});
 /* tes pistes : je t'accompagne (étapes, piste armée toute seule, prises rangées) ou tu gères toi-même */
 const guideEl = document.createElement('div'); guideEl.className = 'guidebar'; guideEl.id = 'guideBar';
 guideEl.innerHTML = '<button data-g="auto">🧭 Guide-moi</button><button data-g="manual">✋ Je gère moi-même</button>';
@@ -7008,7 +7051,7 @@ async function arrangeAuto(){
   toast('🎛️ Ton son est habillé comme en studio : niveaux calés, style sur chaque voix, backs nettoyés. Change ce que tu veux.');
 }
 function updStep(){
-  stepEl.hidden = !guided(); if(!guided()){ stepKey = ''; return; }
+  stepEl.hidden = !guided(); if(!guided()){ stepKey = ''; mxGuideUI(null); msGuideUI(null); return; }
   const f = flowGet();
   const ins = trRole('instru'), L = trRole('lead'), R = trRole('refrain'), B = trRole('back');
   const lyr = ta.value.trim().length > 0, exported = !!lastMaster && masterSig === mixSig();
@@ -7025,6 +7068,8 @@ function updStep(){
   /* retour sur une étape d'avant (charger l'instru, le texte, l'export) : on l'affiche jusqu'à « Suite » */
   if(f.goBack && !S.recording) st = f.goBack;
   const want = { lead: L, refrain: R, back: B }[st];
+  mxGuideUI(st); msGuideUI(st);
+  if(st === 'arr' && ['lead', 'refrain', 'back', 'export'].includes(stepArmed) && !$('#vPistes').hidden) setTimeout(() => goView('vMix'), 0);
   if(st !== stepArmed){ stepArmed = st; if(want && !want.arm && !S.recording && !S.markers.some(m => m.auto)){ S.tracks.forEach(x => x.arm = false); want.arm = true; renderTracks(); } }
   const idl = (st === 'arr' || st === 'export' || st === 'done') ? ideas() : [];
   const voc = vocalTracks().filter(t => t.buffer);
@@ -7053,17 +7098,14 @@ function updStep(){
   else if(st === 'refrain') h = take(R, 'Ton refrain', 'Sur sa propre piste : il pourra avoir son style à lui, plus large et plus fort. Place la lecture au début du refrain, puis enregistre.', 'Pas de refrain dans ce son');
   else if(st === 'back') h = take(B, 'Tes backs', 'Les voix qui appuient tes fins de phrases et tes punchs. Pose-les par-dessus ta lead. Je les nettoie tout seul ensuite.', 'Pas de backs');
   else if(st === 'arr'){
-    h = head('Habille ton son', 'Comme en studio : chaque voix a son style, les niveaux sont calés, les backs nettoyés. Change ce que tu veux et écoute.');
-    h += `<div class="arr">${voc.map(t => `<div class="arrt"><b>${esc(t.name)}</b><div class="arrs">${VSTYLES.map((v, k) => `<button class="sbtn" data-avs="${t.id}:${k}" aria-pressed="${t.vstyle === k}">${v.n}</button>`).join('')}<button class="sbtn" data-aat="${t.id}" aria-pressed="${isTuned(t) || !!t.atOn}">🤖 Auto-tune</button></div></div>`).join('')}</div>`;
-    h += `<div class="stb"><button class="sbtn primary big" data-s="arrok">C'est bon, suite →</button>${playB}<button class="sbtn" data-s="level">⚖️ Recaler les niveaux</button></div>`;
+    h = head('Habille ton son', 'Tout est posé 🔥 L\'habillage se fait dans Mix : le style de chaque voix, les effets, l\'auto-tune, et des réglages sur un mot ou une phrase.');
+    h += `<div class="stb"><button class="sbtn primary big" data-s="tomix">🎛️ Aller dans Mix</button>${playB}</div>`;
   }
   else if(st === 'export'){
-    h = head('Le master et l\'export', 'La touche finale sur tout le son, puis ton fichier MP3 est prêt.');
-    h += `<div class="arrt"><b>Couleur</b><div class="arrs">${[['naturel', 'Naturel'], ['rap', 'Rap moderne'], ['chaud', 'Chaud']].map(([k, l]) => `<button class="sbtn" data-mst="${k}" aria-pressed="${M.preset === k}">${l}</button>`).join('')}</div></div>`;
-    h += `<div class="arrt"><b>Volume</b><div class="arrs">${[['-14', 'Streaming'], ['-9', 'Fort']].map(([k, l]) => `<button class="sbtn" data-mtg="${k}" aria-pressed="${M.target === +k}">${l}</button>`).join('')}</div></div>`;
-    h += `<div class="stb"><button class="sbtn primary big" data-s="export">📤 Exporter mon son</button>${playB}${fwdB || '<button class="sbtn" data-s="back2arr">← Retoucher l\'habillage</button>'}</div>`;
+    h = head('Le master et l\'export', 'La touche finale sur tout le son, puis l\'export : ça se passe dans Master.');
+    h += `<div class="stb"><button class="sbtn primary big" data-s="tomaster">🎚️ Aller dans Master</button>${playB}${fwdB}</div>`;
   }
-  else h = `${dots}<div class="stn">C'est fini</div><h3>Ton son est prêt 🔥</h3><p>Envoie-le où tu veux, ou fais-en un Reel.</p><div class="stb"><button class="sbtn primary big" data-s="share">📲 Partager mon son</button><button class="sbtn" data-s="reel">🎬 Faire un Reel</button><button class="sbtn" data-s="back2arr">🎛️ Retoucher</button></div><p class="sttip">Un avis sur l'appli ? <button class="stlink" data-s="avis">💬 Dis-moi tout</button>, je lis tout.</p>`;
+  else h = `${dots}<div class="stn">C'est fini</div><h3>Ta maquette est prête 🔥</h3><p>Ça reste ton brouillon : partage-la, fais-en un Reel, et amène-la chez ton ingé son pour le son final.</p><div class="stb"><button class="sbtn primary big" data-s="share">📲 Partager mon son</button><button class="sbtn" data-s="reel">🎬 Faire un Reel</button><button class="sbtn" data-s="back2arr">🎛️ Retoucher</button></div><p class="sttip">Un avis sur l'appli ? <button class="stlink" data-s="avis">💬 Dis-moi tout</button>, je lis tout.</p>`;
   stepEl.innerHTML = h + ideasHTML(idl);
   if(st === 'arr' && !f.arrInit) setTimeout(() => arrangeAuto().then(() => { stepKey = ''; updStep(); }), 50);
 }
@@ -7093,7 +7135,9 @@ stepEl.addEventListener('click', async e => {
   else if(a === 'rec' || a === 'stop'){ if(a === 'rec' && curStep && cur[curStep]) armTrack(cur[curStep]); record(); }
   else if(a === 'ok' || a === 'skip'){ if(curStep) flowSet(curStep, true); if(S.playing) pause(); }
   else if(a === 'arrok'){ flowSet('arr', true); if(S.playing) pause(); }
-  else if(a === 'back2arr'){ flowSet('arr', false); }
+  else if(a === 'back2arr'){ flowSet('arr', false); goView('vMix'); }
+  else if(a === 'tomix'){ goView('vMix'); return; }
+  else if(a === 'tomaster'){ goView('vMaster'); return; }
   else if(a === 'level'){ pushUndo('le rééquilibrage'); await rebalanceAll(); toast('Niveaux recalés : voix devant, instru derrière.'); }
   else if(a === 'play'){ if(!S.playing && curStep && cur[curStep]?.buffer) S.pos = Math.max(0, cur[curStep].offset); $('#bPlay').click(); }
   else if(a === 'toprompt'){ document.querySelector('.nav [data-view="vTexte"]').click(); $('#tabP')?.click(); setTimeout(() => $('#iPan')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 200); return; }
