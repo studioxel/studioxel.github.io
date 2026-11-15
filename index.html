@@ -629,7 +629,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.0.6 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.0.7 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -1076,8 +1076,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 146; // numéro interne (jamais affiché)
-const APP_PUB = '2.0.6';
+const APP_VER = 147; // numéro interne (jamais affiché)
+const APP_PUB = '2.0.7';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -2139,7 +2139,7 @@ let undoAt = 0, undoLbl = '';
 function snapTrack(t){
   return { id: t.id, name: t.name, color: t.color, preset: t.preset, vstyle: t.vstyle, fx: { ...t.fx }, vr: t.vr, vol: t.vol, pan: t.pan,
     mute: t.mute, solo: t.solo, arm: t.arm, offset: t.offset, buffer: t.buffer, take: t.take, takes: t.takes.map(k => ({ ...k })),
-    trim: t.trim, atOn: t.atOn, at: { ...t.at }, lv: t.lv ? { ...t.lv } : undefined, vp: t.vp, adapted: t.adapted, semi: t.semi, bpmOrig: t.bpmOrig, origTake: t.origTake, uid: t.uid, owner: t.owner, ownerName: t.ownerName, keep: t.keep, label: t.label };
+    trim: t.trim, atOn: t.atOn, at: { ...t.at }, lv: t.lv ? { ...t.lv } : undefined, vp: t.vp, adapted: t.adapted, semi: t.semi, bpmOrig: t.bpmOrig, origTake: t.origTake, uid: t.uid, owner: t.owner, ownerName: t.ownerName, keep: t.keep, label: t.label, srcName: t.srcName };
 }
 function pushUndo(label, coalesce, force){
   if(S.recording && !force) return;
@@ -2213,7 +2213,8 @@ function timelineW(){ return Math.ceil(Math.max(90, trackEnd() + 20) * S.pps); }
 function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
 /* sous Couplets (et ses copies), ton blaze par défaut ; modifiable, et vidé si tu l'effaces */
-const tLabel = t => t.label != null ? t.label : (roleOf(t) === 'lead' && ME.name ? ME.name : '');
+/* sous Instru, le nom du fichier importé */
+const tLabel = t => t.label != null ? t.label : t.preset === 'instru' ? (t.srcName || '') : (roleOf(t) === 'lead' && ME.name ? ME.name : '');
 let rtPending = false;
 function renderTracks(){
   /* pendant que tu tapes ton nom de piste, on ne redessine pas (sinon le clavier se ferme) */
@@ -2439,7 +2440,7 @@ $('#file').addEventListener('change', async e => {
     const buf = await ctx.decodeAudioData(await f.arrayBuffer());
     pushUndo('l\'import');
     const t = importFor;
-    claim(t);
+    claim(t); t.srcName = String(f.name || '').replace(/\.[^.]+$/, '').slice(0, 40);
     t.takes = [{ buffer: buf, offset: 0 }]; t.take = 0;
     t.buffer = buf; t.offset = 0;
     renderTracks();
@@ -4235,7 +4236,7 @@ async function saveSession(){
     showSessTitle();
     const tracks = S.tracks.map(t => ({
       name: t.name, color: t.color, preset: t.preset, fx: t.fx, vr: t.vr, vol: t.vol, pan: t.pan, mute: t.mute, solo: t.solo,
-      uid: t.uid, owner: t.owner, ownerName: t.ownerName, label: t.label ?? null, lbl2: true, keep: !!t.keep, take: t.take, trim: t.trim, atOn: t.atOn, at: t.at, lv: t.lv, vp: t.vp, adapted: t.adapted, semi: t.semi, bpmOrig: t.bpmOrig, origTake: t.origTake,
+      uid: t.uid, owner: t.owner, ownerName: t.ownerName, label: t.label ?? null, lbl2: true, srcName: t.srcName || '', keep: !!t.keep, take: t.take, trim: t.trim, atOn: t.atOn, at: t.at, lv: t.lv, vp: t.vp, adapted: t.adapted, semi: t.semi, bpmOrig: t.bpmOrig, origTake: t.origTake,
       takes: t.takes.map(k => ({ aid: bufAid(k.buffer), offset: k.offset, tuned: k.tuned, src: k.src, xf: k.xf, punch: k.punch }))
     }));
     for(const t of S.tracks) for(const k of t.takes){
@@ -4264,7 +4265,7 @@ async function loadSession(id){
   undoStack.length = 0; updUndo();
   for(const tr of rec.tracks){
     const t = addTrack(tr.name, FX[tr.preset] ? tr.preset : 'neutre'); t.preset = tr.preset;
-    Object.assign(t, { keep: !!tr.keep, label: tr.lbl2 ? (tr.label ?? null) : (tr.label || null), uid: tr.uid || t.uid, owner: tr.owner || null, ownerName: tr.ownerName || '', color: tr.color, fx: { ...FX.neutre, ...tr.fx }, vr: tr.vr || 0, vol: tr.vol, pan: tr.pan, mute: tr.mute, solo: tr.solo,
+    Object.assign(t, { keep: !!tr.keep, srcName: tr.srcName || '', label: tr.lbl2 ? (tr.label ?? null) : (tr.label || null), uid: tr.uid || t.uid, owner: tr.owner || null, ownerName: tr.ownerName || '', color: tr.color, fx: { ...FX.neutre, ...tr.fx }, vr: tr.vr || 0, vol: tr.vol, pan: tr.pan, mute: tr.mute, solo: tr.solo,
       trim: tr.trim, atOn: tr.atOn, at: { ...t.at, ...tr.at }, lv: tr.lv, vp: tr.vp, adapted: tr.adapted, semi: tr.semi, bpmOrig: tr.bpmOrig, origTake: tr.origTake });
     t.takes = [];
     /* on ne recharge que les prises utiles (la prise en cours, sa version d'origine, et les dernières prises) : tout l'historique d'une longue séance
