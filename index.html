@@ -94,6 +94,7 @@ button{cursor:pointer}
 .ruler .hdr{padding:4px 8px;justify-content:center;font-size:11px;color:var(--muted)}
 .ruler canvas{display:block;cursor:pointer}
 .l1{display:flex;align-items:center;gap:4px}
+#rulerHdr{flex-direction:row;align-items:center;gap:6px;padding:3px 8px}#rulerHdr .rzl{font-size:11px;color:var(--muted);flex:1}#rulerHdr .zoom{height:30px;min-width:38px;padding:0 6px}#rulerHdr .zoom svg{width:18px;height:18px}
 .row .l3{flex-wrap:nowrap;gap:4px}.row .l3 .sbtn{padding:0 7px;min-width:0}.row .l3 [data-act=import]{font-size:16px}.row .l3 .sbtn{white-space:nowrap}
 #modeBar{display:none!important}
 /* mode avancé : le nom de la piste prend toute sa ligne (jamais coupé), R M S passent juste en dessous */
@@ -433,7 +434,8 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
 .edhead .sbtn,.edrow .sbtn{height:40px;padding:0 12px;font-size:14px}
 .edwave{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel)}
 #edCv{display:block;width:100%;height:min(30vh,240px);touch-action:none;cursor:crosshair}
-.edstick{position:sticky;top:0;z-index:3;background:var(--bg);display:flex;flex-direction:column;gap:8px;padding:12px 0 8px;margin-top:-12px;box-shadow:0 10px 14px -10px rgba(0,0,0,.7)}
+.edrow.edplayer{flex-wrap:nowrap;gap:6px}.edrow.edplayer .sbtn{padding:0 9px;white-space:nowrap;min-width:0}.edplayer output{margin-left:auto;font:600 14px ui-monospace,monospace}
+.edstick{position:sticky;top:0;z-index:3;background:var(--bg);display:flex;flex-direction:column;gap:8px;padding:max(12px,env(safe-area-inset-top,0px)) 0 8px;margin-top:calc(-1 * max(12px,env(safe-area-inset-top,0px)));box-shadow:0 10px 14px -10px rgba(0,0,0,.7)}
 #edOv{display:block;width:100%;height:38px;border:1px solid var(--line);border-radius:8px;background:var(--panel);touch-action:none;cursor:grab}
 .edcut .sbtn{flex:1 1 0;min-width:0}
 body.ed-open .toast{z-index:46}
@@ -487,7 +489,7 @@ body.simple #viewP .pbar,body.simple #viewP .tsman,body.simple #tsMinus,body.sim
 .idea span{font-size:18px;line-height:1}.idea b{font:800 14px var(--display)}.idea small{font-size:11.5px;color:var(--muted);font-weight:500}
 .idea[aria-pressed=true]{border-color:var(--accent)}
 @media (prefers-reduced-motion:reduce){.power{animation:none}}
-body.ed-open .transport{position:fixed;top:env(safe-area-inset-top,0px);left:max(6px,env(safe-area-inset-left,0px));right:max(6px,env(safe-area-inset-right,0px));z-index:42;margin:0}
+body.ed-open .transport{display:none!important;position:fixed;top:env(safe-area-inset-top,0px);left:max(6px,env(safe-area-inset-left,0px));right:max(6px,env(safe-area-inset-right,0px));z-index:42;margin:0}
 body.ed-open .transport #settings{display:none}
 body.ed-open .reclyr{z-index:43}
 body.ed-open .wmark{z-index:41}
@@ -656,7 +658,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.3 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.3.1 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -726,7 +728,7 @@ body.ed-open .wmark{z-index:41}
   <div class="mkrow" id="mkRow"></div>
   <div class="scroller" id="scroller">
     <div class="inner" id="inner">
-      <div class="row ruler"><div class="hdr">Touche la règle pour te placer</div><canvas id="ruler" height="26"></canvas></div>
+      <div class="row ruler"><div class="hdr" id="rulerHdr"><span class="rzl">🔍 Zoom</span></div><canvas id="ruler" height="26"></canvas></div>
       <div id="list"></div>
       <div class="loopband" id="loopBand" hidden></div>
       <div class="selband" id="selBand" hidden><span class="hdl l" data-h="a" aria-hidden="true">◀</span><span class="hdl r" data-h="b" aria-hidden="true">▶</span></div>
@@ -1111,8 +1113,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 157; // numéro interne (jamais affiché)
-const APP_PUB = '2.3';
+const APP_VER = 158; // numéro interne (jamais affiché)
+const APP_PUB = '2.3.1';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -4693,6 +4695,7 @@ function renderMarkers(){
 }
 { const tog = $('#mkTog'), wrap = $('#mkWrap'), set = o => { wrap.hidden = !o; tog.setAttribute('aria-expanded', String(o)); };
   tog.onclick = () => set(wrap.hidden); $('#mkOk').onclick = () => set(false); }
+{ const rh = $('#rulerHdr'); ['#zOut', '#zIn'].forEach(q => { const z = $(q); if(z && rh) rh.appendChild(z); }); }
 $('#mkAdd').onclick = () => {
   pushUndo('le repère');
   const heads = ta.value.split('\n').filter(isHead).map(l => l.trim().slice(1, -1).trim());
@@ -6067,9 +6070,9 @@ function openEditor(t, a, b){
       <div class="edhead"><button class="sbtn" id="edClose">✕ Fermer</button><b id="edName"></b><button class="sbtn" id="edUndo" aria-label="Annuler">↶ Annuler</button></div>
       <div class="edwave"><canvas id="edCv"></canvas></div>
       <canvas id="edOv" aria-label="Toute la prise : glisse pour te déplacer"></canvas>
+      <div class="edrow edplayer"><button class="sbtn" id="edStart" aria-label="Revenir au début">⏮</button><button class="sbtn primary" id="edPlay">▶ Écouter</button><button class="sbtn" id="edLoop" aria-pressed="false">🔁 Boucle</button><button class="sbtn" id="edSolo" aria-pressed="false">🎧 Seule</button><output id="edClock">0:00.0</output></div>
       <div class="edrow"><button class="sbtn" data-z="out" aria-label="Dézoomer">−</button><button class="sbtn" data-z="in" aria-label="Zoomer">+</button><button class="sbtn" data-z="all">Tout</button><button class="sbtn" data-z="sel">Sélection</button><span class="edinfo" id="edInfo"></span></div>
     </div>
-    <div class="edrow"><button class="sbtn primary" id="edPlay">▶ Écouter</button><button class="sbtn" id="edLoop" aria-pressed="false">🔁 En boucle</button><button class="sbtn" id="edSolo" aria-pressed="false">🎧 Seule</button></div>
     <div class="edrow edcut"><button class="sbtn" id="edA">⟦ Début ici</button><button class="sbtn" id="edB">Fin ici ⟧</button><button class="sbtn" id="edX" aria-label="Enlever la sélection">✕</button></div>
     <div class="edtools">
       <button class="sbtn" data-op="del">✂️ Supprimer</button><button class="sbtn" data-op="keep">🎯 Garder que ça</button>
@@ -6092,7 +6095,14 @@ function openEditor(t, a, b){
     ov.addEventListener('pointermove', e => { if(ovDrag) ovGo(e); });
     ov.addEventListener('pointerup', () => { ovDrag = false; }); ov.addEventListener('pointercancel', () => { ovDrag = false; }); }
   const cv = $('#edCv');
-  cv.addEventListener('pointerdown', edDown); cv.addEventListener('pointermove', edMove); cv.addEventListener('pointerup', edUp); cv.addEventListener('pointercancel', edUp);
+  { const pts = new Map(); let pz = null;
+    const pDown = e => { pts.set(e.pointerId, e.clientX); if(pts.size === 2){ const xs = [...pts.values()], r = cv.getBoundingClientRect(); pz = { d: Math.abs(xs[0] - xs[1]) || 1, span: ed.v1 - ed.v0, c: edX2T((xs[0] + xs[1]) / 2 - r.left) }; ed.drag = null; return; } edDown(e); };
+    const pMove = e => { if(pts.has(e.pointerId)) pts.set(e.pointerId, e.clientX);
+      if(pz && pts.size === 2){ const t = edT(); if(!t) return; const xs = [...pts.values()], d = Math.abs(xs[0] - xs[1]) || 1, dur = t.buffer.duration, r = (pz.c - ed.v0) / (ed.v1 - ed.v0);
+        const span = clamp(pz.span * pz.d / d, 0.05, dur); ed.v0 = clamp(pz.c - r * span, 0, Math.max(0, dur - span)); ed.v1 = ed.v0 + span; edDraw(); return; }
+      if(!pz) edMove(e); };
+    const pUp = e => { pts.delete(e.pointerId); if(pz){ if(pts.size < 2) pz = null; return; } edUp(e); };
+    cv.addEventListener('pointerdown', pDown); cv.addEventListener('pointermove', pMove); cv.addEventListener('pointerup', pUp); cv.addEventListener('pointercancel', pUp); }
   if(S.playing) pause();
   requestAnimationFrame(edTick);
   edDraw();
@@ -6103,7 +6113,8 @@ const edT = () => ed && trackById(ed.tid);
 const trbUpd = () => { try{ const tr = document.querySelector('.transport'); document.documentElement.style.setProperty('--trb', Math.round(tr.getBoundingClientRect().height + parseFloat(getComputedStyle(tr).top || 0)) + 'px'); }catch(e){} };
 try{ new ResizeObserver(() => { try{ edFit(); }catch(e){} trbUpd(); }).observe(document.querySelector('.transport')); }catch(e){}
 addEventListener('resize', trbUpd); setTimeout(trbUpd, 500);
-function edFit(){ if(!ed) return; const tr = document.querySelector('.transport'); const h = tr ? tr.getBoundingClientRect().bottom : 0; ed.el.style.top = Math.max(0, Math.round(h)) + 'px'; ed.el.style.paddingTop = '12px'; }
+/* l'éditeur prend tout l'écran : il a son propre lecteur, la barre principale est cachée */
+function edFit(){ if(!ed) return; ed.el.style.top = '0px'; ed.el.style.paddingTop = 'max(12px, env(safe-area-inset-top, 0px))'; }
 function closeEditor(){
   if(!ed) return;
   const t = edT();
@@ -6152,6 +6163,7 @@ function edClick(e){
   if(b.id === 'edClose') return closeEditor();
   if(b.id === 'edUndo'){ undo(); setTimeout(() => { if(!edT()?.buffer) return closeEditor(); ed.v1 = Math.min(ed.v1, edT().buffer.duration); edDraw(); }, 50); return; }
   if(b.id === 'edPlay') return edPlayToggle();
+  if(b.id === 'edStart'){ const t = edT(); if(!t) return; const was = S.playing; if(was) pause(); ed.cur = ed.a != null ? ed.a : ed.v0; S.pos = t.offset + ed.cur; if(was) edPlayToggle(); else edDraw(); return; }
   if(b.id === 'edA' || b.id === 'edB' || b.id === 'edX'){
     const d = t.buffer.duration, p = clamp(S.playing ? now() - t.offset : ed.cur, 0, d);
     if(b.id === 'edX'){ ed.a = ed.b = null; edDraw(); return; }
@@ -6188,6 +6200,7 @@ function edTick(){
   if(t) edDraw();
   if(((edTick.n = (edTick.n || 0) + 1) % 30) === 0) edFit();
   $('#edPlay') && ($('#edPlay').textContent = S.playing ? '⏸ Pause' : '▶ Écouter');
+  try{ setTxt($('#edClock'), fmt(S.playing ? now() : (edT() ? edT().offset + ed.cur : S.pos))); }catch(e){}
   requestAnimationFrame(edTick);
 }
 function edDraw(){
