@@ -133,7 +133,8 @@ body:not(.simple) .row .l1 .chip{flex:1 1 0}
 /* Mixage & Master */
 .pad{padding:12px;display:flex;flex-direction:column;gap:14px}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
-.mxw{position:relative;margin-top:10px;border:1px solid var(--line);border-radius:10px;background:var(--raise);overflow:hidden;touch-action:none}.mxw canvas{display:block;width:100%;height:84px}
+.mxw{position:relative;margin-top:10px;border:1px solid var(--line);border-radius:10px;background:var(--raise);overflow:hidden;touch-action:none}.mxw canvas{display:block;width:100%;height:120px}
+.mxz{display:flex;gap:6px;justify-content:flex-end;padding:6px;border-top:1px solid var(--line);background:var(--panel)}.mxz button{flex:1;max-width:64px;height:34px;border-radius:8px;border:1px solid var(--line);background:var(--raise);color:inherit;font-weight:800;font-size:16px}
 .mxhint{margin:6px 0 0;font-size:12px}
 .mxtarget{display:flex;align-items:center;gap:8px;margin-top:10px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--panel);font-size:14px}
 .mxtarget.sel{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--panel))}.mxtarget b{color:var(--accent)}.mxtarget small{display:block;color:var(--muted)}
@@ -648,7 +649,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.1 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.1.1 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -733,7 +734,8 @@ body.ed-open .wmark{z-index:41}
   <div class="cardhead"><h2>Mixage</h2><span class="spacer"></span><button class="sbtn" id="bLevel">Rééquilibrer les niveaux</button><button class="qhelp" data-help="vMix" aria-label="Aide de cet onglet">?</button></div>
   <div class="pad">
     <div class="chips" id="mixChips"></div>
-    <div class="mxw" id="mxW"><canvas id="mxWave" aria-label="L'onde de la piste : glisse le doigt pour choisir un bout"></canvas></div>
+    <div class="mxw" id="mxW"><canvas id="mxWave" aria-label="L'onde de la piste : glisse le doigt pour choisir un bout"></canvas>
+      <div class="mxz"><button data-mz="left" aria-label="Reculer">◀</button><button data-mz="out" aria-label="Dézoomer">−</button><button data-mz="in" aria-label="Zoomer">+</button><button data-mz="right" aria-label="Avancer">▶</button></div></div>
     <p class="note mxhint">👆 Glisse le doigt sur l'onde pour choisir un bout (un mot, une phrase…). Le violet = un bout déjà réglé à part : touche-le pour le reprendre.</p>
     <div class="mxtarget" id="mxTarget"></div>
     <div id="strip" class="pad" style="padding:0"></div>
@@ -1100,8 +1102,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 149; // numéro interne (jamais affiché)
-const APP_PUB = '2.1';
+const APP_VER = 150; // numéro interne (jamais affiché)
+const APP_PUB = '2.1.1';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -2966,6 +2968,7 @@ function renderMix(){
   try{ renderZone(); }catch(e){}
   const cur = selTrack(); S.sel = cur?.id ?? null;
   if(mxSel && (!cur || mxSel.tid !== cur.id)) mxSel = null;
+  if(mxSel){ const [v0, v1] = mxView(); if(mxSel.a < v0 || mxSel.b > v1){ mxW = Math.max(mxW, (mxSel.b - mxSel.a) * 1.6); mxV0 = Math.max(0, (mxSel.a + mxSel.b) / 2 - mxW / 2); } }
   $('#mixChips').innerHTML = S.tracks.map(t =>
     `<button class="tchip" data-id="${t.id}" aria-pressed="${t === cur}"><i style="background:${t.color}"></i>${esc(t.name)}</button>`).join('');
   const st = $('#strip'), tg = $('#mxTarget');
@@ -3047,8 +3050,24 @@ document.addEventListener('click', e => {
   if(a === 'reset' && mxSel?.ri != null){ pushUndo('le bout réglé'); t.regs.splice(mxSel.ri, 1); mxSel = null; t.chain.set(t, audible(t), true); scheduleSave(); renderMix(); toast('↺ Bout remis comme le reste de la piste.'); return; }
   if(a === 'hear' && mxSel){ if(S.playing) pause(); S.pos = Math.max(0, mxSel.a - 0.6); S.listenEnd = mxSel.b + 1.6; if(!mic) audioSessionPlay(); unlockSpeaker(); wake().then(() => play()); }
 });
-/* l'onde de la piste : 10 s autour de la lecture, glisse pour choisir un bout */
-const mxView = () => { const p = S.playing ? now() : S.pos, w = 10; let a0 = Math.max(0, p - 3); if(mxSel && (mxSel.a < a0 || mxSel.b > a0 + w)) a0 = Math.max(0, (mxSel.a + mxSel.b) / 2 - w / 2); return [a0, a0 + w]; };
+/* l'onde de la piste : zoom (+ / −, ou deux doigts) et déplacement (◀ ▶), glisse un doigt pour choisir un bout */
+let mxW = 10, mxV0 = null;
+function mxView(){
+  const p = S.playing ? now() : S.pos;
+  if(mxV0 == null) mxV0 = Math.max(0, p - mxW * 0.3);
+  if(S.playing && (p < mxV0 || p > mxV0 + mxW * 0.92)) mxV0 = Math.max(0, p - mxW * 0.15);
+  return [mxV0, mxV0 + mxW];
+}
+function mxZoom(f, center){
+  const [v0, v1] = mxView(), c = center ?? (mxSel ? (mxSel.a + mxSel.b) / 2 : clamp(S.playing ? now() : S.pos, v0, v1));
+  const nw = clamp(mxW * f, 0.4, 120), r = (c - v0) / (v1 - v0);
+  mxW = nw; mxV0 = Math.max(0, c - r * nw); drawMxWave();
+}
+document.querySelector('.mxz').addEventListener('click', e => {
+  const b = e.target.closest('[data-mz]'); if(!b) return; const k = b.dataset.mz;
+  if(k === 'in') mxZoom(0.5); else if(k === 'out') mxZoom(2);
+  else { const [v0] = mxView(); mxV0 = Math.max(0, v0 + (k === 'left' ? -0.5 : 0.5) * mxW); drawMxWave(); }
+});
 function drawMxWave(){
   const cv = $('#mxWave'); if(!cv || $('#vMix').hidden) return;
   const t = selTrack(), dpr = window.devicePixelRatio || 1, W = cv.clientWidth, H = cv.clientHeight; if(!W) return;
@@ -3056,32 +3075,45 @@ function drawMxWave(){
   const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
   const [v0, v1] = mxView(), X = x => (x - v0) / (v1 - v0) * W;
   g.fillStyle = cssVar('--muted') || '#888'; g.font = '10px system-ui'; g.globalAlpha = 0.6;
-  for(let s2 = Math.ceil(v0); s2 <= v1; s2++){ g.fillRect(X(s2), 0, 1, 5); if(s2 % 2 === 0) g.fillText(fmt(s2, true), X(s2) + 2, 12); }
+  const stp = [0.1, 0.25, 0.5, 1, 2, 5, 10, 15, 30].find(x => (v1 - v0) / x <= 8) || 30;
+  for(let s2 = Math.ceil(v0 / stp) * stp; s2 <= v1; s2 += stp){ g.fillRect(X(s2), 0, 1, 5); g.fillText(stp < 1 ? fmt(s2) : fmt(s2, true), X(s2) + 2, 12); }
   g.globalAlpha = 1;
   if(!t?.buffer){ g.fillStyle = cssVar('--muted') || '#888'; g.font = '13px system-ui'; g.fillText('Piste vide', 10, H / 2 + 4); return; }
   (t.regs || []).forEach(r => { g.fillStyle = 'rgba(124,92,255,.25)'; g.fillRect(X(r.a), 0, X(r.b) - X(r.a), H); g.fillStyle = '#7c5cff'; g.fillRect(X(r.a), 0, X(r.b) - X(r.a), 3); });
   const env = envOf(t.buffer); let pk = 0; for(let i = 0; i < env.length; i += 4) if(env[i] > pk) pk = env[i]; pk = pk || 1;
   g.fillStyle = t.color || '#f2b544';
-  for(let x = 0; x < W; x += 2){ const tt = v0 + x / W * (v1 - v0) - t.offset, f = Math.floor(tt * 100); if(f < 0 || f >= env.length) continue; const h = Math.max(1, env[f] / pk * (H - 18) * 0.95); g.fillRect(x, (H + 10) / 2 - h / 2, 1.5, h); }
+  if((v1 - v0) / W < 0.01){
+    /* très zoomé : la vraie forme d'onde, échantillon par échantillon */
+    const d = t.buffer.getChannelData(0), sr = t.buffer.sampleRate, mid = (H + 10) / 2, amp = (H - 18) / 2 / Math.min(1, pk * 3);
+    for(let x = 0; x < W; x++){ const i0 = Math.floor((v0 + x / W * (v1 - v0) - t.offset) * sr), i1 = Math.floor((v0 + (x + 1) / W * (v1 - v0) - t.offset) * sr); if(i0 < 0 || i0 >= d.length) continue;
+      let lo = 1, hi = -1; for(let i = i0; i <= Math.min(i1, d.length - 1); i++){ if(d[i] < lo) lo = d[i]; if(d[i] > hi) hi = d[i]; } g.fillRect(x, mid - hi * amp, 1, Math.max(1, (hi - lo) * amp)); }
+  } else for(let x = 0; x < W; x += 2){ const tt = v0 + x / W * (v1 - v0) - t.offset, f = Math.floor(tt * 100); if(f < 0 || f >= env.length) continue; const h = Math.max(1, env[f] / pk * (H - 18) * 0.95); g.fillRect(x, (H + 10) / 2 - h / 2, 1.5, h); }
   if(mxSel){ const a = X(mxSel.a), b = X(mxSel.b); g.fillStyle = 'rgba(242,181,68,.28)'; g.fillRect(a, 0, b - a, H); g.fillStyle = '#f2b544'; g.fillRect(a - 1.5, 0, 3, H); g.fillRect(b - 1.5, 0, 3, H); }
   const p = S.playing ? now() : S.pos; g.fillStyle = '#e7eaf0'; g.fillRect(X(p) - 1, 0, 2, H);
 }
-{ const cv = $('#mxWave'); let drag = null;
+{ const cv = $('#mxWave'); let drag = null; const pts = new Map(); let pinch = null;
   const tAt = e => { const r = cv.getBoundingClientRect(), [v0, v1] = mxView(); return v0 + clamp((e.clientX - r.left) / r.width, 0, 1) * (v1 - v0); };
   cv.addEventListener('pointerdown', e => {
     const t = selTrack(); if(!t?.buffer) return;
+    pts.set(e.pointerId, e.clientX);
+    if(pts.size === 2){ const xs = [...pts.values()], r = cv.getBoundingClientRect(), [v0, v1] = mxView();
+      pinch = { d: Math.abs(xs[0] - xs[1]) || 1, w: mxW, c: v0 + ((xs[0] + xs[1]) / 2 - r.left) / r.width * (v1 - v0) }; drag = null; return; }
     cv.setPointerCapture(e.pointerId); const x = tAt(e), [v0, v1] = mxView(), tol = (v1 - v0) * 0.03;
     if(mxSel && Math.abs(x - mxSel.a) < tol) drag = { h: 'a' }; else if(mxSel && Math.abs(x - mxSel.b) < tol) drag = { h: 'b' };
     else drag = { h: 'n', x0: x, moved: false };
     e.preventDefault();
   });
   cv.addEventListener('pointermove', e => {
+    if(pts.has(e.pointerId)) pts.set(e.pointerId, e.clientX);
+    if(pinch && pts.size === 2){ const xs = [...pts.values()], d = Math.abs(xs[0] - xs[1]) || 1, [v0, v1] = mxView(), r = (pinch.c - v0) / (v1 - v0);
+      mxW = clamp(pinch.w * pinch.d / d, 0.4, 120); mxV0 = Math.max(0, pinch.c - r * mxW); drawMxWave(); return; }
     if(!drag) return; const t = selTrack(), x = clamp(tAt(e), t.offset, t.offset + t.buffer.duration);
     if(drag.h === 'n'){ if(Math.abs(x - drag.x0) > 0.04){ drag.moved = true; mxSel = { tid: t.id, a: Math.min(drag.x0, x), b: Math.max(drag.x0, x), ri: null }; } }
     else if(mxSel){ mxSel[drag.h] = x; if(mxSel.a > mxSel.b) [mxSel.a, mxSel.b] = [mxSel.b, mxSel.a], drag.h = drag.h === 'a' ? 'b' : 'a'; if(mxSel.ri != null){ const r = selTrack().regs[mxSel.ri]; r.a = mxSel.a; r.b = mxSel.b; } }
     drawMxWave();
   });
-  const up = () => {
+  const up = e => {
+    if(e) pts.delete(e.pointerId); if(pinch){ if(pts.size < 2) pinch = null; return; }
     if(!drag) return; const d = drag; drag = null; const t = selTrack();
     if(d.h === 'n' && !d.moved){
       /* simple toucher : sur un bout violet = on le reprend ; ailleurs = on se place là */
