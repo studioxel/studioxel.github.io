@@ -146,10 +146,20 @@ body:not(.simple) .row .l1 .chip{flex:1 1 0}
 /* l'onde, son lecteur et la cible restent collés sous la barre du haut quand on descend dans les réglages */
 body.mix-on .transport,body.notr .transport,body.txt-on .transport{display:none}
 /* Texte : un mini-lecteur d'une ligne, pour garder la place pour écrire ; il s'efface quand le clavier est ouvert */
-.txp{display:none}body.txt-on .txp{display:flex;align-items:center;gap:6px;position:sticky;top:env(safe-area-inset-top,0px);z-index:12;padding:8px 10px;background:var(--panel);border-bottom:1px solid var(--line);border-radius:10px 10px 0 0}
-body.txt-on.kb .txp{display:none}
+.txp{display:none}body.txt-on .txp{display:block;position:sticky;top:env(safe-area-inset-top,0px);z-index:12;padding:8px 10px;background:var(--panel);border-bottom:1px solid var(--line);border-radius:10px 10px 0 0}
+.txrow{display:flex;align-items:center;gap:6px}.txinfo{flex:1;min-width:0;display:flex;align-items:center;gap:6px}.txp.lp .txinfo{display:none}
+body.txt-on.kb .txp:not(.lp){display:none}body.kb .txlp{display:none!important}
+.txcnt{flex:1;min-width:0;display:flex;gap:4px;align-items:center}
+.txcnt .c{flex:1;min-width:0;height:34px;border:1px solid var(--line);border-radius:7px;background:var(--raise);display:flex;align-items:center;justify-content:center}
+.txcnt .c.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,var(--raise))}
+.txd{display:flex;gap:2px}.txd i{width:6px;height:6px;border-radius:50%;background:var(--line)}.txd i.p{background:color-mix(in srgb,var(--muted) 70%,var(--raise))}.txd i.n{background:var(--accent);box-shadow:0 0 7px var(--accent)}
+.txcnt.big{flex-direction:column;align-items:stretch;gap:5px}.txbig{display:flex;align-items:center;gap:6px;font:700 13px system-ui;color:var(--accent)}.txbig span{color:var(--muted);font-weight:600}.txbig .txd{margin-left:auto}
+.txstrip{display:flex;gap:2px}.txstrip i{flex:1;height:6px;border-radius:2px;background:var(--line)}.txstrip i.p{background:color-mix(in srgb,var(--muted) 70%,var(--raise))}.txstrip i.n{background:var(--accent)}
+.txlp{display:flex;flex-direction:column;gap:8px;padding-top:8px}.txpick{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.txpick>span{font-size:13px;color:var(--muted)}
+.txseg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}.txp .txseg button{height:32px;min-width:0;border:0;border-radius:0;background:transparent;padding:0 10px;font:700 13px system-ui;color:var(--muted)}.txp .txseg button[aria-pressed=true]{background:var(--accent);color:#1a1405}
+.txp .txtap{height:32px;font-size:13px;font-weight:700}
 .txp button{flex:none;height:34px;min-width:36px;border-radius:8px;border:1px solid var(--line);background:var(--raise);color:inherit;font-size:15px;padding:0 8px}
-.txp .txplay{background:var(--accent);color:#1a1405;border-color:var(--accent);min-width:46px}.txp [data-tx=loop][aria-pressed=true]{border-color:var(--accent);color:var(--accent)}
+.txp .txplay{background:var(--accent);color:#1a1405;border-color:var(--accent);min-width:46px}.txp [data-tx=loop][aria-pressed=true]{border-color:var(--accent);color:var(--accent);font-weight:800}
 .txp output{font:600 13px ui-monospace,monospace;color:var(--muted);min-width:38px}
 .txbar{flex:1;height:22px;position:relative;cursor:pointer}.txbar::before{content:'';position:absolute;left:0;right:0;top:9px;height:4px;border-radius:2px;background:var(--line)}.txbar i{position:absolute;left:0;top:9px;height:4px;border-radius:2px;background:var(--accent);width:0}
 /* les Réglages restent ouvrables partout (bouton ⚙️ dans l'en-tête) */
@@ -670,7 +680,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.3.4 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.4.0 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -888,7 +898,7 @@ body.ed-open .wmark{z-index:41}
 
 <!-- TEXTE -->
 <section class="card view" id="vTexte" aria-label="Texte" hidden>
-  <div class="txp" id="txPlayer"><button data-tx="start" aria-label="Revenir au début">⏮</button><button data-tx="play" class="txplay" aria-label="Lecture">▶</button><button data-tx="loop" aria-pressed="false" aria-label="Boucle de 4 mesures">🔁</button><output id="txClock">0:00</output><div class="txbar" id="txBar"><i id="txFill"></i></div><button data-openset aria-label="Réglages">⚙️</button></div>
+  <div class="txp" id="txPlayer"><div class="txrow"><button data-tx="start" aria-label="Revenir au début">⏮</button><button data-tx="play" class="txplay" aria-label="Lecture">▶</button><button data-tx="loop" aria-pressed="false" aria-label="Répéter des mesures">🔁</button><span class="txinfo"><output id="txClock">0:00</output><div class="txbar" id="txBar"><i id="txFill"></i></div></span><div class="txcnt" id="txCnt" hidden></div><button data-openset aria-label="Réglages">⚙️</button></div><div class="txlp" id="txLp" hidden><div class="txpick"><span>Répéter</span><div class="txseg" id="txN"></div><span>mesures</span></div><div class="txpick"><span>Compter depuis</span><div class="txseg" id="txF"><button data-txf="zero">0:00</button><button data-txf="ryth">la rythmique</button></div><button class="txtap" data-tx="tap">🎯 Caler le 1</button></div></div></div>
   <div class="cardhead">
     <h2>Texte</h2><span class="spacer"></span>
     <div class="tabs" role="tablist">
@@ -1126,8 +1136,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 161; // numéro interne (jamais affiché)
-const APP_PUB = '2.3.4';
+const APP_VER = 162; // numéro interne (jamais affiché)
+const APP_PUB = '2.4.0';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -3133,9 +3143,55 @@ document.querySelector('#txPlayer').addEventListener('click', e => {
   const b = e.target.closest('[data-tx]'); if(!b) return; const k = b.dataset.tx;
   if(k === 'play'){ if(S.playing) pause(); else { if(!mic) audioSessionPlay(); unlockSpeaker(); wake().then(() => play()); } }
   else if(k === 'start'){ const was = S.playing; if(was) pause(); S.pos = 0; if(was) wake().then(() => play()); }
-  else if(k === 'loop'){ if(S.rep) setRep(null); else { const p = S.playing ? now() : S.pos, bar = 4 * 60 / S.bpm, a = Math.floor(p / bar) * bar; setRep({ a, b: a + 4 * bar }); } }
+  else if(k === 'loop'){ if(S.rep) setRep(null); else setRep(txLoopAt(S.playing ? now() : S.pos)); }
+  else if(k === 'tap'){
+    if(!S.playing){ toast('🎯 Lance la lecture, puis touche « Caler le 1 » pile sur le premier temps.'); return; }
+    const ins = trRole('instru'), t = Math.max(0, now() - heardLat());
+    S.loopOrg = { t, d: ins?.buffer ? Math.round(ins.buffer.duration * 10) : 0 }; txFrom = 'ryth'; store.set('txLoopFrom', txFrom); scheduleSave();
+    txSoftRep(txLoopAt(t + 0.01)); toast('🎯 Premier temps calé à ' + fmt(t, true) + '.');
+  }
   txPlayerUI();
 });
+$('#txLp').addEventListener('click', e => {
+  const n = e.target.closest('[data-txn]'), f = e.target.closest('[data-txf]'); if(!n && !f) return;
+  if(n){ txN = +n.dataset.txn; store.set('txLoopN', txN); if(S.rep?.tx) txSoftRep(txFit(S.rep.a)); }
+  if(f){ txFrom = f.dataset.txf; store.set('txLoopFrom', txFrom); if(S.rep?.tx) txSoftRep(txLoopAt(S.playing ? now() : S.pos)); }
+  txPlayerUI();
+});
+/* répéter des mesures : 1 à 16 mesures, comptées depuis 0:00 ou depuis l'entrée de la rythmique */
+let txN = [1, 2, 4, 8, 12, 16].includes(store.get('txLoopN', 4)) ? store.get('txLoopN', 4) : 4, txFrom = store.get('txLoopFrom', 'ryth') === 'zero' ? 'zero' : 'ryth';
+$('#txN').innerHTML = [1, 2, 4, 8, 12, 16].map(v => `<button data-txn="${v}">${v}</button>`).join('');
+/* ce qu'on entend arrive un peu après ce qui joue (Bluetooth surtout) */
+function heardLat(){ const o = ctx.outputLatency || 0; return (o > 0.005 ? o : routeKey() === 'bt' ? 0.17 : 0.02) + (ctx.baseLatency || 0); }
+function loopOrigin(){
+  if(txFrom === 'zero') return 0;
+  const ins = trRole('instru');
+  if(S.loopOrg && (!S.loopOrg.d || (ins?.buffer && Math.round(ins.buffer.duration * 10) === S.loopOrg.d))) return S.loopOrg.t;
+  const l = startSugs(); if(!l || !l.barSec) return 0;
+  const sec = (l.sections || []).find(x => x.kind !== 'intro');
+  return sec ? sec.t : (l.grid0 || 0);
+}
+function txFit(a){
+  const bar = 4 * 60 / S.bpm, end = trackEnd(), o = loopOrigin();
+  if(end > 0 && a + txN * bar > end + 0.05) a -= Math.ceil((a + txN * bar - end - 0.05) / bar) * bar;
+  if(a < 0) a += Math.ceil(-a / bar - 1e-6) * bar;
+  if(a < 0) a = 0;
+  return { a, b: a + txN * bar, tx: txN, o };
+}
+function txLoopAt(p){ const bar = 4 * 60 / S.bpm, o = loopOrigin(); return txFit(o + Math.floor((p - o) / bar + 1e-6) * bar); }
+/* on change la boucle sans couper si ce qui joue est déjà dedans */
+function txSoftRep(r){ const p = S.playing ? now() : S.pos; if(S.playing && p >= r.a && p < r.b){ S.rep = r; updRepInfo(); } else setRep(r); }
+function txCntUI(){
+  const box = $('#txCnt'), r = S.rep; if(!r || !r.tx){ box.hidden = true; return; }
+  box.hidden = false;
+  const n = r.tx, bar = (r.b - r.a) / n, p = (S.playing ? now() - heardLat() : S.pos) - r.a;
+  const k = clamp(Math.floor(p / bar), 0, n - 1), beat = p < 0 ? -1 : clamp(Math.floor((p - k * bar) / (bar / 4)), 0, 3);
+  const dots = b => '<span class="txd">' + [0, 1, 2, 3].map(i => `<i class="${i < b ? 'p' : i === b ? 'n' : ''}"></i>`).join('') + '</span>';
+  const key = n + ':' + k + ':' + beat; if(box._k === key) return; box._k = key;
+  box.className = 'txcnt' + (n >= 8 ? ' big' : '');
+  if(n >= 8) box.innerHTML = `<div class="txbig">Mesure ${k + 1} <span>/ ${n}</span>${dots(beat)}</div><div class="txstrip">${Array.from({ length: n }, (_, i) => `<i class="${i < k ? 'p' : i === k ? 'n' : ''}"></i>`).join('')}</div>`;
+  else box.innerHTML = Array.from({ length: n }, (_, i) => `<span class="c${i === k ? ' on' : ''}">${dots(i < k ? 4 : i === k ? beat : -1)}</span>`).join('');
+}
 { const bar = $('#txBar'); let drag = false; const at = e => { const r = bar.getBoundingClientRect(); return clamp((e.clientX - r.left) / r.width, 0, 1) * Math.max(trackEnd(), 1); };
   bar.addEventListener('pointerdown', e => { drag = true; bar.setPointerCapture(e.pointerId); seek(at(e)); txPlayerUI(); });
   bar.addEventListener('pointermove', e => { if(drag){ seek(at(e)); txPlayerUI(); } });
@@ -3144,6 +3200,11 @@ function txPlayerUI(){
   const pb = document.querySelector('#txPlayer .txplay'); if(!pb) return;
   const t = S.playing ? '⏸' : '▶'; if(pb._t !== t){ pb._t = t; pb.textContent = t; }
   const lp = document.querySelector('#txPlayer [data-tx=loop]'), on = String(!!S.rep); if(lp.getAttribute('aria-pressed') !== on) lp.setAttribute('aria-pressed', on);
+  const tx = !!S.rep?.tx; setTxt(lp, tx ? '🔁 ' + S.rep.tx : '🔁');
+  $('#txPlayer').classList.toggle('lp', tx); $('#txLp').hidden = !tx;
+  if(tx){ document.querySelectorAll('#txN [data-txn]').forEach(b => { const v = String(+b.dataset.txn === txN); if(b.getAttribute('aria-pressed') !== v) b.setAttribute('aria-pressed', v); });
+    document.querySelectorAll('#txF [data-txf]').forEach(b => { const v = String(b.dataset.txf === txFrom); if(b.getAttribute('aria-pressed') !== v) b.setAttribute('aria-pressed', v); }); }
+  txCntUI();
   const p = S.playing ? now() : S.pos; setTxt($('#txClock'), fmt(p, true));
   $('#txFill').style.width = clamp(p / Math.max(trackEnd(), 1), 0, 1) * 100 + '%';
 }
@@ -4514,7 +4575,7 @@ async function saveSession(){
     }
     const rec = { id: sess.id, name: sess.name, link: sess.link || '', created: sess.created || Date.now(), updated: Date.now(),
       bpm: S.bpm, instruKey: S.instruKey || null, markers: S.markers, loopBars: S.loop.bars, dur: trackEnd(),
-      lyrics: ta.value, syncs, syncsAuto, syncsTid: store.get('syncsTid', null), textStart: S.textStart || 0, tsUser: !!S.tsUser, secs: S.secs || null, secsDur: S.secsDur || 0, lineBars: S.lineBars || 0,
+      lyrics: ta.value, syncs, syncsAuto, syncsTid: store.get('syncsTid', null), textStart: S.textStart || 0, tsUser: !!S.tsUser, secs: S.secs || null, secsDur: S.secsDur || 0, lineBars: S.lineBars || 0, loopOrg: S.loopOrg || null,
       M: { preset: M.preset, low: M.low, high: M.high, glue: M.glue, target: M.target }, tracks };
     await dbDo('sessions', 'readwrite', st => st.put(JSON.parse(JSON.stringify(rec))));
     const i = sessIndex.findIndex(x => x.id === rec.id), lite = { id: rec.id, name: rec.name, link: rec.link, updated: rec.updated, dur: rec.dur };
@@ -4562,7 +4623,7 @@ async function loadSession(id){
   /* chaque son a son propre texte et son propre calage */
   if(rec.lyrics != null){ ta.value = rec.lyrics; syncs = rec.syncs || {}; syncsAuto = rec.syncsAuto ?? true; store.set('syncsTid', rec.syncsTid ?? null); if(syncsAuto && rec.syncsTid != null){ syncs = {}; store.set('syncs', {}); store.set('syncsTid', null); } }
   S.tracks.forEach(x => { if(x.name === 'Lead') x.name = 'Couplets'; });
-  S.textStart = rec.textStart || 0; S.tsUser = !!rec.tsUser; S.startSugs = null; S.secs = rec.secs || null; S.secsDur = rec.secsDur || 0; S.lineBars = rec.lineBars || 0; try{ updLineUI(); }catch(e){}
+  S.textStart = rec.textStart || 0; S.tsUser = !!rec.tsUser; S.startSugs = null; S.secs = rec.secs || null; S.secsDur = rec.secsDur || 0; S.lineBars = rec.lineBars || 0; S.loopOrg = rec.loopOrg || null; try{ updLineUI(); }catch(e){}
   store.set('lyrics', ta.value); store.set('syncs', syncs); store.set('syncsAuto', syncsAuto); lstat(); if(!$('#viewP').hidden) renderPrompt(); updTextStart();
   Object.assign(M, rec.M || {}); mpre.set();
   sess = { id: rec.id, name: rec.name, link: rec.link, created: rec.created }; store.set('sessId', rec.id);
@@ -4591,7 +4652,7 @@ async function newSession(){
   [['Instru', 'instru'], ['Couplets', 'lead'], ['Refrain', 'lead'], ['Back', 'back'], ['Ambiance', 'ambiance']].forEach(([n, p]) => addTrack(n, p));
   defaultRefrain();
   S.markers = []; S.loop.on = false; S.instruKey = null; S.pos = 0; S.sel = null;
-  ta.value = ''; syncs = {}; syncsAuto = true; S.textStart = 0; S.tsUser = false; S.startSugs = null; S.secs = null; S.lineBars = 0; store.set('lyrics', ''); store.set('syncs', {}); store.set('syncsAuto', true); store.set('syncsTid', null); lstat(); updTextStart();
+  ta.value = ''; syncs = {}; syncsAuto = true; S.textStart = 0; S.tsUser = false; S.startSugs = null; S.secs = null; S.lineBars = 0; S.loopOrg = null; store.set('lyrics', ''); store.set('syncs', {}); store.set('syncsAuto', true); store.set('syncsTid', null); lstat(); updTextStart();
   S.secsDur = 0; curLine = null; flow = { sid: undefined }; if(chk){ chk = null; try{ chkShow(); }catch(e){} } if(tap){ tap = null; try{ tapShow(); }catch(e){} }
   try{ updLineUI(); }catch(e){} try{ renderPrompt(); }catch(e){} try{ renderMarkers(); }catch(e){}
   sess = { id: null, name: '', link: '', created: 0 }; store.set('sessId', null);
