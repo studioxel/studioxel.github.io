@@ -684,7 +684,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.4.4 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.4.5 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -1140,8 +1140,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 166; // numéro interne (jamais affiché)
-const APP_PUB = '2.4.4';
+const APP_VER = 167; // numéro interne (jamais affiché)
+const APP_PUB = '2.4.5';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -1614,9 +1614,9 @@ async function getMic0(){
   /* avec écouteurs : micro brut, la meilleure qualité. Sans écouteurs (haut-parleur, Bluetooth de voiture) : comme les premières versions,
      l'iPhone retire lui-même du micro l'instru qui sort du haut-parleur (annulation d'écho). Désactivable dans Réglages. */
   const ec = wantEC();
-  const want = { echoCancellation: ec, noiseSuppression: false, autoGainControl: ec, channelCount: 1, sampleRate: ctx.sampleRate };
+  const want = { echoCancellation: ec, noiseSuppression: false, autoGainControl: false, channelCount: 1 };
   try{ mic = await navigator.mediaDevices.getUserMedia({ audio: want }); }
-  catch(e){ if(e.name === 'NotAllowedError') throw e; mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: ec, noiseSuppression: false, autoGainControl: ec } }); }
+  catch(e){ if(e.name === 'NotAllowedError') throw e; mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: ec, noiseSuppression: false, autoGainControl: false } }); }
   micEC = ec; micTouched = true;
   const lbl = (mic.getAudioTracks()[0]?.label || '');
   S.micLabel = lbl;
@@ -1633,6 +1633,15 @@ let silentEl = null;
 function freshAudio(){
   if(!micTouched || S.recording || S.mon || mic || S.playing || dict) return;
   micTouched = false;
+  rebuildAudio();
+}
+/* une sortie audio neuve, créée APRÈS l'ouverture du micro : sinon le téléphone mélange deux circuits son et l'instru crépite */
+function rebuildAudio(){
+  if(S.recording || S.playing) return;
+  if(micSrc){ try{ micSrc.disconnect(); }catch(e){} micSrc = null; }
+  if(micSink){ try{ micSink.disconnect(); }catch(e){} micSink = null; }
+  if(monSrc){ try{ monSrc.disconnect(); }catch(e){} monSrc = null; }
+  micAnalyser = null;
   try{
     const old = ctx;
     initAudio();
@@ -1649,6 +1658,8 @@ function freshAudio(){
 function micIdleReset(){
   if(mic || S.calib || S.recording || S.mon || S.playing || S.reelRec || (typeof rsPlaying !== 'undefined' && rsPlaying)) return;
   freshAudio();
+  /* le téléphone peut encore être en train de basculer son circuit son : on refera une sortie neuve au prochain ▶, quand tout est posé */
+  micTouched = true;
 }
 function unlockSpeaker(){
   freshAudio();
@@ -1863,9 +1874,11 @@ async function record(){
   if(!calDone()){ await forceCal(false); await detectHeadset(true); }
   if(S.mon && routeKey() === 'bt'){ S.monAuto = false; monOff(); toast('🎧 Retour voix coupé : en Bluetooth ta voix te revient en retard dans les oreilles et te fait rapper en retard.'); }
   if(mic && micEC !== wantEC() && !S.mon) releaseMic(true);
+  const freshMic = !mic;
   try{ await getMic(); }
   catch(e){ toast(e.name === 'NotAllowedError' ? 'Accès au micro refusé. Il faut ouvrir la page en ligne (https) et autoriser le micro.' : (e.message || 'Micro introuvable.')); return; }
   if(S.playing) pause();
+  if(freshMic && !S.mon) rebuildAudio();
   if(S.loop.on) S.pos = S.loop.start;
   /* pré-roulement : on réentend sa prise d'avant 1 ou 2 mesures, puis l'enregistrement démarre pile à l'endroit voulu */
   const recEC = micEC;
@@ -2101,6 +2114,7 @@ async function calibrateLat(){
     await getMic();
     await detectHeadset(true);
     if(devKey() !== key){ key = devKey(); if(mic && micEC !== wantEC()){ releaseMic(true); await getMic(); } }
+    if(!S.mon) rebuildAudio();
     if(!window.MediaRecorder) throw new Error('rec');
     await wake();
     /* une piste comme dans un jeu de rythme : les points arrivent de la droite et touchent la ligne pile sur le temps.
@@ -7439,7 +7453,7 @@ document.addEventListener('visibilitychange', () => { if(document.hidden){ if(S.
 window.addEventListener('pagehide', () => { releaseMic(true); saveNow(); });
 window.addEventListener('beforeunload', () => saveNow());
 setInterval(() => { if(saveTimer) saveNow(); }, 20000);
-setInterval(() => { if(mic && !S.mon && !S.recording && !S.calib && !(rec && rec.state === 'recording')){ releaseMic(); setTimeout(micIdleReset, 300); } }, 3000);
+setInterval(() => { if(mic && !S.mon && !S.recording && !S.calib && !(rec && rec.state === 'recording')) releaseMic(); }, 3000);
 document.addEventListener('pointerdown', firstTouch, { once: true });
 ctx.onstatechange = () => { if(ctx.state !== 'running' && (S.playing || S.recording)) ctx.resume().catch(() => {}); };
 })();
