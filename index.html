@@ -684,7 +684,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.4.3 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.4.4 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -1140,8 +1140,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 165; // numéro interne (jamais affiché)
-const APP_PUB = '2.4.3';
+const APP_VER = 166; // numéro interne (jamais affiché)
+const APP_PUB = '2.4.4';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -1645,6 +1645,11 @@ function freshAudio(){
     ctx.resume().catch(() => {});
   }catch(e){}
 }
+/* micro rendu : le téléphone garde parfois l'indicateur micro allumé tant que la sortie audio qui l'a utilisé vit encore → on la remplace */
+function micIdleReset(){
+  if(mic || S.calib || S.recording || S.mon || S.playing || S.reelRec || (typeof rsPlaying !== 'undefined' && rsPlaying)) return;
+  freshAudio();
+}
 function unlockSpeaker(){
   freshAudio();
   try{
@@ -2026,7 +2031,7 @@ function recGraph(){
       for(let i = 0; i < n; i++) d[i] = 0.9;
       const s = ctx.createBufferSource(); s.buffer = b; s.connect(mg, 0, 1); s.start(t); g.tm = t;
     };
-    g.close = () => g.nodes.forEach(x => { try{ x.disconnect(); }catch(e){} });
+    g.close = () => { g.nodes.forEach(x => { try{ x.disconnect(); }catch(e){} }); try{ dst.stream.getTracks().forEach(t => t.stop()); }catch(e){} };
     return g;
   }catch(e){ return null; }
 }
@@ -2168,6 +2173,8 @@ async function calibrateLat(){
     }
   }catch(e){ setBusy(false); document.querySelectorAll('.calrun').forEach(x => x.remove()); toast(e && e.name === 'NotAllowedError' ? 'Autorise le micro pour faire le calage.' : 'Calage impossible ici, réessaie dans Réglages.'); }
   calBusy = false; S.calib = false;
+  /* test fini : on coupe le micro tout de suite, et on repart sur une sortie audio neuve (sinon le téléphone garde le micro allumé) */
+  if(!S.recording && !S.mon){ releaseMic(true); setTimeout(micIdleReset, 400); }
   return ok;
 }
 /* Calage obligatoire : nouvelle session, nouveau matériel, ou matériel jamais réglé. On ne peut pas l'esquiver. */
@@ -7432,7 +7439,7 @@ document.addEventListener('visibilitychange', () => { if(document.hidden){ if(S.
 window.addEventListener('pagehide', () => { releaseMic(true); saveNow(); });
 window.addEventListener('beforeunload', () => saveNow());
 setInterval(() => { if(saveTimer) saveNow(); }, 20000);
-setInterval(() => { if(mic && !S.mon && !S.recording && !S.calib && !(rec && rec.state === 'recording')) releaseMic(); }, 3000);
+setInterval(() => { if(mic && !S.mon && !S.recording && !S.calib && !(rec && rec.state === 'recording')){ releaseMic(); setTimeout(micIdleReset, 300); } }, 3000);
 document.addEventListener('pointerdown', firstTouch, { once: true });
 ctx.onstatechange = () => { if(ctx.state !== 'running' && (S.playing || S.recording)) ctx.resume().catch(() => {}); };
 })();
