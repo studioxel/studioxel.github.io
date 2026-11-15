@@ -94,6 +94,7 @@ button{cursor:pointer}
 .ruler .hdr{padding:4px 8px;justify-content:center;font-size:11px;color:var(--muted)}
 .ruler canvas{display:block;cursor:pointer}
 .l1{display:flex;align-items:center;gap:4px}
+#modeBar{display:none!important}
 /* mode avancé : le nom de la piste prend toute sa ligne (jamais coupé), R M S passent juste en dessous */
 body:not(.simple) .row .l1{flex-wrap:wrap;row-gap:6px}
 body:not(.simple) .row .l1 .lockname{flex:1 1 calc(100% - 22px);min-width:0;white-space:normal;overflow:visible}
@@ -139,6 +140,7 @@ body:not(.simple) .row .l1 .chip{flex:1 1 0}
 .mxp .mxplay{min-width:54px;background:var(--accent);color:#1a1405;border-color:var(--accent)}.mxp [data-mp=loop][aria-pressed=true]{border-color:var(--accent);color:var(--accent)}.mxp output{margin-left:auto;font:600 15px ui-monospace,monospace}
 .mxhint{margin:6px 0 0;font-size:12px}
 /* l'onde, son lecteur et la cible restent collés sous la barre du haut quand on descend dans les réglages */
+body.mix-on .transport{display:none}body.mix-on .mxstick{top:env(safe-area-inset-top,0px)}
 .mxstick{position:sticky;top:var(--trb,0px);z-index:12;background:var(--panel);padding:6px 0 8px;margin:-6px 0 0;box-shadow:0 10px 12px -10px rgba(0,0,0,.6)}
 .mxtarget{display:flex;align-items:center;gap:8px;margin-top:10px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--panel);font-size:14px}
 .mxtarget.sel{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--panel))}.mxtarget b{color:var(--accent)}.mxtarget small{display:block;color:var(--muted)}
@@ -463,7 +465,6 @@ body.simple #viewP .pbar,body.simple #viewP .tsman,body.simple #tsMinus,body.sim
 .stepbar .stdots{display:flex;gap:6px}.stepbar .stdots i{flex:1;height:4px;border-radius:2px;background:var(--line)}.stepbar .stdots i.on{background:var(--accent)}
 .stepbar .sttip{margin:0;font-size:14px;color:var(--muted)}.stepbar .stlink{background:none;border:0;padding:0;color:var(--accent);font-weight:800;text-decoration:underline;font-size:14px}
 .stepbar .stadv{align-self:flex-start;background:none;border:0;color:var(--muted);text-decoration:underline;padding:2px 0;font-size:13px}
-body:not(.simple) .stepbar{display:none}
 .power{display:flex;flex-direction:column;gap:8px;padding:12px;border:2px dashed var(--accent);border-radius:14px;background:var(--bg);animation:pwIn .45s ease-out}
 @keyframes pwIn{0%{transform:scale(.92);opacity:0}70%{transform:scale(1.02);opacity:1}100%{transform:scale(1)}}
 .power .pwtop{display:flex;align-items:center;gap:8px;font:800 12px var(--display);letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
@@ -653,7 +654,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.1.5 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.2 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -739,7 +740,7 @@ body.ed-open .wmark{z-index:41}
   <div class="pad">
     <div class="chips" id="mixChips"></div>
     <div class="mxstick" id="mxStick"><div class="mxw" id="mxW"><canvas id="mxWave" aria-label="L'onde de la piste : glisse le doigt pour choisir un bout"></canvas>
-      <div class="mxp"><button data-mp="start" aria-label="Revenir au début du bout">⏮</button><button data-mp="play" class="mxplay" aria-label="Lecture">▶</button><button data-mp="loop" aria-pressed="false">🔁 Boucle</button><output id="mxClock">0:00.0</output></div>
+      <div class="mxp"><button data-mp="start" aria-label="Revenir au début du bout">⏮</button><button data-mp="play" class="mxplay" aria-label="Lecture">▶</button><button data-mp="loop" aria-pressed="false">🔁 Boucle</button><button data-mp="undo" aria-label="Annuler">↶</button><output id="mxClock">0:00.0</output></div>
       <div class="mxz"><button data-mz="left" aria-label="Reculer">◀</button><button data-mz="out" aria-label="Dézoomer">−</button><input type="range" id="mxZoom" min="0" max="100" step="1" aria-label="Zoom"><button data-mz="in" aria-label="Zoomer">+</button><button data-mz="right" aria-label="Avancer">▶</button></div>
       <div class="mxzl" id="mxZl"></div></div>
     <div class="mxtarget" id="mxTarget"></div></div>
@@ -1108,8 +1109,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 154; // numéro interne (jamais affiché)
-const APP_PUB = '2.1.5';
+const APP_VER = 155; // numéro interne (jamais affiché)
+const APP_PUB = '2.2';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -1487,7 +1488,8 @@ function schedRegs(t, c, at, pos){
 function unschedRegs(){ S.tracks.forEach(t => { if(!t.regs?.length) return; const P = t.chain.params(); REG_K.forEach(k => { try{ P[k] && P[k].cancelScheduledValues(0); }catch(e){} }); t.chain.set(t, audible(t), false); }); }
 function audible(t){ const solo = S.tracks.some(x => x.solo); return !t.mute && (!solo || t.solo); }
 /* Mode simple : voix brutes pendant qu'on pose (prise propre, on juge la voix telle qu'elle est). Les effets arrivent à l'habillage. */
-function rawPhase(){ try{ return isSimple() && guided() && !flowGet().arrInit; }catch(e){ return false; } }
+/* voix brutes tant qu'on pose (mode Guide-moi), jusqu'à l'habillage, ou dès qu'on va dans le Mix pour régler */
+function rawPhase(){ try{ const f = flowGet(); return guided() && !f.arrInit && !f.mixed; }catch(e){ return false; } }
 /* une piste vide (sans prise ni retour voix) n'a pas besoin d'effets qui tournent : ça économise le téléphone */
 function fxOff(t){ if(t.preset === 'instru') return false; if(rawPhase()) return true; try{ return (!t.buffer || !audible(t)) && !(S.mon && monTrack() === t); }catch(e){ return false; } }
 function applyMix(){ S.tracks.forEach(t => t.chain.set(t, audible(t), true)); }
@@ -3081,6 +3083,7 @@ document.querySelector('.mxp').addEventListener('click', e => {
   if(k === 'play'){ if(S.playing){ pause(); } else { if(!mic) audioSessionPlay(); unlockSpeaker(); wake().then(() => play()); } }
   else if(k === 'start'){ const was = S.playing; if(was) pause(); S.pos = mxSel ? mxSel.a : mxView()[0]; if(was) wake().then(() => play()); drawMxWave(); }
   else if(k === 'loop'){ if(S.rep){ setRep(null); } else setRep(span()); }
+  else if(k === 'undo'){ $('#bUndo')?.click(); }
   mxPlayerUI();
 });
 function mxPlayerUI(){
@@ -6317,7 +6320,7 @@ function startTour(force, steps, onEnd){
   if(!steps && !force && (store.get('tourOff', false) || tourDoneRun)) return;
   tourOnEnd = onEnd || null;
   if(steps) steps = steps.filter(st => !st.sel || tourEls(st).length);
-  TSTEPS = steps || (isSimple() ? SIMPLE_TOUR : TOUR);
+  TSTEPS = steps || (guided() ? SIMPLE_TOUR : TOUR).filter(st => !(st.sel || []).includes('#modeBar'));
   if(!steps) document.querySelector('.nav [data-view="vPistes"]').click();
   try{ closePlus(); }catch(e){}
   $('#settings').hidden = true; $('#bSet').setAttribute('aria-expanded', 'false');
@@ -6731,7 +6734,8 @@ function showBeta(){
   });
 }
 /* ---------- Mode simple : les étapes d'un son, une à la fois ---------- */
-const isSimple = () => store.get('uiMode', 'simple') === 'simple';
+/* un seul mode : l'accompagnement passe par « Guide-moi / Je gère moi-même » */
+const isSimple = () => false;
 TOUR.splice(1, 0, WHO, HELLO);
 const SIMPLE_TOUR = [
   TOUR[0], WHO, HELLO, TOUR[3],
@@ -6817,7 +6821,7 @@ const DEF_STYLE = { lead: 0, refrain: 4, back: 2 };
 let flow = { sid: null };
 function flowGet(){
   const id = sess && sess.id;
-  if(flow.sid !== id){ flow = Object.assign({ sid: id, instru: false, text: false, lead: false, refrain: false, back: false, arr: false, arrInit: false, styles: null }, store.get('flow:' + id, {})); flow.sid = id; }
+  if(flow.sid !== id){ flow = Object.assign({ sid: id, instru: false, text: false, lead: false, refrain: false, back: false, arr: false, arrInit: false, mixed: false, styles: null }, store.get('flow:' + id, {})); flow.sid = id; }
   return flow;
 }
 function flowSet(k, v){ const f = flowGet(); f[k] = v; if(f.sid) store.set('flow:' + f.sid, Object.fromEntries(Object.entries(f).filter(([x]) => x !== 'sid' && x !== 'styles'))); saveNow(); }
@@ -6840,7 +6844,6 @@ async function arrangeAuto(){
   toast('🎛️ Ton son est habillé comme en studio : niveaux calés, style sur chaque voix, backs nettoyés. Change ce que tu veux.');
 }
 function updStep(){
-  if(!isSimple()) return;
   stepEl.hidden = !guided(); if(!guided()){ stepKey = ''; return; }
   const f = flowGet();
   const ins = trRole('instru'), L = trRole('lead'), R = trRole('refrain'), B = trRole('back');
@@ -7026,7 +7029,8 @@ document.querySelector('.nav').addEventListener('click', e => {
   document.querySelectorAll('.nav button').forEach(x => x.setAttribute('aria-selected', x === b));
   document.querySelectorAll('.view').forEach(v => v.hidden = v.id !== b.dataset.view);
   if(b.dataset.view === 'vPistes') renderTracks();
-  if(b.dataset.view === 'vMix'){ mixPick(); renderMix(); }
+  document.body.classList.toggle('mix-on', b.dataset.view === 'vMix'); try{ trbUpd(); }catch(e){}
+  if(b.dataset.view === 'vMix'){ try{ if(!flowGet().mixed) flowSet('mixed', true); }catch(e){} mixPick(); renderMix(); }
   if(b.dataset.view === 'vMaster') renderMaster();
   if(b.dataset.view === 'vTexte' && !$('#viewP').hidden){ curLine = null; renderPrompt(); }
   if(b.dataset.view === 'vProjets') renderProjets();
