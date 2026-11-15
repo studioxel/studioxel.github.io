@@ -94,6 +94,12 @@ button{cursor:pointer}
 .ruler .hdr{padding:4px 8px;justify-content:center;font-size:11px;color:var(--muted)}
 .ruler canvas{display:block;cursor:pointer}
 .l1{display:flex;align-items:center;gap:4px}
+/* mode avancé : le nom de la piste prend toute sa ligne (jamais coupé), R M S passent juste en dessous */
+body:not(.simple) .row .l1{flex-wrap:wrap;row-gap:6px}
+body:not(.simple) .row .l1 .lockname{flex:1 1 calc(100% - 22px);min-width:0;white-space:normal;overflow:visible}
+body:not(.simple) .row .l1 .lockname b{overflow:visible;text-overflow:clip;overflow-wrap:anywhere}
+body:not(.simple) .row .l1 .swatch{min-height:24px;align-self:center}
+body:not(.simple) .row .l1 .chip{flex:1 1 0}
 .swatch{width:14px;align-self:stretch;min-height:30px;border-radius:5px;flex:none;border:0;padding:0;cursor:pointer}
 .swatch[aria-expanded=true]{outline:2px solid var(--fg);outline-offset:2px}
 .pal{display:flex;flex-wrap:wrap;gap:6px;padding:6px;border-radius:10px;background:var(--bg);border:1px solid var(--line)}
@@ -629,7 +635,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.0.7 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.0.8 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -1076,8 +1082,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 147; // numéro interne (jamais affiché)
-const APP_PUB = '2.0.7';
+const APP_VER = 148; // numéro interne (jamais affiché)
+const APP_PUB = '2.0.8';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
