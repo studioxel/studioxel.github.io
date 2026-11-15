@@ -134,7 +134,9 @@ body:not(.simple) .row .l1 .chip{flex:1 1 0}
 .pad{padding:12px;display:flex;flex-direction:column;gap:14px}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .mxw{position:relative;margin-top:10px;border:1px solid var(--line);border-radius:10px;background:var(--raise);overflow:hidden;touch-action:none}.mxw canvas{display:block;width:100%;height:120px}
-.mxz{display:flex;gap:6px;justify-content:flex-end;padding:6px;border-top:1px solid var(--line);background:var(--panel)}.mxz button{flex:1;max-width:64px;height:34px;border-radius:8px;border:1px solid var(--line);background:var(--raise);color:inherit;font-weight:800;font-size:16px}
+.mxz,.mxp{display:flex;gap:6px;align-items:center;padding:6px 8px;border-top:1px solid var(--line);background:var(--panel)}.mxz button,.mxp button{flex:none;min-width:38px;height:36px;border-radius:8px;border:1px solid var(--line);background:var(--raise);color:inherit;font-weight:800;font-size:15px;padding:0 10px}
+.mxz input{flex:1;min-width:0;accent-color:var(--accent)}.mxzl{padding:0 8px 6px;background:var(--panel);font-size:11px;color:var(--muted);text-align:center}
+.mxp .mxplay{min-width:54px;background:var(--accent);color:#1a1405;border-color:var(--accent)}.mxp [data-mp=loop][aria-pressed=true]{border-color:var(--accent);color:var(--accent)}.mxp output{margin-left:auto;font:600 15px ui-monospace,monospace}
 .mxhint{margin:6px 0 0;font-size:12px}
 .mxtarget{display:flex;align-items:center;gap:8px;margin-top:10px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--panel);font-size:14px}
 .mxtarget.sel{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--panel))}.mxtarget b{color:var(--accent)}.mxtarget small{display:block;color:var(--muted)}
@@ -649,7 +651,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.1.1 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.1.2 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -735,7 +737,9 @@ body.ed-open .wmark{z-index:41}
   <div class="pad">
     <div class="chips" id="mixChips"></div>
     <div class="mxw" id="mxW"><canvas id="mxWave" aria-label="L'onde de la piste : glisse le doigt pour choisir un bout"></canvas>
-      <div class="mxz"><button data-mz="left" aria-label="Reculer">◀</button><button data-mz="out" aria-label="Dézoomer">−</button><button data-mz="in" aria-label="Zoomer">+</button><button data-mz="right" aria-label="Avancer">▶</button></div></div>
+      <div class="mxp"><button data-mp="start" aria-label="Revenir au début du bout">⏮</button><button data-mp="play" class="mxplay" aria-label="Lecture">▶</button><button data-mp="loop" aria-pressed="false">🔁 Boucle</button><output id="mxClock">0:00.0</output></div>
+      <div class="mxz"><button data-mz="left" aria-label="Reculer">◀</button><button data-mz="out" aria-label="Dézoomer">−</button><input type="range" id="mxZoom" min="0" max="100" step="1" aria-label="Zoom"><button data-mz="in" aria-label="Zoomer">+</button><button data-mz="right" aria-label="Avancer">▶</button></div>
+      <div class="mxzl" id="mxZl"></div></div>
     <p class="note mxhint">👆 Glisse le doigt sur l'onde pour choisir un bout (un mot, une phrase…). Le violet = un bout déjà réglé à part : touche-le pour le reprendre.</p>
     <div class="mxtarget" id="mxTarget"></div>
     <div id="strip" class="pad" style="padding:0"></div>
@@ -1102,8 +1106,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 150; // numéro interne (jamais affiché)
-const APP_PUB = '2.1.1';
+const APP_VER = 151; // numéro interne (jamais affiché)
+const APP_PUB = '2.1.2';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -3021,6 +3025,7 @@ function renderMix(){
   }
   st.innerHTML = isLocked(cur) ? `<p class="note lknote">🔒 Piste de ${esc(cur.ownerName)} : verrouillée. Tu peux l'écouter, la couper (M) ou l'isoler (S), mais seul ${esc(cur.ownerName)} peut la modifier.</p><fieldset class="lk" disabled>${html}</fieldset>` : html;
   try{ renderQuick(); }catch(e){}
+  try{ mxZoomUI(); mxPlayerUI(); }catch(e){}
   if(mxOpen.has('eq')) setTimeout(drawEQ, 0);
 }
 /* les titres ouverts restent ouverts */
@@ -3058,10 +3063,28 @@ function mxView(){
   if(S.playing && (p < mxV0 || p > mxV0 + mxW * 0.92)) mxV0 = Math.max(0, p - mxW * 0.15);
   return [mxV0, mxV0 + mxW];
 }
+const MXZ_MIN = 0.4, MXZ_MAX = 120, zToR = w => Math.round(100 * Math.log(MXZ_MAX / w) / Math.log(MXZ_MAX / MXZ_MIN)), rToZ = r => MXZ_MAX * Math.pow(MXZ_MIN / MXZ_MAX, r / 100);
+function mxZoomUI(){ const z = $('#mxZoom'); if(z && document.activeElement !== z) z.value = zToR(mxW); const l = $('#mxZl'); if(l){ const w = mxW; l.textContent = '🔍 ' + (w >= 10 ? Math.round(w) + ' s visibles' : w >= 1 ? w.toFixed(1).replace('.', ',') + ' s visibles' : Math.round(w * 1000) + ' ms visibles') + (w <= 1.5 ? ' · au mot près' : ''); } }
 function mxZoom(f, center){
   const [v0, v1] = mxView(), c = center ?? (mxSel ? (mxSel.a + mxSel.b) / 2 : clamp(S.playing ? now() : S.pos, v0, v1));
   const nw = clamp(mxW * f, 0.4, 120), r = (c - v0) / (v1 - v0);
-  mxW = nw; mxV0 = Math.max(0, c - r * nw); drawMxWave();
+  mxW = nw; mxV0 = Math.max(0, c - r * nw); drawMxWave(); mxZoomUI();
+}
+$('#mxZoom').addEventListener('input', e => { const nw = rToZ(+e.target.value); mxZoom(nw / mxW); });
+/* le lecteur de l'onglet Mix : lecture, retour au début du bout, boucle sur le bout (ou sur ce qu'on voit) */
+document.querySelector('.mxp').addEventListener('click', e => {
+  const b = e.target.closest('[data-mp]'); if(!b) return; const k = b.dataset.mp;
+  const span = () => mxSel ? { a: mxSel.a, b: mxSel.b + 0.6 } : (() => { const [v0, v1] = mxView(); return { a: v0, b: v1 }; })();
+  if(k === 'play'){ if(S.playing){ pause(); } else { if(!mic) audioSessionPlay(); unlockSpeaker(); wake().then(() => play()); } }
+  else if(k === 'start'){ const was = S.playing; if(was) pause(); S.pos = mxSel ? Math.max(0, mxSel.a - 0.3) : mxView()[0]; if(was) wake().then(() => play()); drawMxWave(); }
+  else if(k === 'loop'){ if(S.rep){ setRep(null); } else { const r = span(); setRep({ a: Math.max(0, r.a - (mxSel ? 0.3 : 0)), b: r.b }); } }
+  mxPlayerUI();
+});
+function mxPlayerUI(){
+  const pb = document.querySelector('.mxp .mxplay'); if(!pb) return;
+  const t = S.playing ? '⏸' : '▶'; if(pb._t !== t){ pb._t = t; pb.textContent = t; }
+  const lp = document.querySelector('.mxp [data-mp=loop]'), on = String(!!S.rep); if(lp.getAttribute('aria-pressed') !== on) lp.setAttribute('aria-pressed', on);
+  setTxt($('#mxClock'), fmt(S.playing ? now() : S.pos));
 }
 document.querySelector('.mxz').addEventListener('click', e => {
   const b = e.target.closest('[data-mz]'); if(!b) return; const k = b.dataset.mz;
@@ -3106,7 +3129,7 @@ function drawMxWave(){
   cv.addEventListener('pointermove', e => {
     if(pts.has(e.pointerId)) pts.set(e.pointerId, e.clientX);
     if(pinch && pts.size === 2){ const xs = [...pts.values()], d = Math.abs(xs[0] - xs[1]) || 1, [v0, v1] = mxView(), r = (pinch.c - v0) / (v1 - v0);
-      mxW = clamp(pinch.w * pinch.d / d, 0.4, 120); mxV0 = Math.max(0, pinch.c - r * mxW); drawMxWave(); return; }
+      mxW = clamp(pinch.w * pinch.d / d, 0.4, 120); mxV0 = Math.max(0, pinch.c - r * mxW); drawMxWave(); mxZoomUI(); return; }
     if(!drag) return; const t = selTrack(), x = clamp(tAt(e), t.offset, t.offset + t.buffer.duration);
     if(drag.h === 'n'){ if(Math.abs(x - drag.x0) > 0.04){ drag.moved = true; mxSel = { tid: t.id, a: Math.min(drag.x0, x), b: Math.max(drag.x0, x), ri: null }; } }
     else if(mxSel){ mxSel[drag.h] = x; if(mxSel.a > mxSel.b) [mxSel.a, mxSel.b] = [mxSel.b, mxSel.a], drag.h = drag.h === 'a' ? 'b' : 'a'; if(mxSel.ri != null){ const r = selTrack().regs[mxSel.ri]; r.a = mxSel.a; r.b = mxSel.b; } }
@@ -7127,7 +7150,7 @@ function loop(){
   ph.style.left = x + 'px';
   setTxt(clock, fmt(p));
   updProg(p);
-  if(!$('#vMix').hidden) drawMxWave();
+  if(!$('#vMix').hidden){ drawMxWave(); mxPlayerUI(); }
   if(S.playing && !$('#vPistes').hidden && Date.now() - userScrollAt > 2500){
     if(x > sc.scrollLeft + sc.clientWidth - 40 || x < sc.scrollLeft + HDR) sc.scrollLeft = x - HDR - 40;
   }
