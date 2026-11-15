@@ -56,6 +56,9 @@ button{cursor:pointer}
 @keyframes pulse{50%{opacity:.6}}
 @media (prefers-reduced-motion:reduce){.tbtn.rec.on{animation:none}}
 .clock{font:500 22px/1 var(--mono);font-variant-numeric:tabular-nums;min-width:96px;padding:0 4px}
+.latbox{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 14px;margin:6px 0;border:1px solid var(--line);border-radius:12px;background:var(--raise)}
+.latl{flex:1;min-width:150px;display:flex;flex-direction:column;gap:2px}.latt{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.latv{font:800 26px system-ui;color:var(--fg);line-height:1.1}.latd{font-size:14px;color:var(--muted)}.latbox #bCal{height:44px;font-size:15px}
 .grp{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.06em}
 .grp input[type=number]{width:58px;height:34px;background:var(--raise);border:1px solid var(--line);border-radius:6px;padding:0 6px;font-family:var(--mono)}
 .toggle{height:34px;padding:0 10px;border-radius:6px;border:1px solid var(--line);background:transparent;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
@@ -649,8 +652,7 @@ body.ed-open .wmark{z-index:41}
       <div class="bkrow"><label class="grp">Tempo (BPM) <input type="number" id="bpm" min="40" max="220" value="90"></label>
       <button class="toggle" id="tCount" aria-pressed="true" title="1 mesure de décompte avant la prise">Décompte</button>
       <button class="toggle" id="tMetro" aria-pressed="false">Métronome</button></div>
-      <div class="bkrow"><button class="toggle" id="tDeBleed" aria-pressed="true">🧽 Sans écouteurs : le téléphone retire l'instru du micro</button></div>
-      <div class="bkrow"><button class="sbtn" id="bCal">🎯 Recalibrer la latence</button><span class="grp" id="latInfo"></span></div>
+      <div class="latbox"><div class="latl"><span class="latt">Latence</span><span class="latv" id="latVal">—</span><span class="latd" id="latDev"></span></div><button class="sbtn" id="bCal">🎯 Refaire le test</button></div>
       <div class="bkrow" hidden><span class="grp">Prises</span><div class="seg" id="recModeSeg" role="group" aria-label="Façon d'enregistrer"><button data-rm2="onego">🎙️ Tout d'un coup</button><button data-rm2="parts">✂️ Partie par partie</button></div></div>
       <div class="bkrow"><span class="grp">Pré-roulement</span><div class="seg" id="preSeg" role="group" aria-label="Pré-roulement"><button data-pr="0">Aucun</button><button data-pr="1">1 mesure</button><button data-pr="2">2 mesures</button></div></div>
       <p class="note">Le tempo est détecté tout seul quand tu importes ton instru. Le pré-roulement : quand tu refais un passage sur une piste déjà enregistrée, tu réentends ta prise d'avant juste avant, puis l'enregistrement démarre pile au bon endroit (ça remplace le décompte).</p>
@@ -680,7 +682,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.4.1 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.4.2 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -1136,8 +1138,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 163; // numéro interne (jamais affiché)
-const APP_PUB = '2.4.1';
+const APP_VER = 164; // numéro interne (jamais affiché)
+const APP_PUB = '2.4.2';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -1958,7 +1960,12 @@ function latFor(r, dk){
   const api = Math.round(((ctx.baseLatency || 0) + (ctx.outputLatency || 0)) * 1000) + 60 + (r === 'bt' ? 150 : 0);
   return Math.max(LAT_DEF[r], api);
 }
-function showLat(){ const el = $('#latInfo'); if(!el) return; el.textContent = calDone() ? 'Latence réglée : ' + latFor(routeKey()) + ' ms' : 'Latence pas encore réglée'; }
+function showLat(){
+  const v = $('#latVal'), d = $('#latDev'); if(!v) return; const r = routeKey();
+  setTxt(v, calDone() ? latFor(r) + ' ms' : 'Pas encore réglée');
+  setTxt(d, (r === 'speaker' ? '📱 ' : '🎧 ') + devName().replace(/^./, c => c.toUpperCase()));
+  setTxt($('#bCal'), calDone() ? '🎯 Refaire le test' : '🎯 Faire le test');
+}
 /* Sans casque, le micro entend l'instru qui sort des enceintes (téléphone, voiture) : on compare les deux pour mesurer le vrai retard */
 function measureLatency(raw, info){
   try{
@@ -7083,8 +7090,8 @@ setInterval(() => { if(!document.hidden) updStep(); }, 500);
   }, 400); }
 applyMode();
 $('#bCal').onclick = () => { calibrateLat(); }; showLat();
-{ const b = $('#tDeBleed'); store.set('deBleed', false); const up = () => b.setAttribute('aria-pressed', String(store.get('spkClean', true))); up();
-  b.onclick = () => { store.set('spkClean', !store.get('spkClean', true)); up(); toast(store.get('spkClean', true) ? '🧽 Sans écouteurs, le téléphone retire l\'instru du micro : ta voix sort plus propre. Pendant la prise, l\'instru peut sonner un peu comme au téléphone, c\'est normal.' : 'Micro brut sans écouteurs : l\'instru qui sort du haut-parleur s\'entendra dans ta prise.'); }; }
+/* sans écouteurs, le téléphone retire toujours l'instru du micro : plus de réglage */
+store.set('deBleed', false); store.set('spkClean', true);
 function syncRecMode(){ document.querySelectorAll('#recModeSeg [data-rm2]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.rm2 === recMode()))); }
 $('#recModeSeg').addEventListener('click', e => { const b = e.target.closest('[data-rm2]'); if(!b) return; store.set('recMode', b.dataset.rm2); syncRecMode(); stepKey = ''; toast(b.dataset.rm2 === 'parts' ? '✂️ Partie par partie : ça s\'arrête à la fin de chaque couplet ou refrain.' : '🎙️ Tout d\'un coup : je range couplets et refrains sur leur piste.'); });
 syncRecMode();
@@ -7208,8 +7215,8 @@ $('#bPlay').onclick = async () => {
 $('#bStop').onclick = () => { const was = S.playing; pause(); if(!was) S.pos = 0; };
 $('#bHome').onclick = () => seek(0);
 $('#bReload').onclick = () => { location.replace(location.pathname + '?v=' + Date.now()); };
-document.addEventListener('click', e => { if(e.target.closest('[data-openset]')){ const st = $('#settings'); st.hidden = false; $('#bSet').setAttribute('aria-expanded', 'true'); } });
-$('#bSet').onclick = () => { const st = $('#settings'); st.hidden = !st.hidden; $('#bSet').setAttribute('aria-expanded', !st.hidden); };
+document.addEventListener('click', e => { if(e.target.closest('[data-openset]')){ const st = $('#settings'); st.hidden = false; showLat(); $('#bSet').setAttribute('aria-expanded', 'true'); } });
+$('#bSet').onclick = () => { const st = $('#settings'); st.hidden = !st.hidden; if(!st.hidden) showLat(); $('#bSet').setAttribute('aria-expanded', !st.hidden); };
 /* Réglages ouverts : la barre du haut arrête de rester collée, sinon le défilement bloque */
 /* Réglages : un écran à part, en plein écran ; en fermant on retrouve tout comme avant */
 try{ const st = $('#settings'), bs = $('#bSet');
