@@ -138,6 +138,8 @@ body:not(.simple) .row .l1 .chip{flex:1 1 0}
 .mxz input{flex:1;min-width:0;accent-color:var(--accent)}.mxzl{padding:0 8px 6px;background:var(--panel);font-size:11px;color:var(--muted);text-align:center}
 .mxp .mxplay{min-width:54px;background:var(--accent);color:#1a1405;border-color:var(--accent)}.mxp [data-mp=loop][aria-pressed=true]{border-color:var(--accent);color:var(--accent)}.mxp output{margin-left:auto;font:600 15px ui-monospace,monospace}
 .mxhint{margin:6px 0 0;font-size:12px}
+/* l'onde, son lecteur et la cible restent collés sous la barre du haut quand on descend dans les réglages */
+.mxstick{position:sticky;top:var(--trb,0px);z-index:12;background:var(--panel);padding:6px 0 8px;margin:-6px 0 0;box-shadow:0 10px 12px -10px rgba(0,0,0,.6)}
 .mxtarget{display:flex;align-items:center;gap:8px;margin-top:10px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--panel);font-size:14px}
 .mxtarget.sel{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--panel))}.mxtarget b{color:var(--accent)}.mxtarget small{display:block;color:var(--muted)}
 .mxtarget .x{margin-left:auto;flex:none;width:32px;height:32px;border-radius:50%;border:1px solid var(--line);background:var(--raise);color:inherit}
@@ -651,7 +653,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.1.4 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.1.5 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -736,12 +738,12 @@ body.ed-open .wmark{z-index:41}
   <div class="cardhead"><h2>Mixage</h2><span class="spacer"></span><button class="sbtn" id="bLevel">Rééquilibrer les niveaux</button><button class="qhelp" data-help="vMix" aria-label="Aide de cet onglet">?</button></div>
   <div class="pad">
     <div class="chips" id="mixChips"></div>
-    <div class="mxw" id="mxW"><canvas id="mxWave" aria-label="L'onde de la piste : glisse le doigt pour choisir un bout"></canvas>
+    <div class="mxstick" id="mxStick"><div class="mxw" id="mxW"><canvas id="mxWave" aria-label="L'onde de la piste : glisse le doigt pour choisir un bout"></canvas>
       <div class="mxp"><button data-mp="start" aria-label="Revenir au début du bout">⏮</button><button data-mp="play" class="mxplay" aria-label="Lecture">▶</button><button data-mp="loop" aria-pressed="false">🔁 Boucle</button><output id="mxClock">0:00.0</output></div>
       <div class="mxz"><button data-mz="left" aria-label="Reculer">◀</button><button data-mz="out" aria-label="Dézoomer">−</button><input type="range" id="mxZoom" min="0" max="100" step="1" aria-label="Zoom"><button data-mz="in" aria-label="Zoomer">+</button><button data-mz="right" aria-label="Avancer">▶</button></div>
       <div class="mxzl" id="mxZl"></div></div>
+    <div class="mxtarget" id="mxTarget"></div></div>
     <p class="note mxhint">👆 Glisse le doigt sur l'onde pour choisir un bout (un mot, une phrase…). Le violet = un bout déjà réglé à part : touche-le pour le reprendre.</p>
-    <div class="mxtarget" id="mxTarget"></div>
     <div id="strip" class="pad" style="padding:0"></div>
     <details class="mxacc" data-acc="zone"><summary>🔁 Zone à écouter en boucle</summary><div class="mxbody">
     <div class="zone" id="zone">
@@ -1106,8 +1108,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 153; // numéro interne (jamais affiché)
-const APP_PUB = '2.1.4';
+const APP_VER = 154; // numéro interne (jamais affiché)
+const APP_PUB = '2.1.5';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -6069,7 +6071,9 @@ function openEditor(t, a, b){
 const edT = () => ed && trackById(ed.tid);
 /* l'éditeur se cale sous la barre du haut (lecture, pause, REC restent dispo) */
 /* la barre du haut peut changer de taille (volet des parties…) : l'éditeur se recale dessous */
-try{ new ResizeObserver(() => { try{ edFit(); }catch(e){} }).observe(document.querySelector('.transport')); }catch(e){}
+const trbUpd = () => { try{ const tr = document.querySelector('.transport'); document.documentElement.style.setProperty('--trb', Math.round(tr.getBoundingClientRect().height + parseFloat(getComputedStyle(tr).top || 0)) + 'px'); }catch(e){} };
+try{ new ResizeObserver(() => { try{ edFit(); }catch(e){} trbUpd(); }).observe(document.querySelector('.transport')); }catch(e){}
+addEventListener('resize', trbUpd); setTimeout(trbUpd, 500);
 function edFit(){ if(!ed) return; const tr = document.querySelector('.transport'); const h = tr ? tr.getBoundingClientRect().bottom : 0; ed.el.style.top = Math.max(0, Math.round(h)) + 'px'; ed.el.style.paddingTop = '12px'; }
 function closeEditor(){
   if(!ed) return;
