@@ -686,7 +686,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.4.6 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.4.7 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -1142,8 +1142,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 168; // numéro interne (jamais affiché)
-const APP_PUB = '2.4.6';
+const APP_VER = 169; // numéro interne (jamais affiché)
+const APP_PUB = '2.4.7';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -1617,11 +1617,24 @@ async function getMic0(){
      l'iPhone retire lui-même du micro l'instru qui sort du haut-parleur (annulation d'écho). Désactivable dans Réglages. */
   const ec = wantEC();
   const want = { echoCancellation: ec, noiseSuppression: false, autoGainControl: false, channelCount: 1 };
-  try{ mic = await navigator.mediaDevices.getUserMedia({ audio: want }); }
-  catch(e){ if(e.name === 'NotAllowedError') throw e; mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: ec, noiseSuppression: false, autoGainControl: false } }); }
+  /* écouteurs sans fil (AirPods…) : on essaie d'enregistrer avec le micro du téléphone, bien meilleur que celui des écouteurs,
+     et l'instru reste dans tes oreilles (donc pas besoin de la retirer du micro) */
+  let phoneMic = null;
+  if(S.routeInfo?.kind === 'ecouteurs' && S.routeInfo.wireless && S.outMode !== 'hp'){
+    try{ const ds = await navigator.mediaDevices.enumerateDevices(); phoneMic = ds.find(d => d.kind === 'audioinput' && d.deviceId && /iphone|ipad|int[ée]gr|built-?in|internal|interne/i.test(d.label || '') && !EAR_MIC.test(d.label || '')) || null; }catch(e){}
+  }
+  try{ mic = await navigator.mediaDevices.getUserMedia({ audio: phoneMic ? { ...want, deviceId: { exact: phoneMic.deviceId } } : want }); }
+  catch(e){
+    if(e.name === 'NotAllowedError') throw e;
+    phoneMic = null;
+    try{ mic = await navigator.mediaDevices.getUserMedia({ audio: want }); }
+    catch(e2){ if(e2.name === 'NotAllowedError') throw e2; mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: ec, noiseSuppression: false, autoGainControl: false } }); }
+  }
   micEC = ec; micTouched = true;
   const lbl = (mic.getAudioTracks()[0]?.label || '');
   S.micLabel = lbl;
+  const was = S.btPhoneMic; S.btPhoneMic = !!phoneMic && !EAR_MIC.test(lbl);
+  if(S.btPhoneMic && !was){ track('bt-micro-tel'); toast('🎙️ Ta voix passe par le micro du téléphone (bien meilleur que celui des écouteurs), l\'instru reste dans tes oreilles. Garde le téléphone à 15–20 cm de ta bouche.'); }
   detectHeadset(true);
   micAnalyser = null;
   return mic;
@@ -1879,6 +1892,8 @@ async function record(){
   const freshMic = !mic;
   try{ await getMic(); }
   catch(e){ toast(e.name === 'NotAllowedError' ? 'Accès au micro refusé. Il faut ouvrir la page en ligne (https) et autoriser le micro.' : (e.message || 'Micro introuvable.')); return; }
+  /* micro ouvert : si c'est un nouveau montage (ex. AirPods + micro du téléphone), il faut caler son timing à lui */
+  if(!calDone()){ await forceCal(false); try{ await getMic(); }catch(e){ toast('Micro introuvable.'); return; } }
   if(S.playing) pause();
   if(freshMic && !S.mon) rebuildAudio();
   if(S.loop.on) S.pos = S.loop.start;
@@ -1985,7 +2000,7 @@ function latFor(r, dk){
 function showLat(){
   const v = $('#latVal'), d = $('#latDev'); if(!v) return; const r = routeKey();
   setTxt(v, calDone() ? latFor(r) + ' ms' : 'Pas encore réglée');
-  setTxt(d, (r === 'speaker' ? '📱 ' : '🎧 ') + devName().replace(/^./, c => c.toUpperCase()));
+  setTxt(d, (r === 'speaker' ? '📱 ' : '🎧 ') + devName().replace(/^./, c => c.toUpperCase()) + (S.btPhoneMic ? ' + micro du téléphone' : ''));
   setTxt($('#bCal'), calDone() ? '🎯 Refaire le test' : '🎯 Faire le test');
 }
 /* Sans casque, le micro entend l'instru qui sort des enceintes (téléphone, voiture) : on compare les deux pour mesurer le vrai retard */
@@ -2078,7 +2093,7 @@ function devName(){
   if(routeKey() === 'speaker') return 'haut-parleur du téléphone';
   return (r.name || S.micLabel || (routeKey() === 'bt' ? 'Bluetooth' : 'écouteurs')).replace(/\s*\(.*\)\s*$/, '').slice(0, 40);
 }
-function devKey(){ return routeKey() + '|' + devName().toLowerCase(); }
+function devKey(){ return routeKey() + '|' + devName().toLowerCase() + (S.btPhoneMic ? '|micro-tel' : ''); }
 function calDone(k){ return S.latDev[k || devKey()] != null; }
 function calDetect(raw, recStart, times){
   const sr = raw.sampleRate, d = raw.getChannelData(0), a0 = Math.round(0.2 * sr), w = Math.round(0.95 * sr), sm = Math.max(1, Math.round(sr * 0.004)), res = [];
@@ -2202,7 +2217,7 @@ function calAsk(changed, retry){
     w.innerHTML = `<div class="wpanel">
       <h2>${changed ? '🎯 Nouveau matériel détecté : on refait le timing' : '🎯 On règle le timing'}</h2>
       ${retry ? '<p class="note"><b>On recommence : dis « TA » bien fort, pile sur chaque clic.</b></p>' : ''}
-      <p class="note">Pour ce matériel (${esc(devName())}) : dis « TA » sur chaque clic. Des points te donnent d'abord le rythme, puis ils disparaissent : continue à l'oreille, c'est là qu'on mesure. 20 secondes, et tes prises tomberont dans les temps.</p>
+      <p class="note">Pour ce matériel (${esc(devName() + (S.btPhoneMic ? ' + micro du téléphone' : ''))}) : dis « TA » sur chaque clic. Des points te donnent d'abord le rythme, puis ils disparaissent : continue à l'oreille, c'est là qu'on mesure. 20 secondes, et tes prises tomberont dans les temps.</p>
       <button class="wbig" data-c="go">🎯 Go</button>
     </div>`;
     document.body.appendChild(w);
