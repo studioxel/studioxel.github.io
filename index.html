@@ -686,7 +686,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.4.7 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.4.8 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -1142,8 +1142,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 169; // numéro interne (jamais affiché)
-const APP_PUB = '2.4.7';
+const APP_VER = 170; // numéro interne (jamais affiché)
+const APP_PUB = '2.4.8';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -1630,6 +1630,10 @@ async function getMic0(){
     try{ mic = await navigator.mediaDevices.getUserMedia({ audio: want }); }
     catch(e2){ if(e2.name === 'NotAllowedError') throw e2; mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: ec, noiseSuppression: false, autoGainControl: false } }); }
   }
+  if(phoneMic && await deadTrack(mic)){
+    track('bt-micro-tel-muet'); mic.getTracks().forEach(tr => tr.stop()); mic = null; phoneMic = null;
+    mic = await navigator.mediaDevices.getUserMedia({ audio: want });
+  }
   micEC = ec; micTouched = true;
   const lbl = (mic.getAudioTracks()[0]?.label || '');
   S.micLabel = lbl;
@@ -1638,6 +1642,18 @@ async function getMic0(){
   detectHeadset(true);
   micAnalyser = null;
   return mic;
+}
+/* un micro qui ne renvoie que du zéro absolu (même pas le souffle de la pièce) : le téléphone ne l'a pas vraiment branché */
+async function deadTrack(stream){
+  try{
+    ensureCtx(); try{ await ctx.resume(); }catch(e){}
+    if(ctx.state !== 'running') return false;
+    const src = ctx.createMediaStreamSource(stream), an = ctx.createAnalyser(); an.fftSize = 2048; src.connect(an);
+    const d = new Float32Array(an.fftSize); let mx = 0;
+    for(let i = 0; i < 8; i++){ await new Promise(r => setTimeout(r, 90)); an.getFloatTimeDomainData(d); for(let j = 0; j < d.length; j++) mx = Math.max(mx, Math.abs(d[j])); if(mx > 1e-6) break; }
+    try{ src.disconnect(); }catch(e){}
+    return mx <= 1e-6;
+  }catch(e){ return false; }
 }
 /* iPhone : après le micro, le son peut rester dans l'écouteur du haut ou être coupé par le bouton silencieux */
 function audioSessionPlay(){ try{ if(navigator.audioSession) navigator.audioSession.type = 'playback'; }catch(e){} }
@@ -1671,7 +1687,7 @@ function rebuildAudio(){
 }
 /* micro rendu : le téléphone garde parfois l'indicateur micro allumé tant que la sortie audio qui l'a utilisé vit encore → on la remplace */
 function micIdleReset(){
-  if(mic || S.calib || S.recording || S.mon || S.playing || S.reelRec || (typeof rsPlaying !== 'undefined' && rsPlaying)) return;
+  if(mic || S.calib || S.recPrep || S.recording || S.mon || S.playing || S.reelRec || (typeof rsPlaying !== 'undefined' && rsPlaying)) return;
   freshAudio();
   /* le téléphone peut encore être en train de basculer son circuit son : on refera une sortie neuve au prochain ▶, quand tout est posé */
   micTouched = true;
@@ -1862,6 +1878,11 @@ function releaseMic(force){
 }
 async function record(){
   if(S.recording){ pause(); return; }
+  if(S.recPrep) return;
+  S.recPrep = true;
+  try{ await record0(); } finally { S.recPrep = false; }
+}
+async function record0(){
   if(S.rep) setRep(null);
   let t = S.tracks.find(x => x.arm);
   /* partie par partie : la partie où tu es (ou la suivante) choisit sa piste, l'enregistrement s'arrête à sa fin */
@@ -1893,7 +1914,11 @@ async function record(){
   try{ await getMic(); }
   catch(e){ toast(e.name === 'NotAllowedError' ? 'Accès au micro refusé. Il faut ouvrir la page en ligne (https) et autoriser le micro.' : (e.message || 'Micro introuvable.')); return; }
   /* micro ouvert : si c'est un nouveau montage (ex. AirPods + micro du téléphone), il faut caler son timing à lui */
-  if(!calDone()){ await forceCal(false); try{ await getMic(); }catch(e){ toast('Micro introuvable.'); return; } }
+  if(!calDone()){
+    await forceCal(false);
+    try{ await getMic(); }
+    catch(e){ await new Promise(r => setTimeout(r, 400)); try{ await getMic(); }catch(e2){ toast(e2.name === 'NotAllowedError' ? 'Accès au micro refusé : autorise le micro.' : 'Micro introuvable : relance REC.'); return; } }
+  }
   if(S.playing) pause();
   if(freshMic && !S.mon) rebuildAudio();
   if(S.loop.on) S.pos = S.loop.start;
@@ -2224,11 +2249,19 @@ function calAsk(changed, retry){
     w.querySelector('[data-c=go]').addEventListener('click', () => { w.remove(); res('go'); });
   });
 }
-async function forceCal(changed){
-  for(let n = 0; ; n++){
-    await calAsk(changed && n === 0, n > 0);
-    if(await calibrateLat()) return true;
-  }
+let calLock = null;
+function forceCal(changed){
+  if(calLock) return calLock;
+  calLock = (async () => {
+    try{
+      for(let n = 0; ; n++){
+        if(S.playing) pause();
+        await calAsk(changed && n === 0, n > 0);
+        if(await calibrateLat()) return true;
+      }
+    } finally { calLock = null; calDev = devKey(); }
+  })();
+  return calLock;
 }
 /* Nouvelle session : un nom obligatoire */
 function nameAsk(){
@@ -2260,7 +2293,7 @@ async function setupNew(){
 }
 /* pendant la session : dès que le matériel change (écouteurs branchés, AirPods, enceinte…), on refait le test */
 setInterval(async () => {
-  if(document.hidden || !sessOn || calBusy || S.recording || S.calib || document.querySelector('.welcome,.tour')) return;
+  if(document.hidden || !sessOn || calBusy || calLock || S.recPrep || S.recording || S.calib || document.querySelector('.welcome,.tour')) return;
   const k = devKey();
   if(calDev == null){ calDev = k; return; }
   if(k !== calDev){ calDev = k; await forceCal(true); }
