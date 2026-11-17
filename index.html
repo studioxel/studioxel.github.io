@@ -390,6 +390,7 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
 .nets{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
 .net{height:56px;border-radius:12px;border:1px solid var(--line);background:var(--raise);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-weight:700;font-size:12px;color:var(--fg)}
 .net span{font-size:20px;line-height:1}
+#netShare{width:100%;height:54px;font-size:17px;font-weight:800;margin:6px 0}
 #netCap,#avTxt,#avName{width:100%;background:var(--raise);border:1px solid var(--line);border-radius:10px;padding:10px;font:16px/1.4 inherit;color:var(--fg);resize:vertical}
 .avrow{display:flex;gap:6px;flex-wrap:wrap}
 .avrow button{flex:1 1 0;min-width:44px;height:48px;border-radius:10px;border:1px solid var(--line);background:var(--raise);font-size:22px}
@@ -675,6 +676,8 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Toi</div>
       <label class="grp">Ton blaze <input id="meName" style="width:120px;height:34px;background:var(--raise);border:1px solid var(--line);border-radius:6px;padding:0 8px;text-transform:none;letter-spacing:0" placeholder="ex. Xela"></label>
+      <label class="grp">Ton Insta / TikTok <input id="meSoc" maxlength="40" autocapitalize="off" autocomplete="off" spellcheck="false" style="width:140px;height:34px;background:var(--raise);border:1px solid var(--line);border-radius:6px;padding:0 8px;text-transform:none;letter-spacing:0" placeholder="@tonpseudo"></label>
+      <p class="note" style="flex-basis:100%;margin:0">Facultatif : ton @ apparaît sur tes Reels, pour que ceux qui les voient te retrouvent.</p>
       <label class="grp">D'où tu viens <input id="meFrom" maxlength="40" style="width:140px;height:34px;background:var(--raise);border:1px solid var(--line);border-radius:6px;padding:0 8px;text-transform:none;letter-spacing:0" placeholder="Ville ou département"></label>
     </div>
     <div class="autobox"><div class="autot">Écoute</div>
@@ -698,7 +701,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.4.9 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.5.0 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
@@ -878,16 +881,15 @@ body.ed-open .wmark{z-index:41}
     <input type="file" id="reelVidFile" accept="video/*" hidden>
     <div class="btns">
       <button class="sbtn primary rsgo" id="bVideo">🎬 Créer mon Reel</button>
-      <button class="sbtn primary" id="bShareVideo" hidden>Partager la vidéo</button>
     </div>
     <div class="netbox" id="netBox" hidden>
-      <div class="rslab">Où tu le postes ?</div>
-      <div class="nets" id="netList" role="group" aria-label="Réseaux"></div>
       <label class="rslab" for="netCap">Ta légende (copiée toute seule, tu n'as qu'à coller)</label>
-      <textarea id="netCap" rows="3"></textarea>
-      <p class="note" id="netHelp">Touche un réseau : la légende est copiée, la liste de partage s'ouvre, choisis l'appli puis colle la légende.</p>
+      <textarea id="netCap" rows="6"></textarea>
+      <p class="note">#StudioXel est toujours en premier. Ajoute tes propres # si tu veux : je garde 5 hashtags au total, la limite d'Instagram.</p>
+      <button class="sbtn primary big" id="netShare">📤 Partager mon Reel</button>
+      <p class="note" id="netHelp">La légende est copiée, le partage du téléphone s'ouvre avec ta vidéo : choisis ton réseau, puis colle la légende. Reviens ici pour le réseau suivant. En story Instagram, ajoute le sticker « Lien » avec studioxel.github.io : il sera cliquable.</p>
     </div>
-    <p class="note">Ta vidéo est toujours signée StudioXel, en discret : petit logo et lien en haut, l'appli qui tourne en transparence en bas.</p>
+    <p class="note">Ta vidéo est toujours signée StudioXel : un bandeau en bas, et le QR code de l'appli en grand sur la fin, pendant que ton son tourne.</p>
     <div class="sec">Fais tourner l'appli</div>
     <p class="note">Envoie le lien de StudioXel à tes potes kickeurs.</p>
     <div class="nets" id="linkList" role="group" aria-label="Partager le lien"></div>
@@ -1154,8 +1156,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 171; // numéro interne (jamais affiché)
-const APP_PUB = '2.4.9';
+const APP_VER = 172; // numéro interne (jamais affiché)
+const APP_PUB = '2.5.0';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -5264,6 +5266,9 @@ function coverSource(){
 }
 /* Extrait vidéo : signé StudioXel (logo, nom, lien) + paroles calées en sous-titres */
 const SXL_URL = 'studioxel.github.io';
+/* QR code de l'appli (https://studioxel.github.io), 1 pixel par case : toujours le même, pas besoin de le calculer */
+const QR_APP = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB0AAAAdAQAAAAB+6FqiAAAAnElEQVR42gGRAG7/AAGl7AAEfJbo8ABFvvUQBAA9YgACACjwAAI4cSDgAAFVVAAA/+an+APW6ojdAwXfRUQBJc9LAQQtLQ65A1CXGNwAzlTxsAMOZ/xbAzSSEU4C7vmb+ARP9iPwAwxrm/0CURXcSALC+63QAP8E50AEApK+4AR8OxkQAwfuwSgCAC+/4AIAdh/YAjivuTgAAQrBIIFHNpFpRoPNAAAAAElFTkSuQmCC';
+const meSoc = () => { const v = (ME.soc || '').trim(); return v ? (v[0] === '@' ? v : '@' + v) : ''; };
 function lyricCues(){
   const lines = ta.value.split('\n');
   return Object.entries(syncs).map(([i, t]) => ({ t, text: (lines[i] || '').trim() }))
@@ -5332,6 +5337,7 @@ async function reelEngine(){
   const cues = lyricCues(), cs = coverSource();
   await new Promise(r => { const im = cs.img; if(!im || im.complete) r(); else { im.onload = r; im.onerror = r; } });
   const logo = await loadImg(document.querySelector('link[rel="apple-touch-icon"]')?.href);
+  const qrImg = await loadImg(QR_APP);
   const trs = S.tracks.filter(t => t.buffer && audible(t)).slice(0, 6).map(t => {
     const env = envOf(t.buffer); let pk = 0; for(const v of env) if(v > pk) pk = v;
     const sr = t.buffer.sampleRate;
@@ -5428,7 +5434,7 @@ async function reelEngine(){
   const overUser = pos => {
     const grd = g.createLinearGradient(0, 860, 0, H); grd.addColorStop(0, 'rgba(0,0,0,0)'); grd.addColorStop(1, 'rgba(0,0,0,.6)');
     g.fillStyle = grd; g.fillRect(0, 860, W, H - 860);
-    const rows = trs.slice(0, 4), x0 = 28, w = W - 56, top = 1110, hh = 140, rh = hh / Math.max(1, rows.length), WIN = 8, ws = pos - WIN * 0.3;
+    const rows = trs.slice(0, 4), x0 = 28, w = W - 56, top = 1052, hh = 126, rh = hh / Math.max(1, rows.length), WIN = 8, ws = pos - WIN * 0.3;
     g.globalAlpha = 0.18; g.fillStyle = '#000'; round(x0 - 8, top - 10, w + 16, hh + 20, 12); g.fill(); g.globalAlpha = 1;
     rows.forEach((tr, k) => waves(tr, x0, top + k * rh + 4, w, rh - 8, ws, WIN, 0.55));
     const px = x0 + w * 0.3;
@@ -5438,11 +5444,40 @@ async function reelEngine(){
     g.globalAlpha = 0.85; g.textAlign = 'right'; g.font = `500 22px ${MONO}`; g.fillStyle = '#ffffff'; g.fillText(fmt(pos), W - 28, top - 18);
     if(RO.title){ g.globalAlpha = 1; g.textAlign = 'left'; g.font = `800 30px ${FONT}`; g.fillStyle = '#ffffff'; g.fillText(fit(title, W - 220), 28, top - 46); if(artist){ g.font = `700 22px ${FONT}`; g.fillStyle = '#ff5a52'; g.fillText(fit(artist, W - 220), 28, top - 16); } }
     g.restore();
-    lyrics(pos, (RO.title ? 930 : 990), 'rgba(0,0,0,.85)');
-    brandMark(true);
+    lyrics(pos, (RO.title ? 872 : 932), 'rgba(0,0,0,.85)');
+  };
+  /* le bandeau StudioXel en bas, sur toute la vidéo */
+  const banner = () => {
+    const BH = 74, y = H - BH;
+    g.save();
+    g.fillStyle = 'rgba(8,9,13,.82)'; g.fillRect(0, y, W, BH);
+    g.fillStyle = '#D7261E'; g.fillRect(0, y, W, 3);
+    if(logo) g.drawImage(logo, 22, y + 15, 44, 44);
+    g.textBaseline = 'middle'; g.textAlign = 'left';
+    g.font = `900 26px ${FONT}`; g.fillStyle = '#F4EFE6'; g.fillText('STUDIO', 78, y + 28); const sw = g.measureText('STUDIO').width;
+    g.fillStyle = '#D7261E'; g.fillText('XEL', 78 + sw, y + 28);
+    g.font = `600 18px ${FONT}`; g.fillStyle = '#e7eaf0'; g.fillText(SXL_URL, 78, y + 53);
+    const soc = meSoc();
+    if(soc){ g.textAlign = 'right'; g.font = `800 26px ${FONT}`; g.fillStyle = '#ffffff'; g.fillText(fit(soc, W - 330), W - 24, y + 38); }
+    g.restore();
+  };
+  /* l'écran de fin : le QR code de l'appli en grand, par-dessus ta vidéo assombrie, pendant que ton son tourne encore */
+  const endCard = a => {
+    g.save();
+    g.globalAlpha = a; g.fillStyle = 'rgba(5,6,10,.84)'; g.fillRect(0, 0, W, H);
+    g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+    const soc = meSoc();
+    if(soc){ g.font = `500 28px ${FONT}`; g.fillStyle = '#b8bfcd'; g.fillText('Un son de', W / 2, 118); g.font = `800 46px ${FONT}`; g.fillStyle = '#ffffff'; g.fillText(fit(soc, W - 80), W / 2, 172); }
+    g.font = `900 92px ${FONT}`; const w1 = g.measureText('STUDIO').width, w2 = g.measureText('XEL').width, lx = (W - w1 - w2) / 2;
+    g.textAlign = 'left'; g.fillStyle = '#F4EFE6'; g.fillText('STUDIO', lx, 340); g.fillStyle = '#D7261E'; g.fillText('XEL', lx + w1, 340);
+    const qs = 440, px = (W - qs) / 2, py = 420;
+    g.fillStyle = '#ffffff'; round(px - 22, py - 22, qs + 44, qs + 44, 28); g.fill();
+    if(qrImg){ g.imageSmoothingEnabled = false; g.drawImage(qrImg, px, py, qs, qs); g.imageSmoothingEnabled = true; }
+    g.textAlign = 'center'; g.font = `600 40px ${FONT}`; g.fillStyle = '#e7eaf0'; g.fillText(SXL_URL, W / 2, py + qs + 92);
+    g.restore();
   };
   /* dessine une image de la vidéo : pos = temps du morceau, p = avancement 0..1, lvl = niveau du son 0..1 */
-  const render = (gg, pos, p, lvl) => {
+  const render = (gg, pos, p, lvl, dur) => {
     g = gg;
     const fx = RO.fx || {}, beat = pos * S.bpm / 60, bi = Math.floor(beat), ph = beat - bi;
     g.save();
@@ -5462,6 +5497,9 @@ async function reelEngine(){
     if(fx.vignette){ const rg = g.createRadialGradient(W / 2, H / 2, H * 0.28, W / 2, H / 2, H * 0.72); rg.addColorStop(0, 'rgba(0,0,0,0)'); rg.addColorStop(1, 'rgba(0,0,0,.65)'); g.fillStyle = rg; g.fillRect(0, 0, W, H); }
     if(reelMode === 'app'){ lyrics(pos, 1095, BG); g.fillStyle = BG; g.fillRect(0, 0, W, 76); brandMark(false); }
     else overUser(pos);
+    banner();
+    /* 1/6 de la durée du Reel, 5 secondes minimum, toujours pendant le son */
+    if(dur > 0){ const endLen = Math.min(Math.max(5, dur / 6), dur * 0.5), t = p * dur - (dur - endLen); if(t >= 0) endCard(Math.min(1, t / 0.4)); }
   };
   return { render, W, H };
 }
@@ -5568,7 +5606,7 @@ $('#rsPlay').onclick = () => {
   const step = () => {
     if(!rsPlaying || !S.playing || $('#vPartager').hidden || now() >= w.start + w.dur){ rsPlaying = false; if(S.playing) pause(); if(reelVid) reelVid.pause(); $('#rsPlay').textContent = '▶ Aperçu'; refreshReel(false); return; }
     outAn.getFloatTimeDomainData(buf); let pk = 0; for(let i = 0; i < buf.length; i++){ const a = Math.abs(buf[i]); if(a > pk) pk = a; }
-    reelEng.render(g, now(), (now() - w.start) / w.dur, Math.min(1, pk * 1.4));
+    reelEng.render(g, now(), (now() - w.start) / w.dur, Math.min(1, pk * 1.4), w.dur);
     pg.drawImage(c, 0, 0, pv.width, pv.height);
     requestAnimationFrame(step);
   };
@@ -5616,7 +5654,7 @@ $('#bVideo').onclick = async () => {
     const draw = () => {
       const el = t0 == null ? 0 : clamp(ctx.currentTime - t0, 0, dur), pos = start + el;
       let lvl = 0; if(t0 != null){ an.getFloatTimeDomainData(lvlBuf); for(let i = 0; i < lvlBuf.length; i++){ const a = Math.abs(lvlBuf[i]); if(a > lvl) lvl = a; } lvl = Math.min(1, lvl * 1.2); }
-      eng.render(g, pos, el / dur, lvl);
+      eng.render(g, pos, el / dur, lvl, dur);
       if(t0 == null && countTo){
         const n = Math.ceil((countTo - performance.now()) / 1000);
         if(n > 0){ g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(0, 0, eng.W, eng.H); g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '900 260px Archivo, system-ui, sans-serif'; g.fillText(n, eng.W / 2, eng.H / 2); g.textBaseline = 'alphabetic'; }
@@ -5644,45 +5682,47 @@ $('#bVideo').onclick = async () => {
     if(chunks.length){
       const blob = new Blob(chunks, { type: mr.mimeType || 'video/mp4' });
       track('video-reel'); lastVideo = new File([blob], baseName() + '-reel.' + ((mr.mimeType || '').includes('mp4') ? 'mp4' : 'webm'), { type: blob.type });
-      $('#bShareVideo').hidden = false; $('#netBox').hidden = false; renderNets();
+      $('#netBox').hidden = false; renderNets();
       toast('🎉 Ton Reel est prêt : touche « Partager la vidéo ».');
     } else toast('Reel annulé.');
   }catch(e){ ov.hidden = true; S.reelRec = false; toast('Vidéo impossible : ' + e.message); }
   setBusy(false);
 };
-$('#bShareVideo').onclick = () => { if(!lastVideo) return; const c = $('#netCap').value.trim() || ('Enregistré avec StudioXel 🎤 https://' + SXL_URL); copyText(c); shareFiles([lastVideo], c); };
 
 
 /* ---------- Partage par réseau + avis ---------- */
-const NETS = [
-  { k: 'insta', n: 'Instagram', i: '📸', tags: '#rap #rapfr #reels #studioxel' },
-  { k: 'tiktok', n: 'TikTok', i: '🎵', tags: '#rap #rapfr #pourtoi #studioxel' },
-  { k: 'yt', n: 'YT Shorts', i: '▶️', tags: '#shorts #rap #rapfr #studioxel' },
-  { k: 'snap', n: 'Snapchat', i: '👻', tags: '#rap #studioxel' },
-  { k: 'wa', n: 'WhatsApp', i: '💬', tags: '' },
-  { k: 'fb', n: 'Facebook', i: '📘', tags: '#rap #rapfr #studioxel' },
-  { k: 'x', n: 'X', i: '✖️', tags: '#rap #rapfr #studioxel' }
-];
+/* une seule légende pour tous les réseaux : #StudioXel toujours en premier, 5 hashtags maximum (la limite d'Instagram) */
+const AUTO_TAGS = ['#homestudio', '#recording', '#rap', '#musique'];
 const APP_LINK = 'https://' + SXL_URL;
 function baseCaption(){
   const t = (sess.name && !/^session/i.test(sess.name)) ? sess.name + ' 🎤' : 'Nouveau son 🎤';
-  return t + '\nEnregistré sur mon tel avec StudioXel → ' + SXL_URL;
+  const soc = meSoc();
+  return t + (soc ? ' · ' + soc : '') + '\nEnregistré sur mon tel avec StudioXel → ' + SXL_URL;
 }
-function capFor(n){ let c = $('#netCap').value.trim() || baseCaption(); if(n.tags && !c.includes('#')) c += '\n' + n.tags; return c; }
+function finalCaption(raw){
+  const TAG = /#[\p{L}\p{N}_]+/gu;
+  let body = (raw == null ? '' : raw).trim() || baseCaption();
+  const mine = (body.match(TAG) || []).filter(t => t.toLowerCase() !== '#studioxel' && !AUTO_TAGS.includes(t.toLowerCase()));
+  body = body.replace(TAG, '').replace(/[ \t]{2,}/g, ' ').replace(/[ \t]+$/gm, '').replace(/\n{3,}/g, '\n\n').trim();
+  if(!body.includes(SXL_URL)) body += '\nEnregistré sur mon tel avec StudioXel → ' + SXL_URL;
+  const tags = ['#StudioXel'];
+  for(const t of mine) if(tags.length < 5 && !tags.some(x => x.toLowerCase() === t.toLowerCase())) tags.push(t);
+  for(const t of AUTO_TAGS) if(tags.length < 5) tags.push(t);
+  return body + '\n\n' + tags.join(' ');
+}
 function copyText(t){ try{ if(navigator.clipboard) return navigator.clipboard.writeText(t).then(() => true, () => false); }catch(e){} return Promise.resolve(false); }
 function renderNets(){
-  if(!$('#netCap').value) $('#netCap').value = baseCaption();
+  $('#netCap').value = finalCaption($('#netCap').value);
+  setTxt($('#netShare'), '📤 Partager mon Reel');
 }
-$('#netList').innerHTML = NETS.map(n => `<button class="net" data-net="${n.k}"><span>${n.i}</span>${n.n}</button>`).join('');
-$('#netList').addEventListener('click', e => {
-  const b = e.target.closest('[data-net]'); if(!b || !lastVideo) return;
-  const n = NETS.find(x => x.k === b.dataset.net), cap = capFor(n); track('partage-' + n.k);
-  copyText(cap);
-  shareFiles([lastVideo], cap);
-  /* une vidéo n'est jamais cliquable sur les réseaux : on donne l'astuce pour que le lien le soit */
-  const tip = { insta: ' En story, ajoute le sticker « Lien » avec studioxel.github.io : il sera cliquable.', snap: ' Touche le trombone 📎 et colle studioxel.github.io : le lien sera cliquable.', tiktok: ' Sur TikTok le lien n\'est cliquable que dans la bio.', yt: ' Le lien dans la description sera cliquable.', fb: ' Le lien dans le texte sera cliquable.', x: ' Le lien dans le texte sera cliquable.', wa: ' Le lien dans le message sera cliquable.' }[n.k] || '';
-  toast('Légende copiée 📋 Choisis ' + n.n + ' dans la liste, puis colle-la.' + tip);
+$('#netShare').addEventListener('click', () => {
+  if(!lastVideo) return;
+  const cap = finalCaption($('#netCap').value); $('#netCap').value = cap;
+  track('partage-reel'); copyText(cap); shareFiles([lastVideo], cap);
+  setTxt($('#netShare'), '📤 Partager sur un autre réseau');
+  toast('Légende copiée 📋 Choisis ton réseau, puis colle-la.');
 });
+$('#netCap').addEventListener('blur', () => { if($('#netCap').value.trim()) $('#netCap').value = finalCaption($('#netCap').value); });
 const LINK_MSG = 'Je fais mes sons direct sur mon tel avec StudioXel 🎤 Gratuit, sans rien installer : ' + APP_LINK;
 const LINKS = [
   { n: 'WhatsApp', i: '💬', u: () => 'https://wa.me/?text=' + encodeURIComponent(LINK_MSG) },
@@ -5788,6 +5828,9 @@ const ME = (() => {
 })();
 $('#meName').value = ME.name || '';
 $('#meFrom').value = ME.from || '';
+$('#meSoc').value = ME.soc ? '@' + ME.soc : '';
+$('#meSoc').addEventListener('input', e => { ME.soc = e.target.value.replace(/\s+/g, '').replace(/^@+/, ''); store.set('me', ME); });
+$('#meSoc').addEventListener('blur', e => { e.target.value = ME.soc ? '@' + ME.soc : ''; });
 $('#meFrom').addEventListener('input', e => { ME.from = e.target.value.trim(); store.set('me', ME); });
 $('#meName').addEventListener('input', e => {
   ME.name = e.target.value.trim(); store.set('me', ME);
@@ -6305,7 +6348,7 @@ const TOUR = [
   { sel: ['.nav [data-view=vTexte]'], t: 'Texte', b: 'Écris tes lyrics ici, ou touche « 🎙️ Dicter mon texte » et dis-les : ils s\'écrivent tout seuls (relis, la dictée se trompe sur le rap). Le prompteur les fait défiler pendant que tu kickes. Je cale le texte tout seul : sur le tempo pendant ta première prise, puis pile sur ta voix une fois la prise posée. Tu peux toujours caler à la main. Le calage sort aussi en sous-titres dans tes Reels.\nEn haut, le petit lecteur : 🔁 répète 1 à 16 mesures pendant que t\'écris, et te montre sur quelle mesure et quel temps t\'es.' },
   { sel: ['.nav [data-view=vProjets]'], t: 'Projets', b: 'Prépare ton single, ton EP ou ton album : pochette, tracklist, et où en est chaque titre.' },
   { sel: ['.nav [data-view=vPartager]'], t: 'Partager', b: 'Exporte ton son en MP3, monte un Reel avec ta photo, ta vidéo ou un selfie, et envoie ta session à un collègue pour qu\'il pose son couplet.' },
-  { sel: ['.nav [data-view=vPartager]'], t: 'Poste ton Reel', b: 'Ton Reel prêt, choisis ton réseau : Insta, TikTok, Shorts, Snap… Ta légende est copiée toute seule avec les bons hashtags, t\'as plus qu\'à coller. Et dans « Fais tourner l\'appli », envoie le lien à tes potes kickeurs.' },
+  { sel: ['.nav [data-view=vPartager]'], t: 'Poste ton Reel', b: 'Ton Reel prêt, un seul bouton : « 📤 Partager mon Reel ». Ta légende est copiée toute seule avec #StudioXel et les bons hashtags, le partage du téléphone s\'ouvre : choisis ton réseau et colle. Reviens pour le réseau suivant.\nTon Reel porte le bandeau StudioXel et, sur la fin, le QR code de l\'appli en grand. Mets ton Insta ou ton TikTok dans Réglages : ton @ s\'affiche dessus, ceux qui le voient te retrouvent.' },
   { sel: ['.nav [data-view=vPartager]'], t: 'Ne perds jamais tes sons', b: 'Tes sons sont gardés dans ton téléphone. Pour ne rien perdre : Partager → « 💾 Sauvegarder tous mes sons », et range le fichier dans iCloud Drive, Google Drive ou Dropbox. Sur un nouveau téléphone, « ♻️ Restaurer » et tout revient.' },
   { sel: ['#vPistes .qhelp'], t: 'Le ? de chaque onglet', b: 'En haut de chaque onglet, le petit ? jaune te fait le tour détaillé de tout ce qu\'il y a dedans. Perdu ? Touche-le.' },
   { sel: ['#bSet'], t: 'Ton avis', b: 'Un bug, une idée, un kif ? Dans Réglages ou en bas de Partager, touche « Donner mon avis » : ça m\'arrive direct, je lis tout. C\'est comme ça que l\'appli avance.' },
@@ -6758,7 +6801,8 @@ const HELP = {
     { sel: ['#reelFx'], t: '3 · Les effets', b: 'Pulsation, flashs sur le tempo, secousse, glitch, zoom, grain, vignette : allume ceux que tu veux.' },
     { sel: ['#reelLen'], t: '4 · La durée', b: '15, 30, 60 secondes, tout le son, ou un passage que tu choisis au curseur.' },
     { sel: ['#reelText'], t: '5 · Les textes', b: 'Tes paroles en sous-titres (si ton texte est calé) et le titre du son.' },
-    { sel: ['#bVideo'], t: 'Créer le Reel', b: 'Lance la fabrication. Ensuite tu choisis ton réseau : la légende est copiée avec les bons hashtags, et je te dis comment rendre le lien cliquable sur chaque réseau.' },
+    { sel: ['#bVideo'], t: 'Créer le Reel', b: 'Lance la fabrication. Ta vidéo porte le bandeau StudioXel en bas, et sur la fin (1/6 du Reel, 5 secondes minimum) le QR code de l\'appli en grand, pendant que ton son tourne. Ton @ s\'affiche si tu l\'as mis dans Réglages.' },
+    { sel: ['#netBox'], t: 'Partager', b: 'Ta légende est prête : #StudioXel en premier, puis les hashtags qui vont bien (5 au total, la limite d\'Instagram). Tu peux ajouter les tiens. « 📤 Partager mon Reel » copie la légende et ouvre le partage : choisis ton réseau, colle. Reviens pour le suivant.' },
     { sel: ['#linkList'], t: 'Fais tourner l\'appli', b: 'Envoie le lien de StudioXel par WhatsApp, SMS, X, Facebook, Snapchat, ou copie-le.' },
     { sel: ['#vPartager [data-bk=save]'], t: 'Ta sauvegarde', b: 'Un fichier avec tous tes sons : audio, texte, réglages. Range-le où tu veux : iCloud Drive, Google Drive, Dropbox, OneDrive ou par mail. « Restaurer » le récupère, même sur un autre téléphone. Je te rappelle de le faire de temps en temps (désactivable dans Réglages).' },
     { sel: ['#bAvis2'], t: 'Ton avis', b: 'Un bug, une idée, un kif : ça part direct, je lis tout.' },
