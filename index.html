@@ -578,22 +578,14 @@ body.ed-open .wmark{z-index:41}
 .tsrow .sbtn[aria-pressed=true]{background:var(--accent);color:#1a1405;border-color:var(--accent)}
 .pl.virt .t{opacity:.45;font-style:italic}
 .rlcd{font:700 13px var(--mono, ui-monospace);color:var(--accent);margin-right:auto}
-.routedd{flex-basis:100%;min-width:0;display:flex;gap:6px;align-items:stretch}.routedd .routebar{flex:1;min-width:0}
-.routeref{flex:none;width:44px;border-radius:10px;border:1px solid var(--line);background:var(--raise);color:var(--fg);font-size:17px}.routeref.spin{animation:rspin .8s linear infinite}@keyframes rspin{to{transform:rotate(360deg)}}
-.welcome.routew{z-index:57;align-items:flex-end}.routesheet{width:100%;max-width:560px;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;text-align:left}
-.rshead{display:flex;align-items:center;gap:8px;margin-bottom:6px}.rshead b{flex:1;font-size:17px}
-.routebar{width:100%;display:flex;align-items:center;gap:5px;min-height:38px;padding:6px 9px;border-radius:10px;border:1px solid var(--line);background:var(--raise);color:var(--fg);font-size:13.5px;text-align:left}
-.routebar>span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}.routebar .rbo,.routebar .rbi{font-weight:700}.routebar .rbsep{flex:none;width:1px;height:16px;background:var(--line)}
-@media (max-width:360px){.routebar{font-size:12px;gap:4px;padding:6px 7px}.routebar .rq{font-size:10px;padding:2px 4px}}
-.routebar i{margin-left:auto;font-style:normal;color:var(--muted);flex:none}
+.routedd{flex-basis:100%;min-width:0;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.rsel{flex:1 1 0;min-width:0;display:flex;align-items:center;gap:4px;height:40px;padding:0 4px 0 8px;border-radius:10px;border:1px solid var(--line);background:var(--raise)}
+.rsel span{flex:none;font-size:15px}.rsel select{flex:1;min-width:0;height:100%;border:0;background:transparent;color:var(--fg);font:700 13.5px system-ui,-apple-system,sans-serif;text-overflow:ellipsis;-webkit-appearance:menulist;appearance:auto}
+.routeref{flex:none;width:44px;height:40px;border-radius:10px;border:1px solid var(--line);background:var(--raise);color:var(--fg);font-size:17px}.routeref.spin{animation:rspin .8s linear infinite}@keyframes rspin{to{transform:rotate(360deg)}}
+@media (max-width:360px){.rsel span{display:none}.rsel{padding-left:6px}.rsel select{font-size:13px}}
+.rinfo{flex-basis:100%;display:flex;align-items:center;gap:8px;font-size:12px;white-space:nowrap;color:var(--muted);min-height:22px}
 .rq{flex:none;font-size:11px;font-weight:800;padding:2px 6px;border-radius:6px}.rq.ok{background:color-mix(in srgb,#2ee6a6 18%,transparent);color:#2ee6a6}.rq.wa{background:color-mix(in srgb,#ff9f43 18%,transparent);color:#ff9f43}
-.routepan{display:flex;flex-direction:column;gap:8px}
-.routepan .rsec{font:800 11px system-ui;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:4px}
-.routepan .ropt{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--raise);color:var(--fg);font-size:14px;text-align:left}
-.routepan .ropt[aria-pressed=true]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--raise))}
-.routepan .ropt .rr{flex:none;width:16px;height:16px;border-radius:50%;border:2px solid var(--line)}.routepan .ropt[aria-pressed=true] .rr{border-color:var(--accent);background:var(--accent);box-shadow:inset 0 0 0 3px var(--raise)}
-.routepan .ropt small{display:block;color:var(--muted);font-size:12px;margin-top:1px}.routepan .ropt .rq{margin-left:auto}.routepan .ropt>span{min-width:0;overflow-wrap:anywhere}
-.routepan .rnote{font-size:12.5px;color:var(--muted);line-height:1.4;margin:0}.routepan .rlat{display:flex;align-items:center;gap:8px;font-size:14px;flex-wrap:wrap}.routepan .rlat .sbtn{margin-left:auto}
+.rcal{margin-left:auto;background:none;border:0;color:var(--accent);font-weight:700;font-size:12.5px;text-decoration:underline;padding:4px 0}
 .tprog{flex-basis:100%;display:flex;align-items:center;gap:10px}
 .tpt{font:12px var(--mono, ui-monospace);color:var(--muted);min-width:34px;text-align:center}
 .tpbar{position:relative;flex:1;height:22px;cursor:pointer;touch-action:none}
@@ -664,7 +656,12 @@ body.ed-open .wmark{z-index:41}
     <div class="tpbar" id="tpBar"><i id="tpFill"></i><div class="tpmk" id="tpMk"></div><b id="tpHead"></b></div>
     <span class="tpt" id="tpTot">0:00</span>
   </div>
-  <div class="routedd" id="routeDd"><button class="routebar" id="routeBar" aria-expanded="false" aria-controls="routePan"><span class="rbo" id="rbOut">📱 Haut-parleur</span><span class="rbsep"></span><span class="rbi" id="rbIn">🎙️ Micro du tél</span><span class="rq" id="rbQ"></span><i>▾</i></button><button class="routeref" id="routeRef" aria-label="Actualiser le matériel" title="Actualiser le matériel">🔄</button></div>
+  <div class="routedd" id="routeDd">
+    <label class="rsel"><span aria-hidden="true">🎧</span><select id="outSel" aria-label="Tu écoutes avec"></select></label>
+    <label class="rsel"><span aria-hidden="true">🎙️</span><select id="micSel" aria-label="Ça enregistre avec"></select></label>
+    <button class="routeref" id="routeRef" aria-label="Actualiser le matériel" title="Actualiser le matériel">🔄</button>
+    <div class="rinfo"><span class="rq" id="rbQ"></span><span id="rLat"></span><button class="rcal" id="rCal">Refaire le test</button></div>
+  </div>
   <div class="mkdrawer" id="mkDrawer" hidden><button class="mkdtog" id="mkTog" aria-expanded="false" aria-controls="mkWrap"><span id="mkTogTxt">✂️ Parties de l'instru</span><i>▾</i></button><div class="mkwrap" id="mkWrap" hidden><button class="sbtn mkok" id="mkOk">✓ OK</button></div></div>
   <div class="settings" id="settings" hidden>
     <div class="sethead"><b>⚙️ Réglages</b><button class="sbtn setclose" data-setclose>✕ Fermer</button></div>
@@ -688,7 +685,7 @@ body.ed-open .wmark{z-index:41}
       <p class="note" style="flex-basis:100%;margin:0">Facultatif : ton @ apparaît sur tes Reels, pour que ceux qui les voient te retrouvent.</p>
       <label class="grp">D'où tu viens <input id="meFrom" maxlength="40" style="width:140px;height:34px;background:var(--raise);border:1px solid var(--line);border-radius:6px;padding:0 8px;text-transform:none;letter-spacing:0" placeholder="Ville ou département"></label>
     </div>
-    <div class="autobox"><div class="autot">Écoute</div>
+    <div class="autobox" hidden><div class="autot">Écoute</div>
       <div class="seg" id="outSeg" role="group" aria-label="Écoute"><button data-o="auto" aria-pressed="false">Auto</button><button data-o="casque" aria-pressed="false">Casque</button><button data-o="hp" aria-pressed="false">Haut-parleur</button></div>
       <p class="note">Auto : je détecte tout seul tes écouteurs. Choisis toi-même si la pastille d'écoute en haut se trompe.</p>
     </div>
@@ -709,7 +706,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.5.3 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.5.4 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookie, sans garder ton adresse IP) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false">📊 Statistiques anonymes : activées</button>
@@ -1166,8 +1163,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 175; // numéro interne (jamais affiché)
-const APP_PUB = '2.5.3';
+const APP_VER = 176; // numéro interne (jamais affiché)
+const APP_PUB = '2.5.4';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -1664,6 +1661,7 @@ async function getMic0(){
   mic = m;
   micEC = ec; micTouched = true;
   const lbl = (mic.getAudioTracks()[0]?.label || '');
+  if(!phoneMic && lbl) S.defLabel = lbl;
   S.micLabel = lbl;
   const was = S.btPhoneMic; S.btPhoneMic = !!phoneMic && isPhoneMic(lbl) && S.routeInfo?.kind === 'ecouteurs';
   try{ showRoute(); }catch(e){}
@@ -1935,6 +1933,7 @@ async function record0(){
     }
   }
   ensureCtx();
+  await probeDefault();
   await detectHeadset(true);
   if(!calDone()){ await forceCal(false); await detectHeadset(true); }
   if(S.mon && routeKey() === 'bt'){ S.monAuto = false; monOff(); toast('🎧 Retour voix coupé : en Bluetooth ta voix te revient en retard dans les oreilles et te fait rapper en retard.'); }
@@ -2041,7 +2040,7 @@ function finishRec(){ S.recording = false; boot('ok'); setRecUI(); hideRecLyrics
 /* ---------- Calage automatique (latence) ---------- */
 function routeKey(){
   if(S.routeInfo?.wireless && S.outMode !== 'hp') return 'bt';
-  if(/airpods|bluetooth|beats|buds/i.test(S.micLabel || '')) return 'bt';
+  if(S.outMode === 'auto' && /airpods|bluetooth|beats|buds/i.test(S.micLabel || '')) return 'bt';
   return S.casque ? 'wired' : 'speaker';
 }
 function latFor(r, dk){
@@ -2178,6 +2177,7 @@ async function calibrateLat(){
   if(calBusy || S.recording) return false; calBusy = true; S.calib = true;
   if(S.playing) pause();
   ensureCtx(); await wake();
+  await probeDefault();
   await detectHeadset(true);
   let key = devKey(), ok = false;
   try{
@@ -6181,7 +6181,7 @@ const HEADSET_MIC = /airpods|bluetooth|beats|buds|headset|headphone|casque|[ée]
 const isHeadsetLabel = l => !!l && HEADSET_MIC.test(l);
 function applyOutMode(){
   const was = S.casque;
-  S.casque = S.outMode === 'casque' || (S.outMode === 'auto' && S.headset);
+  S.casque = S.outMode === 'casque' || S.outMode === 'bt' || (S.outMode === 'auto' && S.headset);
   document.querySelectorAll('#outSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.o === S.outMode));
   const info = $('#outInfo');
   if(info) info.textContent = S.outMode === 'auto' ? (S.headset ? '🎧 écouteurs détectés' : S.route === 'bt' ? '🚗 Bluetooth détecté' : '🔊 haut-parleur') : '';
@@ -6218,79 +6218,84 @@ function micPlan(){
 }
 const micShort = l => !l ? 'Micro' : isPhoneMic(l) ? 'Micro du tél' : EAR_MIC.test(l) ? 'Micro ' + (/airpods/i.test(l) ? 'des AirPods' : WIRELESS.test(l) ? 'des écouteurs' : 'du casque') : l.replace(/\s*\(.*\)\s*$/, '');
 const micDraft = l => !!l && EAR_MIC.test(l) && WIRELESS.test(l);
+/* ce que tu choisis toi-même passe avant ce que le téléphone dit (l'iPhone cache souvent les AirPods aux sites web) */
+const OUT_FORCE = {
+  hp: { kind: 'tel', name: '', wireless: false },
+  casque: { kind: 'ecouteurs', name: 'Écouteurs filaires', wireless: false },
+  bt: { kind: 'ecouteurs', name: 'AirPods / Bluetooth', wireless: true },
+  car: { kind: 'bt', name: 'Voiture / enceinte', wireless: true }
+};
+const OUT_LABEL = { hp: 'Haut-parleur du tél', casque: 'Écouteurs filaires', bt: 'AirPods / écouteurs Bluetooth', car: 'Voiture / enceinte Bluetooth' };
+const OUT_SHORT = { hp: 'Haut-parleur', casque: 'Filaire', bt: 'AirPods / BT', car: 'Voiture / BT' };
+const routeShort = r => { r = r || { kind: 'tel' }; return r.kind === 'ecouteurs' ? (r.wireless ? (/airpods/i.test(r.name || '') ? 'AirPods' : 'BT') : 'Filaire') : r.kind === 'bt' ? 'Voiture / BT' : 'HP'; };
+const micTiny = l => !l ? 'Micro' : isPhoneMic(l) || /t[ée]l[ée]phone/i.test(l) ? 'Tél' : /airpods/i.test(l) ? 'AirPods' : EAR_MIC.test(l) ? (WIRELESS.test(l) ? 'Écouteurs' : 'Casque') : micShort(l);
+function routeName(r){ r = r || { kind: 'tel' }; return r.kind === 'ecouteurs' ? (r.name || 'Écouteurs').replace(/\s+de\s+.*$/i, '') : r.kind === 'bt' ? (r.name || 'Bluetooth') : 'Haut-parleur'; }
 function outNow(){
   const r = S.routeInfo || { kind: 'tel' };
-  if(S.outMode === 'hp') return { ic: '📱', t: 'Haut-parleur', full: 'Haut-parleur du téléphone (forcé dans Réglages)', ear: false };
-  if(S.outMode === 'casque' && r.kind !== 'ecouteurs') return { ic: '🎧', t: 'Casque', full: 'Casque (forcé dans Réglages)', ear: true };
-  if(r.kind === 'ecouteurs') return { ic: '🎧', t: (r.name || 'Écouteurs').replace(/\s+de\s+.*$/i, ''), full: r.name || 'Écouteurs', ear: true };
-  if(r.kind === 'bt') return { ic: '🚗', t: r.name || 'Bluetooth', full: (r.name || 'Bluetooth') + ' (voiture ou enceinte)', ear: false };
+  if(r.kind === 'ecouteurs') return { ic: '🎧', t: routeName(r), full: r.name || 'Écouteurs', ear: true };
+  if(r.kind === 'bt') return { ic: '🚗', t: routeName(r), full: (r.name || 'Bluetooth') + ' (voiture ou enceinte)', ear: false };
   return { ic: '📱', t: 'Haut-parleur', full: 'Haut-parleur du téléphone', ear: false };
 }
 function micNow(){
   if(mic && S.micLabel) return S.micLabel;
   const d = micPlan(); if(d) return d.label;
   const r = S.routeInfo || {};
-  if(r.kind === 'ecouteurs'){ const e = micDevs.find(x => EAR_MIC.test(x.label)); if(e) return e.label; }
+  if(r.kind === 'ecouteurs' && !r.wireless){ const e = micDevs.find(x => EAR_MIC.test(x.label)); if(e) return e.label; }
   return (micDevs.find(x => isPhoneMic(x.label)) || {}).label || 'Micro du téléphone';
 }
+const selFill = (sel, opts, val) => { const sig = JSON.stringify(opts); if(sel._sig !== sig){ sel._sig = sig; sel.innerHTML = opts.map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join(''); } if(sel.value !== val) sel.value = val; };
 function showRoute(){
-  const o = outNow(), m = micNow(), good = o.ear && !micDraft(m);
-  setTxt($('#rbOut'), o.ic + ' ' + o.t); setTxt($('#rbIn'), '🎙️ ' + (isPhoneMic(m) || /t[ée]l[ée]phone/i.test(m) ? 'Tél' : /airpods/i.test(m) ? 'AirPods' : EAR_MIC.test(m) ? (WIRELESS.test(m) ? 'Écouteurs' : 'Casque') : micShort(m)));
-  const q = $('#rbQ'); if(q){ setTxt(q, good ? '✓ Bon son' : '⚠️ Son moyen'); q.className = 'rq ' + (good ? 'ok' : 'wa'); }
-  if(!routeW.hidden) routePanUI();
+  const os = $('#outSel'), ms = $('#micSel'); if(!os) return;
+  const det = S.routeDetected || S.routeInfo || { kind: 'tel' };
+  selFill(os, [['auto', 'Auto · ' + routeShort(det)], ...Object.keys(OUT_SHORT).map(k => [k, OUT_SHORT[k]])], S.outMode);
+  const pick = store.get('micPick', 'auto'), m = micNow();
+  const mOpts = [['auto', 'Auto · ' + micTiny(m)], ...micDevs.map(d => [d.label, micTiny(d.label) + (micDraft(d.label) ? ' (son moyen)' : '')])];
+  selFill(ms, mOpts, mOpts.some(o => o[0] === pick) ? pick : 'auto');
+  const o = outNow(), good = o.ear && !micDraft(m);
+  const q = $('#rbQ'); setTxt(q, good ? '✓ Bon son' : '⚠️ Son moyen'); q.className = 'rq ' + (good ? 'ok' : 'wa');
+  setTxt($('#rLat'), '🎯 ' + (calDone() ? latFor(routeKey()) + ' ms' : 'timing pas réglé'));
+  setTxt($('#rCal'), calDone() ? 'Refaire le test' : 'Faire le test');
 }
-/* le menu écoute et micro : une fenêtre à part, qui défile toute seule (plus de menu coincé dans le lecteur) */
-const routeW = document.createElement('div'); routeW.className = 'welcome routew'; routeW.hidden = true; routeW.setAttribute('role', 'dialog'); routeW.setAttribute('aria-label', 'Écoute et micro');
-routeW.innerHTML = '<div class="wpanel routesheet"><div class="rshead"><b>🎧 Écoute et micro</b><button class="sbtn" data-rref>🔄 Actualiser</button><button class="sbtn" data-rclose aria-label="Fermer">✕</button></div><div class="routepan" id="routePan"></div></div>';
-document.body.appendChild(routeW);
-const routeOpen = async () => { routeW.hidden = false; $('#routeBar').setAttribute('aria-expanded', 'true'); await refreshDevs(); routePanUI(); };
-const routeClose = () => { routeW.hidden = true; $('#routeBar').setAttribute('aria-expanded', 'false'); };
-routeW.addEventListener('click', e => { if(e.target === routeW || e.target.closest('[data-rclose]')) routeClose(); if(e.target.closest('[data-rref]')) refreshRoute(); });
+const canSink = () => false;
+/* demander au téléphone quel micro il donne par défaut : avec des AirPods branchés, c'est le leur (ouvert une fraction de seconde) */
+let probing = null;
+async function probeDefault(){
+  if(probing) return probing;
+  probing = (async () => {
+    try{
+      if(S.recording || S.playing || S.mon || !navigator.mediaDevices?.getUserMedia) return;
+      if(mic){ if(!S.btPhoneMic && S.micLabel) S.defLabel = S.micLabel; return; }
+      const st = await navigator.mediaDevices.getUserMedia({ audio: true }); micTouched = true;
+      S.defLabel = st.getAudioTracks()[0]?.label || S.defLabel;
+      st.getTracks().forEach(t => t.stop()); audioSessionPlay();
+    }catch(e){}
+  })();
+  try{ await probing; } finally { probing = null; }
+}
 /* « Actualiser » : on demande au téléphone ce qui est vraiment branché maintenant (le micro s'ouvre une fraction de seconde si besoin) */
 let routeBusy = false;
 async function refreshRoute(){
   if(routeBusy || S.recording || calLock) return; routeBusy = true;
   $('#routeRef').classList.add('spin');
-  let probe = null;
-  try{
-    if(!mic && !S.playing && navigator.mediaDevices?.getUserMedia){
-      try{ probe = await navigator.mediaDevices.getUserMedia({ audio: true }); micTouched = true; }catch(e){}
-    }
-    await detectHeadset(false, probe ? (probe.getAudioTracks()[0]?.label || '') : '');
-  }finally{
-    if(probe){ probe.getTracks().forEach(t => t.stop()); audioSessionPlay(); }
-    $('#routeRef').classList.remove('spin'); routeBusy = false;
-  }
-  const o = outNow(); toast('🔄 ' + o.ic + ' ' + o.full + ' · 🎙️ ' + micShort(micNow()));
-  if(!routeW.hidden) routePanUI();
+  try{ await probeDefault(); await detectHeadset(false); }
+  finally{ $('#routeRef').classList.remove('spin'); routeBusy = false; }
+  const d = S.routeDetected || S.routeInfo;
+  toast('🔄 Le téléphone voit : ' + (d && d.kind === 'ecouteurs' ? '🎧 ' : d && d.kind === 'bt' ? '🚗 ' : '📱 ') + routeName(d) + (S.outMode !== 'auto' ? ' · tu as choisi : ' + OUT_LABEL[S.outMode] : '') + '.');
 }
-const canSink = () => typeof ctx?.setSinkId === 'function' && outDevs.length > 1;
-function routePanUI(){
-  const pan = $('#routePan'), o = outNow(), m = micNow(), pick = store.get('micPick', 'auto');
-  const outH = canSink()
-    ? outDevs.map(d => `<button class="ropt" data-sink="${esc(d.deviceId)}" aria-pressed="${(store.get('sinkId', null) || 'default') === d.deviceId}"><i class="rr"></i><span>${esc(d.label.replace(/\s*\(.*\)\s*$/, ''))}</span></button>`).join('')
-    : `<div class="ropt" aria-pressed="true"><i class="rr"></i><span>${esc(o.full)}</span></div><p class="rnote">Pour changer d'écoute, passe par le menu Bluetooth ou AirPlay du téléphone, puis touche 🔄 Actualiser.</p>`;
-  const mics = micDevs.map(d => `<button class="ropt" data-mic="${esc(d.label)}" aria-pressed="${pick === d.label}"><i class="rr"></i><span>${esc(micShort(d.label))}${micShort(d.label) !== d.label ? `<small>${esc(d.label)}</small>` : ''}</span>${micDraft(d.label) ? '<span class="rq wa">son moyen</span>' : ''}</button>`).join('');
-  pan.innerHTML = `<div class="rsec">🎧 Tu entends sur</div>${outH}
-    <div class="rsec">🎙️ Ça enregistre avec</div>
-    <button class="ropt" data-mic="auto" aria-pressed="${pick === 'auto' || !micDevs.some(d => d.label === pick)}"><i class="rr"></i><span>Auto<small>Je prends le meilleur micro tout seul · en ce moment : ${esc(micShort(m))}</small></span><span class="rq ok">conseillé</span></button>
-    ${mics || '<p class="rnote">La liste de tes micros s\'affiche dès que l\'appli a eu accès au micro (après ta première prise).</p>'}
-    ${o.ear ? '' : '<p class="rnote">⚠️ Sans écouteurs, le téléphone retire l\'instru du micro : ta voix sort en qualité limitée. Branche un casque pour un vrai son.</p>'}
-    <div class="rlat">🎯 Timing : <b>${calDone() ? latFor(routeKey()) + ' ms' : 'pas encore réglé'}</b><button class="sbtn" data-rcal>${calDone() ? 'Refaire le test' : 'Faire le test'}</button></div>`;
-}
-$('#routeBar').addEventListener('click', () => routeOpen());
 $('#routeRef').addEventListener('click', () => refreshRoute());
-$('#routePan').addEventListener('click', async e => {
-  const m = e.target.closest('[data-mic]'), k = e.target.closest('[data-sink]'), c = e.target.closest('[data-rcal]');
-  if(m){
-    store.set('micPick', m.dataset.mic);
-    if(mic && !S.recording && !S.mon) releaseMic(true);
-    toast(S.recording ? '🎙️ Ce micro servira à ta prochaine prise.' : '🎙️ Prochaine prise avec : ' + micShort(m.dataset.mic === 'auto' ? micNow() : m.dataset.mic) + '.');
-  }
-  if(k){ store.set('sinkId', k.dataset.sink); try{ await ctx.setSinkId(k.dataset.sink === 'default' ? '' : k.dataset.sink); }catch(e2){ toast('Le téléphone refuse de changer d\'écoute ici : passe par son menu Bluetooth.'); } }
-  if(c){ routeClose(); await forceCal(false); }
-  showRoute(); routePanUI();
+$('#outSel').addEventListener('change', async e => {
+  S.outMode = e.target.value; store.set('outMode', S.outMode);
+  await detectHeadset('force');
+  toast(S.outMode === 'auto' ? '🎧 Auto : je me fie à ce que le téléphone me dit.' : '🎧 ' + OUT_LABEL[S.outMode] + ' : c\'est noté.');
 });
+$('#micSel').addEventListener('change', e => {
+  store.set('micPick', e.target.value);
+  if(mic && !S.recording && !S.mon) releaseMic(true);
+  showRoute(); devCheck();
+  toast('🎙️ Prochaine prise avec : ' + micShort(e.target.value === 'auto' ? micNow() : e.target.value) + '.');
+});
+$('#rCal').addEventListener('click', () => forceCal(false));
+
 async function detectHeadset(silent, extraLabel){
   try{ await refreshDevs(); }catch(e){}
   try{
@@ -6298,6 +6303,8 @@ async function detectHeadset(silent, extraLabel){
     const labels = ds.filter(d => d.kind === 'audioinput').map(d => d.label || '');
     /* le micro ouvert compte seulement s'il est vraiment ouvert : un ancien micro (AirPods rangés) ne doit pas fausser l'écoute */
     if(S.micLabel && mic && mic.getAudioTracks().some(t => t.readyState === 'live')) labels.unshift(S.micLabel);
+    /* l'iPhone cache les AirPods dans la liste, mais le micro qu'il donne par défaut porte leur nom : c'est notre meilleur indice */
+    if(S.defLabel) labels.unshift(S.defLabel);
     if(extraLabel) labels.unshift(extraLabel);
     const known = labels.some(l => l);
     if(known){
@@ -6307,6 +6314,8 @@ async function detectHeadset(silent, extraLabel){
         if(ctx && ctx.state === 'running' && typeof ctx.outputLatency === 'number' && ctx.outputLatency > 0) S.outLatRoute = ctx.outputLatency > 0.1 ? { kind: 'bt', name: ctx.outputLatency > 0.8 ? 'AirPlay' : 'Bluetooth', wireless: true } : null;
         if(S.outLatRoute) r = S.outLatRoute;
       } else S.outLatRoute = null;
+      S.routeDetected = r;
+      if(S.outMode !== 'auto' && OUT_FORCE[S.outMode]) r = OUT_FORCE[S.outMode];
       const same = S.routeInfo && S.routeInfo.kind === r.kind && S.routeInfo.name === r.name;
       S.routeInfo = r; S.headset = r.kind === 'ecouteurs'; S.route = r.kind;
       if(!same || silent === 'force'){ applyOutMode(); showLat(); }
@@ -6315,7 +6324,10 @@ async function detectHeadset(silent, extraLabel){
       setTimeout(devCheck, 0);
       if(!silent && before && before !== r.kind && S.outMode === 'auto')
         toast(r.kind === 'ecouteurs' ? '🎧 ' + (r.name || 'Écouteurs') + ' détectés : tu entends dedans, ' + micShort(micNow()).toLowerCase() + ' pour enregistrer.' : r.kind === 'bt' ? '🚗 ' + (r.name || 'Bluetooth') + ' détecté : son sur la voiture ou l\'enceinte. Pour enregistrer, ta voix sortira en qualité limitée.' : '📱 ' + (before === 'ecouteurs' ? 'Écouteurs rangés' : 'Plus rien de branché') + ' : le son passe sur le haut-parleur, le micro du téléphone prend le relais. Sans écouteurs, ta voix sort en qualité limitée.');
-    } else { applyOutMode(); showRoute(); }
+    } else {
+      if(S.outMode !== 'auto' && OUT_FORCE[S.outMode]){ S.routeInfo = OUT_FORCE[S.outMode]; S.headset = S.routeInfo.kind === 'ecouteurs'; S.route = S.routeInfo.kind; }
+      applyOutMode(); showRoute(); setTimeout(devCheck, 0);
+    }
   }catch(e){ applyOutMode(); showRoute(); }
 }
 /* écouteurs détectés = retour voix allumé tout seul (pas de larsen possible). Il se coupe quand on les enlève. */
@@ -6343,8 +6355,8 @@ $('#outSeg').addEventListener('click', e => {
 try{ navigator.mediaDevices?.addEventListener('devicechange', () => detectHeadset(false)); }catch(e){}
 /* pas de surveillance en continu : l'appli se réveille quand le téléphone signale un changement,
    et vérifie aussi aux moments qui comptent (retour dans l'appli, ▶, réglages, menu écoute et micro). Le REC vérifie toujours avant d'enregistrer. */
-document.addEventListener('visibilitychange', () => { if(!document.hidden) detectHeadset(false); });
-document.addEventListener('pointerdown', e => { if(!S.recording && e.target.closest('#bPlay, [data-tx=play], .mxplay, #edPlay, [data-s=play], #bSet, [data-openset], #routeBar')) detectHeadset(false); }, true);
+document.addEventListener('visibilitychange', () => { if(!document.hidden) probeDefault().then(() => detectHeadset(false)); });
+document.addEventListener('pointerdown', e => { if(S.recording) return; if(e.target.closest('#outSel, #micSel')) probeDefault().then(() => detectHeadset(false)); else if(e.target.closest('#bPlay, [data-tx=play], .mxplay, #edPlay, [data-s=play], #bSet, [data-openset]')) detectHeadset(false); }, true);
 try{ ctx.addEventListener && ctx.addEventListener('sinkchange', () => detectHeadset(false)); }catch(e){}
 
 /* ---------- Sélection à la phrase (appui long) ---------- */
@@ -6429,7 +6441,7 @@ const TOUR = [
   { sel: ['#list .row:nth-child(2) .chip'], t: 'R, M, S', b: 'R arme la piste : c\'est là que ta voix va s\'enregistrer. M coupe la piste, S l\'écoute toute seule. De base t\'as Instru, Couplets pour tes couplets, Refrain (déjà un peu doublé pour sonner plus large), Back et Ambiance. Arme Couplets avant ton premier couplet.' },
   { sel: ['#bRec'], t: 'REC', b: 'Piste armée ? Touche REC : 4 bips de décompte et tu kickes. La barre MICRO en haut bouge avec ta voix, ta prise se dessine sur la piste en direct, et ton texte s\'affiche en bas s\'il est écrit (onglet Texte). Retouche REC pour t\'arrêter. Si la piste a déjà une prise, la nouvelle se pose par-dessus à cet endroit (Annuler pour revenir), et tu réentends 1 mesure de ta prise d\'avant pour reprendre le flow pile au bon moment (pré-roulement, réglable). Pour garder les deux, ajoute une piste avec le + ou duplique avec ⧉ : c\'est toi qui décides.' },
   { sel: ['#bMon'], t: 'Retour 🎧', b: 'Allume-le pour t\'entendre en direct avec les effets de la piste armée, auto-tune compris, même sans enregistrer : parfait pour chauffer ta voix. Avec des écouteurs c\'est l\'idéal, et je l\'allume tout seul dès que je les détecte. Sur le haut-parleur du téléphone, il ne s\'allume pas : le micro est collé au haut-parleur, ça sifflerait à coup sûr. En Bluetooth (voiture, enceinte), si ça siffle, je supprime le sifflement tout seul.' },
-  { sel: ['#routeDd'], t: 'Écoute et micro', b: 'Sous le lecteur, je te dis où tu entends (🎧 écouteurs, 📱 haut-parleur, 🚗 voiture ou enceinte) et avec quel micro ça enregistre, avec la qualité : ✓ Bon son ou ⚠️ Son moyen. Ça se met à jour quand le téléphone signale un changement. S\'il ne le fait pas (l\'iPhone oublie parfois), touche 🔄 à côté : je regarde ce qui est vraiment branché. Touche-le pour choisir ton micro toi-même ou refaire le test de timing.\nLe meilleur son : un casque filaire. Avec des AirPods, j\'enregistre avec le micro du téléphone, bien meilleur que celui des écouteurs.' },
+  { sel: ['#routeDd'], t: 'Écoute et micro', b: 'Sous le lecteur, deux menus. 🎧 : avec quoi tu écoutes. En Auto, je me fie au téléphone, mais l\'iPhone cache souvent les AirPods : choisis toi-même (Haut-parleur, Écouteurs filaires, AirPods / Bluetooth, Voiture / enceinte) et c\'est pris en compte direct. 🎙️ : avec quel micro ça enregistre. En dessous : ✓ Bon son ou ⚠️ Son moyen, et ton timing. 🔄 redemande au téléphone ce qui est branché.\nLe meilleur son : un casque filaire. Avec des AirPods, j\'enregistre avec le micro du téléphone, bien meilleur que celui des écouteurs.' },
   { sel: ['#bHome', '#bPlay', '#bStop', '#bRep', '#tProg'], t: 'Lecture', b: '▶ lance ou met en pause, ⏹ arrête, ⏮ revient au début. 🔁 répète en boucle le passage chanté où tu es, parfait pour régler tes effets. La barre en dessous montre où tu en es dans le son : touche-la ou glisse dessus pour te déplacer, les petits traits sont tes repères. Réécoute ta prise juste après l\'avoir posée, c\'est là que tu sais si elle est bonne.' },
   { sel: ['#bUndo'], t: 'Annuler', b: 'Une bêtise ? Annuler revient en arrière, étape par étape : une prise, un effet, une piste supprimée, tout s\'annule.' },
   { sel: ['#list .row:nth-child(2) .l2'], t: 'Volume et pan', b: 'VOL règle le niveau de la piste, PAN la place à gauche ou à droite. Je cale déjà les niveaux tout seul, tu peaufines si besoin. Astuce : le lead au centre, les backs un peu sur les côtés.' },
@@ -6439,7 +6451,7 @@ const TOUR = [
   { sel: ['#list .row:nth-child(2) .lane'], t: 'La timeline', b: 'Glisse le doigt pour avancer dans le morceau. Une touche place la lecture. Un appui long sur une phrase la sélectionne : tu peux la supprimer, la déplacer ou l\'envoyer sur une autre piste.\nPour bosser au poil : touche deux fois une prise, ou sa loupe 🔍. Elle s\'ouvre en grand : tu sélectionnes au doigt, tu écoutes en boucle, et tu coupes, montes le son, fais un fondu, répètes un passage, coupes tous les blancs d\'un coup (parfait pour les backs) ou recales la prise de 10 ms en 10 ms. La barre du haut (lecture, pause, REC) reste là.' },
   { sel: ['#zOut', '#zIn'], t: 'Le zoom', b: 'Les loupes zooment et dézooment la timeline. Zoome pour couper une phrase au poil près.' },
   { sel: ['#plusBtn'], t: 'Le bouton +', b: 'Ajoute une piste, pose un repère (couplet, refrain), lance une boucle pour refaire juste une phrase, et retrouve toutes tes sessions. Tout se sauvegarde tout seul.' },
-  { sel: ['#bSet'], t: 'Réglages', b: 'Ils s\'ouvrent en plein écran ; « ✕ Fermer » (en haut ou tout en bas) te ramène où tu étais. Tout est rangé par rubriques : enregistrement (tempo, décompte, métronome, latence), écoute (Auto, Casque ou Haut-parleur) si la pastille d\'écoute se trompe, et ta sauvegarde. Le reste se fait tout seul, et chaque chose se coupe sur place. Et si tu veux refaire ton premier son pas à pas : « 🎤 Premier son guidé ». Tout en bas : les infos légales (conditions, confidentialité) et le bouton pour couper les statistiques anonymes.' },
+  { sel: ['#bSet'], t: 'Réglages', b: 'Ils s\'ouvrent en plein écran ; « ✕ Fermer » (en haut ou tout en bas) te ramène où tu étais. Tout est rangé par rubriques : enregistrement (tempo, décompte, métronome, latence), et ta sauvegarde. Le reste se fait tout seul, et chaque chose se coupe sur place. Et si tu veux refaire ton premier son pas à pas : « 🎤 Premier son guidé ». Tout en bas : les infos légales (conditions, confidentialité) et le bouton pour couper les statistiques anonymes.' },
   { sel: ['.nav [data-view=vMix]'], t: 'Mix', b: 'Ici tu peaufines ta voix. Choisis ta piste en haut, puis ouvre un titre pour la régler : Volume, Style de voix, Effets, Auto-tune, Égaliseur. Pour régler juste un mot ou une phrase, glisse le doigt sur l\'onde : zoome avec la réglette ou à deux doigts, et écoute ton bout en boucle avec le lecteur du Mix. « Rééquilibrer » remet les niveaux d\'aplomb.' },
   { sel: ['.nav [data-view=vMaster]'], t: 'Master', b: 'La touche finale de ta maquette : un style et un volume (Streaming ou Fort). Ton son sort propre et fort, sans jamais saturer.' },
   { sel: ['.nav [data-view=vTexte]'], t: 'Texte', b: 'Écris tes lyrics ici, ou touche « 🎙️ Dicter mon texte » et dis-les : ils s\'écrivent tout seuls (relis, la dictée se trompe sur le rap). Le prompteur les fait défiler pendant que tu kickes. Je cale le texte tout seul : sur le tempo pendant ta première prise, puis pile sur ta voix une fois la prise posée. Tu peux toujours caler à la main. Le calage sort aussi en sous-titres dans tes Reels.\nEn haut, le petit lecteur : 🔁 répète 1 à 16 mesures pendant que t\'écris, et te montre sur quelle mesure et quel temps t\'es.' },
@@ -6846,7 +6858,7 @@ const HELP = {
     { sel: ['#stepBar'], t: 'Les étapes', b: 'Avec « Guide-moi », c\'est une séance studio : instru, texte, lead, refrain et backs se posent ici, puis je t\'emmène dans Mix pour l\'habillage et dans Master pour la touche finale et l\'export. Le gros bouton fait l\'action pour toi, « ← Étape d\'avant » te fait revenir en arrière.' },
     { sel: ['.power'], t: 'Pour aller plus loin', b: 'Pendant l\'habillage et après : retoucher une phrase au poil, t\'entendre en direct avec tes écouteurs, faire un Reel.' },
     { sel: ['#sessTitle', '#sessState'], t: 'Ta session', b: 'Le nom de ton son et son état. « Sauvegardé » : tout est gardé dans le téléphone, rien à faire.' },
-    { sel: ['#routeDd'], t: 'Écoute et micro', b: 'Où tu entends, avec quel micro ça enregistre, et la qualité (✓ Bon son ou ⚠️ Son moyen). Ça suit quand tu branches ou ranges tes écouteurs ; sinon touche 🔄 à côté pour actualiser. Touche-le pour choisir ton micro ou refaire le test de timing. Le meilleur son : un casque filaire.' },
+    { sel: ['#routeDd'], t: 'Écoute et micro', b: '🎧 : avec quoi tu écoutes (Auto, ou choisis toi-même si le téléphone se trompe, l\'iPhone cache souvent les AirPods). 🎙️ : avec quel micro ça enregistre. En dessous : la qualité et ton timing, avec « Refaire le test ». 🔄 redemande au téléphone ce qui est branché. Le meilleur son : un casque filaire.' },
     { sel: ['#zOut', '#zIn'], t: 'Zoom', b: 'Les loupes resserrent ou élargissent la timeline. Zoome pour bosser une phrase, dézoome pour voir tout le morceau.' },
     { sel: ['#plusBtn'], t: 'Le +', b: 'Ajouter une piste, poser un repère (couplet, refrain), lancer une boucle de quelques mesures pour refaire une phrase, renommer ta session, la lier à un projet et retrouver toutes tes sessions.' },
     { sel: ['#ruler'], t: 'La règle', b: 'Touche-la pour placer la lecture à un endroit précis. Le trait vertical, c\'est la tête de lecture.' },
