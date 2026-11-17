@@ -377,6 +377,9 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
 /* le test de latence et le choix de la sauvegarde passent devant tout, Réglages compris */
 .welcome.calw,.welcome.calrun,.welcome.bkdest{z-index:58}
 .welcome.legalw{z-index:59}
+.ocgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}.occ{display:flex;flex-direction:column;gap:3px;text-align:left;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--raise);color:var(--fg);font:inherit;min-width:0}
+.occ b{font-size:15px}.occ span{font-size:12px;color:var(--muted);line-height:1.35}.occ em{font-style:normal;font-size:10.5px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:.05em}.occ[aria-pressed=true]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--raise))}
+#oneClick{margin-bottom:10px}#oneClick:empty{display:none}.ocbox{border:1px solid var(--accent);border-radius:12px;padding:12px;background:var(--panel)}
 .fxsh{position:fixed;inset:0;z-index:57;background:rgba(5,7,10,.55);display:flex;align-items:flex-end;justify-content:center}
 .fxshp{width:100%;max-width:560px;max-height:84vh;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-bottom:0;border-radius:18px 18px 0 0;padding-bottom:env(safe-area-inset-bottom,0px)}
 .shhead{display:flex;align-items:center;gap:10px;padding:14px 16px 8px}.shhead h3{margin:0;font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:0 1 auto}.shhead span{color:var(--muted);font-size:13px;flex:1 1 0;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.shx{flex:none}.shx{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--raise);color:var(--fg)}
@@ -721,7 +724,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.6.0 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.6.1 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookie, sans garder ton adresse IP) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false">📊 Statistiques anonymes : activées</button>
@@ -806,6 +809,7 @@ body.ed-open .wmark{z-index:41}
 <section class="card view" id="vMix" aria-label="Mixage" hidden>
   <div class="cardhead"><h2>Mixage</h2><span class="spacer"></span><button class="sbtn" id="bLevel">Rééquilibrer les niveaux</button><button class="sbtn setmini" data-openset aria-label="Réglages">⚙️</button><button class="qhelp" data-help="vMix" aria-label="Aide de cet onglet">?</button></div>
   <div class="pad">
+    <div id="oneClick"></div>
     <div class="chips" id="mixChips"></div>
     <div class="mxstick" id="mxStick"><div class="mxw" id="mxW"><canvas id="mxWave" aria-label="L'onde de la piste : glisse le doigt pour choisir un bout"></canvas>
       <div class="mxp"><button data-mp="start" aria-label="Revenir au début du bout">⏮</button><button data-mp="play" class="mxplay" aria-label="Lecture">▶</button><button data-mp="loop" aria-pressed="false">🔁 Boucle</button><button data-mp="undo" aria-label="Annuler">↶</button><output id="mxClock">0:00.0</output></div>
@@ -1178,8 +1182,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 181; // numéro interne (jamais affiché)
-const APP_PUB = '2.6.0';
+const APP_VER = 182; // numéro interne (jamais affiché)
+const APP_PUB = '2.6.1';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -3312,6 +3316,7 @@ const fmtDb = v => (v > 0 ? '+' : '') + (+v).toFixed(1) + ' dB', fmtVol = v => M
 function mxRegOf(t){ return mxSel && mxSel.tid === t.id && mxSel.ri != null ? (t.regs || [])[mxSel.ri] : null; }
 function renderMix(){
   try{ renderZone(); }catch(e){}
+  try{ renderOneClick(); }catch(e){}
   const cur = selTrack(); S.sel = cur?.id ?? null;
   if(mxSel && (!cur || mxSel.tid !== cur.id)) mxSel = null;
   if(S.clPrev && (!cur || S.clPrev.tid !== cur.id || mxSel)) clCancel(true);
@@ -3352,7 +3357,7 @@ function renderMix(){
           ${fxRowHTML(cur, 'dbl', 'Doubler')}
           ${fxRowHTML(cur, 'sat', 'Chaleur', 'Saturation à lampe : donne du grain et de la présence. Brûlant = voix qui arrache.')}
           ${fxRowHTML(cur, 'rad', 'Radio', 'Voix filtrée façon vieux poste, téléphone ou lo-fi. Parfait pour une intro ou des ad-libs.')}
-          ${fxRowHTML(cur, 'vr', 'Retirer la voix', 'Pour un son du commerce en stéréo : enlève la voix au centre, garde basse et kick.')}</div>${cur.preset !== 'instru' ? '<p class="mxnote">👆👆 Deux appuis sur un effet : tous ses réglages.</p>' : ''}`)
+          ${fxRowHTML(cur, 'vr', 'Retirer la voix', 'Pour un son du commerce en stéréo : enlève la voix au centre, garde basse et kick.')}</div>${cur.preset !== 'instru' ? '<p class="mxnote">👆👆 Deux appuis (ou un appui long) sur un effet : tous ses réglages.</p>' : ''}`)
       + (cur.preset !== 'instru' ? mxAcc('at', '🤖 Auto-tune', `<div class="fxlist"><div class="fxrow">
           <button class="fxbtn" data-fx="at" aria-pressed="${tuned}">Auto-tune</button>
           ${tuned ? `<div class="notch" data-fx="at" role="group" aria-label="Style d'auto-tune">${AT_N.map((n, i) => `<button data-l="${i}" aria-pressed="${i === ai}">${n}</button>`).join('')}</div>
@@ -3899,23 +3904,38 @@ async function openFxSheet(t, k){
   });
 }
 function closeFxSheet(){ if(!fxSh) return; fxSh.w.remove(); fxSh = null; refreshFx(); }
-/* deux appuis rapprochés sur un effet (dans Mix ou dans une piste) = ses réglages poussés */
-let fxTap = { k: null, id: null, t: 0 };
+/* deux appuis rapprochés sur un effet (son nom ou un de ses niveaux), ou un appui long = ses réglages poussés.
+   Détecté au contact du doigt (pointerdown) : sur iPhone, le 2e « click » d'un double appui n'arrive pas toujours. */
+let fxTap = { k: null, id: null, t: 0 }, fxDeep = null, fxLong = null, fxOpenedAt = 0;
+const fxTarget = el => {
+  const b = el.closest('#vMix .fxbtn[data-fx], #vMix .notch[data-fx] button'); if(!b) return null;
+  const k = b.dataset.fx || b.parentElement.dataset.fx, t = selTrack();
+  return t && FX_SHEET[k] ? { k, t } : null;
+};
+const fxOpenDeep = (t, k) => { if(performance.now() - fxOpenedAt < 700) return; fxOpenedAt = performance.now(); openFxSheet(t, k); };
+document.addEventListener('pointerdown', e => {
+  const x = fxTarget(e.target); if(!x) return;
+  const nowT = performance.now();
+  if(fxTap.k === x.k && fxTap.id === x.t.id && nowT - fxTap.t < 450){ fxDeep = { k: x.k, id: x.t.id, until: nowT + 900 }; fxTap.k = null; }
+  else fxTap = { k: x.k, id: x.t.id, t: nowT };
+  clearTimeout(fxLong?.tm);
+  const x0 = e.clientX, y0 = e.clientY;
+  fxLong = { x0, y0, tm: setTimeout(() => { fxLong = null; fxDeep = { k: x.k, id: x.t.id, until: performance.now() + 1500, long: true }; fxOpenDeep(x.t, x.k); }, 550) };
+}, true);
+document.addEventListener('pointermove', e => { if(fxLong && Math.hypot(e.clientX - fxLong.x0, e.clientY - fxLong.y0) > 12){ clearTimeout(fxLong.tm); fxLong = null; } }, true);
+['pointerup', 'pointercancel'].forEach(ev => document.addEventListener(ev, () => { if(fxLong){ clearTimeout(fxLong.tm); fxLong = null; } }, true));
 document.addEventListener('click', e => {
   const deep = e.target.closest('[data-deep]');
   if(deep){ const t = selTrack(); if(t){ e.preventDefault(); openFxSheet(t, deep.dataset.deep); } return; }
-  const b = e.target.closest('#vMix .fxbtn[data-fx], .row .fxc[data-tfx]');
-  if(!b) return;
-  const k = b.dataset.fx || b.dataset.tfx, row = b.closest('.row'), t = row ? trackById(row.dataset.id) : selTrack();
-  if(!t || !FX_SHEET[k]) return;
-  const nowT = performance.now();
-  if(fxTap.k === k && fxTap.id === t.id && nowT - fxTap.t < 400){
-    e.preventDefault(); e.stopImmediatePropagation(); fxTap.k = null;
-    openFxSheet(t, k);
-    return;
+  const x = fxTarget(e.target); if(!x) return;
+  if(fxDeep && fxDeep.k === x.k && fxDeep.id === x.t.id && performance.now() < fxDeep.until){
+    /* 2e appui (ou fin d'appui long) : on n'éteint pas l'effet, on ouvre ses réglages */
+    e.preventDefault(); e.stopImmediatePropagation();
+    const long = fxDeep.long; fxDeep = null;
+    if(!long) fxOpenDeep(x.t, x.k);
   }
-  fxTap = { k, id: t.id, t: nowT };
 }, true);
+document.addEventListener('dblclick', e => { const x = fxTarget(e.target); if(x){ e.preventDefault(); fxOpenDeep(x.t, x.k); } }, true);
 const quickTrack = () => S.tracks.find(x => x.arm) || selTrack();
 /* Effets propres à chaque piste, directement dans la piste */
 
@@ -4494,9 +4514,9 @@ async function clAnalyse(chs, sr, onProg){
 
 /* ---------- Traitement ---------- */
 const CL_FORCE = [
-  { nr: 9, over: 1.0, dr: 0.5, drFloor: 8, ds: 5, dsT: 9, br: 6, eq: 0.6, plHz: 110, ex: 0.7 },
-  { nr: 15, over: 1.3, dr: 1.0, drFloor: 12, ds: 8, dsT: 6, br: 11, eq: 1, plHz: 160, ex: 1 },
-  { nr: 21, over: 1.8, dr: 1.4, drFloor: 16, ds: 12, dsT: 3, br: 17, eq: 1.3, plHz: 220, ex: 1.3 }
+  { nr: 8, over: 1.0, dr: 0.5, drFloor: 6, ds: 5, dsT: 9, br: 6, eq: 0.6, plHz: 110, ex: 0.7 },
+  { nr: 12, over: 1.15, dr: 0.8, drFloor: 9, ds: 8, dsT: 6, br: 11, eq: 1, plHz: 160, ex: 1 },
+  { nr: 16, over: 1.35, dr: 1.05, drFloor: 12, ds: 11, dsT: 3, br: 16, eq: 1.25, plHz: 210, ex: 1.0 }
 ];
 async function clProcess(chs, sr, R, on, force, onProg){
   const Pf = CL_FORCE[force ?? 1], P = clSetup(sr), { N, hop, K, win, binOf, F } = P, n = chs[0].length, nc = chs.length;
@@ -4524,9 +4544,9 @@ async function clProcess(chs, sr, R, on, force, onProg){
   const fOf = b => b * sr / N;
   if(on.boxy && R.found.boxy){ const f0 = R.found.boxy.f, g = -Math.min(8, Math.max(2, (R.found.boxy.bump ?? R.found.boxy.db) * 0.8)) * Pf.eq;
     for(let b = 0; b < K; b++){ const o = Math.log2(fOf(b) / f0); eq[b] *= Math.pow(10, g * Math.exp(-o * o / (2 * 0.45 * 0.45)) / 20); } }
-  if(on.muffled && R.found.muffled){ const g = Math.min(8, -R.found.muffled.db - 3) * Pf.eq;
+  if(on.muffled && R.found.muffled){ const g = Math.min(6, (-R.found.muffled.db - 3) * Math.min(1, Pf.eq));
     for(let b = 0; b < K; b++){ const f = fOf(b), u = 1 / (1 + Math.pow(2200 / Math.max(f, 1), 2.2)); eq[b] *= Math.pow(10, g * u / 20); } }
-  if(on.thin && R.found.thin){ const g = Math.min(8, -R.found.thin.db - 2) * Pf.eq;
+  if(on.thin && R.found.thin){ const g = Math.min(6, (-R.found.thin.db - 2) * Math.min(1, Pf.eq));
     for(let b = 0; b < K; b++){ const f = fOf(b), u = f < 70 ? 0 : 1 / (1 + Math.pow(f / 300, 3)); eq[b] *= Math.pow(10, g * u / 20); } }
   if(on.tel && R.found.tel){ const g = 3 * Pf.eq, fc = R.found.tel.fc;
     for(let b = 0; b < K; b++){ const f = fOf(b), u = Math.exp(-Math.pow(Math.log2(f / (fc * 0.7)), 2) / 0.5); eq[b] *= Math.pow(10, g * u / 20); } }
@@ -4536,7 +4556,9 @@ async function clProcess(chs, sr, R, on, force, onProg){
     const noise = R.noise, over = Pf.over, floorN = Math.pow(10, -Pf.nr / 20);
     const RT = doDR ? Math.max(0.25, R.found.room.rt) : 0.5, Nd = Math.max(2, Math.round(0.05 * sr / hop)), Td = Nd * hop / sr, dec = Math.exp(-2 * (3 * Math.LN10 / RT) * Td), floorR = Math.pow(10, -Pf.drFloor / 20);
     const hist = []; for(let i = 0; i <= Nd; i++) hist.push(new Float64Array(K));
-    const Gprev = new Float64Array(K).fill(1), Pprev = new Float64Array(K), G = new Float64Array(K), Gs = new Float64Array(K);
+    const Gprev = new Float64Array(K).fill(1), Pprev = new Float64Array(K), G = new Float64Array(K), Gs = new Float64Array(K), Gw = new Float64Array(K).fill(1), Gr = new Float64Array(K).fill(1), Gt = new Float64Array(K).fill(1);
+    /* plancher commun : souffle et pièce ne s'additionnent jamais en trous trop profonds (sinon ça grésille) */
+    const floorTot = doNR ? floorN : floorR, rel = Math.exp(-hop / (sr * 0.025)), rr = Math.exp(-hop / (sr * 0.03));
     const sb0 = binOf(4500), sb1 = binOf(Math.min(12000, sr * 0.45)), mb0 = binOf(300), mb1 = binOf(3000);
     const dsT = (R.sibRef ?? -60) + Pf.dsT, dsRel = Math.exp(-hop / sr / 0.04);
     let dsG = 0;
@@ -4555,19 +4577,26 @@ async function clProcess(chs, sr, R, on, force, onProg){
         let g = 1;
         if(doNR){
           const nb = noise[b] * over + 1e-20;
-          const post = p / nb, prio = 0.98 * Gprev[b] * Gprev[b] * Pprev[b] / nb + 0.02 * Math.max(post - 1, 0);
-          const gw = prio / (1 + prio);
-          g = Math.max(floorN, gw);
+          const post = p / nb, prio = Math.max(0.985 * Gw[b] * Gw[b] * Pprev[b] / nb + 0.015 * Math.max(post - 1, 0), 0.003);
+          Gw[b] = prio / (1 + prio);
+          g = Gw[b];
         }
         if(doDR && f > Nd){
-          const lr = dec * old[b] * Pf.dr;
-          g *= Math.max(floorR, 1 - lr / p);
+          const lr = dec * old[b] * Pf.dr, gr = Math.max(floorR, 1 - lr / p);
+          /* la pièce s'efface en douceur d'une trame à l'autre */
+          Gr[b] = gr < Gr[b] ? Gr[b] * rr + gr * (1 - rr) : gr;
+          g *= Gr[b];
         }
-        G[b] = g;
+        G[b] = Math.max(floorTot, g);
       }
+      /* dans les blancs (que du bruit), le gain devient uniforme : plus de petites notes qui sifflent dans le souffle restant */
+      if(doNR){ let sp = 0, cn = 0; for(let b = mb0; b <= sb1; b += 2){ sp += pw[b] / (noise[b] * over + 1e-20); cn++; } const fs = sp / cn, w = Math.max(0, Math.min(1, (fs - 2) / 4));
+        if(w < 1) for(let b = 0; b < K; b++) G[b] = floorTot + w * (G[b] - floorTot); }
       /* lissage en fréquence (évite les petits bruits « d'eau ») */
-      for(let b = 0; b < K; b++){ const a = G[Math.max(0, b - 1)], c = G[Math.min(K - 1, b + 1)]; Gs[b] = 0.25 * a + 0.5 * G[b] + 0.25 * c; }
-      if(doNR) for(let b = 0; b < K; b++){ Gprev[b] = Gs[b]; Pprev[b] = pw[b]; }
+      for(let b = 0; b < K; b++){ const g2 = (G[Math.max(0, b - 2)] + 2 * G[Math.max(0, b - 1)] + 3 * G[b] + 2 * G[Math.min(K - 1, b + 1)] + G[Math.min(K - 1, b + 2)]) / 9;
+        /* montée immédiate (la voix passe), descente en 50 ms (pas de scintillement dans les blancs) */
+        Gt[b] = g2 >= Gt[b] ? g2 : Math.max(g2, Gt[b] * rel); Gs[b] = Gt[b]; }
+      if(doNR) for(let b = 0; b < K; b++){ Pprev[b] = pw[b]; }
       /* dé-esseur dynamique */
       let dsLin = 1;
       if(doDS){
@@ -4578,7 +4607,8 @@ async function clProcess(chs, sr, R, on, force, onProg){
         dsLin = Math.pow(10, -dsG / 20);
       }
       for(let b = 0; b < K; b++){
-        let g = Gs[b] * eq[b];
+        /* les remontées d'aigus ou de corps ne s'appliquent que là où la voix domine : le souffle restant n'est jamais remonté */
+        let g = Gs[b] * (eq[b] > 1 ? 1 + (eq[b] - 1) * Math.min(1, Gs[b] * Gs[b] * Gs[b]) : eq[b]);
         if(dsLin < 1){ const f2 = b < sb0 - 8 ? 0 : b < sb0 ? (b - sb0 + 8) / 8 : 1; g *= 1 - (1 - dsLin) * f2; }
         G[b] = g;
       }
@@ -4607,15 +4637,18 @@ async function clProcess(chs, sr, R, on, force, onProg){
   /* 5. qualité téléphone : on recrée les aigus qui manquent (harmoniques de la voix, au-dessus de la coupure) */
   if(on.tel && R.found.tel){
     const fc = R.found.tel.fc / 1.26;
+    /* les aigus recréés suivent la voix seulement (jamais le souffle des blancs) */
+    const vEnv = new Float32Array(n); { const at = 1 - Math.exp(-1 / (sr * 0.004)), rl = 1 - Math.exp(-1 / (sr * 0.06)); let y = 0;
+      for(let i = 0; i < n; i++){ const f = Math.min(R.nF - 1, Math.floor(i / R.hop)), on1 = R.eDb[f] > R.pHi - 24 && R.vc[f] > 0.16 ? 1 : 0; y += (on1 > y ? at : rl) * (on1 - y); vEnv[i] = y; } }
     for(const c of out){
       const b = Float32Array.from(c); clBiquad(b, sr, 'hp', fc * 0.5, 0.7); clBiquad(b, sr, 'lp', fc * 0.95, 0.7);
       let e = 0; for(let i = 0; i < n; i += 4) e += b[i] * b[i];
-      const rmsB = Math.sqrt(e / (n / 4)) + 1e-9, drive = 0.35 / rmsB;
-      for(let i = 0; i < n; i++){ const v = b[i] * drive; b[i] = (Math.tanh(v) + 0.3 * Math.tanh(v * v * Math.sign(v))) / drive; }
+      /* redressement doux : surtout l'octave du dessus (harmoniques paires), sans grain ni grésillement */
+      for(let i = 0; i < n; i++){ const v = b[i]; b[i] = Math.abs(v) + 0.25 * v * Math.abs(v) / (Math.sqrt(e / (n / 4)) + 1e-9); }
       clBiquad(b, sr, 'hp', fc * 1.05, 0.7); clBiquad(b, sr, 'hp', fc * 1.05, 0.7); clBiquad(b, sr, 'lp', Math.min(sr * 0.45, 16000), 0.7);
       let e2 = 0; for(let i = 0; i < n; i += 4) e2 += b[i] * b[i];
-      const g = Math.sqrt(e / Math.max(e2, 1e-12)) * Math.pow(10, -2 / 20) * Pf.ex;
-      for(let i = 0; i < n; i++) c[i] += b[i] * g;
+      const g = Math.sqrt(e / Math.max(e2, 1e-12)) * Math.pow(10, -7 / 20) * Pf.ex;
+      for(let i = 0; i < n; i++) c[i] += b[i] * g * vEnv[i];
     }
   }
   /* 6. même niveau qu'avant (le mix ne bouge pas), sans jamais saturer */
@@ -4804,6 +4837,134 @@ document.addEventListener('click', e => {
   else if(k === 'cancel'){ clCancel(); toast('Nettoyage annulé : ta prise n\'a pas bougé.'); }
   else if(k === 'orig') clOrig(t);
   else if(k === 'all') clAll();
+});
+
+/* ---------- Mix en un clic : 4 mixes complets et cohérents (nettoyage, voix, rôles, instru, master) ---------- */
+/* Règle de base d'un mix pro : le lead reste le plus sec et le plus devant ; refrain, backs et ad-libs prennent de l'espace autour. */
+const OC_ROLE_PRESET = { lead: 'lead', refrain: 'lead', back: 'back', amb: 'ambiance' };
+const OC = {
+  propre: { n: '🎯 Propre', d: 'Voix devant, nette, sèche. Le son rap d\'aujourd\'hui.', ins: -1.5, master: { preset: 'rap', target: -14 },
+    lead: { eq: { high: 0.5 }, comp: { thr: -22, ratio: 4 }, rev: 15, dly: 10, p: { rev: { type: 0, rt: 0.6, pre: 20, tone: 60, low: 300, width: 60 }, dly: { div: 0.25, fb: 10, pp: 20, tone: 4000, grain: 15 } } },
+    refrain: { eq: { high: 1 }, comp: { thr: -22, ratio: 4 }, rev: 30, dly: 10, dbl: 35, p: { rev: { type: 1, rt: 1.4, pre: 25, tone: 65, low: 280, width: 90 }, dly: { div: 0.25, fb: 10, pp: 30, tone: 4000, grain: 15 }, dbl: { voices: 2, spread: 14, detune: 35, width: 70, tone: 9000 } } },
+    back: { eq: { hp: 180 }, rev: 30, dbl: 65, vol: -2, p: { rev: { type: 1, rt: 1.6, pre: 20, tone: 60, low: 320, width: 100 }, dbl: { voices: 2, spread: 18, detune: 50, width: 100, tone: 8000 } } },
+    amb: { eq: { hp: 220 }, rev: 50, dly: 20, rad: 1, p: { rev: { type: 1, rt: 2.2, pre: 30, tone: 60, low: 350, width: 100 }, dly: { div: 0.75, fb: 35, pp: 90, tone: 3500, grain: 30 }, rad: { type: 0, band: 1800, grain: 20, mix: 35 } } } },
+  lourd: { n: '🖤 Lourd', d: 'Sombre, grain, gros refrain. Drill, trap.', ins: 0, master: { preset: 'chaud', target: -9 },
+    lead: { eq: { low: 1.5, high: -0.5 }, comp: { thr: -26, ratio: 5 }, sat: 2, rev: 15, dly: 10, p: { sat: { type: 1, drive: 50, tone: 40, mix: 55 }, rev: { type: 2, rt: 1.1, pre: 15, tone: 35, low: 250, width: 80 }, dly: { div: 0.5, fb: 12, pp: 30, tone: 2800, grain: 40 } } },
+    refrain: { eq: { low: 1 }, comp: { thr: -26, ratio: 5 }, sat: 1, rev: 30, dly: 20, dbl: 100, p: { sat: { type: 1, drive: 40, tone: 40, mix: 45 }, rev: { type: 2, rt: 1.6, pre: 20, tone: 40, low: 250, width: 100 }, dly: { div: 1, fb: 30, pp: 80, tone: 2500, grain: 50 }, dbl: { voices: 4, spread: 22, detune: 55, width: 100, tone: 8500 } } },
+    back: { eq: { hp: 170 }, sat: 2, rev: 30, dbl: 65, vol: -2, p: { sat: { type: 2, drive: 45, tone: 40, mix: 40 }, rev: { type: 2, rt: 1.4, pre: 20, tone: 40, low: 280, width: 100 } } },
+    amb: { eq: { hp: 220 }, rev: 30, dly: 34, rad: 2, p: { dly: { div: 1, fb: 45, pp: 90, tone: 2500, grain: 60 }, rad: { type: 1, band: 1500, grain: 50, mix: 70 }, rev: { type: 2, rt: 1.8, pre: 25, tone: 40, low: 300, width: 100 } } } },
+  aerien: { n: '☁️ Aérien', d: 'Auto-tune, espace, échos. Pour le chanté.', ins: -2, master: { preset: 'naturel', target: -14 }, at: { lead: 1, refrain: 1 },
+    lead: { eq: { high: 1.5 }, comp: { thr: -22, ratio: 4 }, rev: 30, dly: 20, dbl: 35, p: { rev: { type: 1, rt: 2.4, pre: 35, tone: 70, low: 300, width: 100 }, dly: { div: 0.5, fb: 30, pp: 90, tone: 4500, grain: 20 }, dbl: { voices: 2, spread: 12, detune: 30, width: 60, tone: 9500 } } },
+    refrain: { eq: { high: 1.5 }, comp: { thr: -22, ratio: 4 }, rev: 50, dly: 20, dbl: 100, p: { rev: { type: 2, rt: 3, pre: 40, tone: 60, low: 280, width: 100 }, dly: { div: 0.5, fb: 30, pp: 90, tone: 4500, grain: 20 }, dbl: { voices: 4, spread: 20, detune: 45, width: 100, tone: 10000 } } },
+    back: { eq: { hp: 200, high: 1 }, rev: 50, dbl: 65, vol: -2, p: { rev: { type: 2, rt: 3, pre: 40, tone: 60, low: 320, width: 100 }, dbl: { voices: 2, spread: 20, detune: 50, width: 100, tone: 9000 } } },
+    amb: { eq: { hp: 240 }, rev: 50, dly: 34, p: { rev: { type: 3, rt: 4.5, pre: 50, tone: 55, low: 350, width: 100 }, dly: { div: 0.75, fb: 50, pp: 100, tone: 3500, grain: 30 } } } },
+  oldschool: { n: '📼 Old school', d: 'Chaud, sec, l\'instru qui tape. Boom bap.', ins: 0.5, master: { preset: 'chaud', target: -14 },
+    lead: { eq: { low: 1, high: -1 }, comp: { thr: -20, ratio: 3.5 }, sat: 1, rev: 15, dly: 10, p: { sat: { type: 0, drive: 35, tone: 45, mix: 50 }, rev: { type: 0, rt: 0.5, pre: 10, tone: 45, low: 250, width: 50 }, dly: { div: 0.25, fb: 8, pp: 0, tone: 3000, grain: 40 } } },
+    refrain: { eq: { low: 0.5 }, comp: { thr: -20, ratio: 3.5 }, sat: 1, rev: 15, dbl: 35, p: { sat: { type: 0, drive: 35, tone: 45, mix: 50 }, rev: { type: 0, rt: 0.6, pre: 10, tone: 45, low: 250, width: 60 }, dbl: { voices: 2, spread: 9, detune: 25, width: 30, tone: 7000 } } },
+    back: { eq: { hp: 160 }, sat: 1, rev: 15, dbl: 35, vol: -1, p: { sat: { type: 0, drive: 35, tone: 40, mix: 45 }, dbl: { voices: 2, spread: 10, detune: 30, width: 40, tone: 7000 } } },
+    amb: { eq: { hp: 200 }, rev: 15, dly: 10, rad: 1, p: { rad: { type: 0, band: 1600, grain: 40, mix: 40 }, dly: { div: 0.25, fb: 10, pp: 40, tone: 3000, grain: 40 } } } }
+};
+let ocPick = null, ocPrev = null, ocBusy = false;
+function ocRecommend(){
+  const voc = S.tracks.filter(t => t.preset !== 'instru' && t.buffer);
+  return voc.some(t => isTuned(t) || t.atOn) ? 'aerien' : 'propre';
+}
+const ocSnap = () => ({ tracks: S.tracks.map(t => ({ t, s: { preset: t.preset, vstyle: t.vstyle, fx: { ...t.fx }, vol: t.vol, at: { ...t.at }, atOn: t.atOn, ocAT: t.ocAT, take: t.take, buffer: t.buffer, offset: t.offset, trim: t.trim } })), M: { preset: M.preset, low: M.low, high: M.high, glue: M.glue, target: M.target } });
+function ocShow(snap){
+  let bufChange = false;
+  snap.tracks.forEach(({ t, s }) => { if(!S.tracks.includes(t)) return; if(t.buffer !== s.buffer) bufChange = true; Object.assign(t, { ...s, fx: { ...s.fx }, at: { ...s.at } }); t.chain.set(t, audible(t), true); });
+  Object.assign(M, snap.M); mpre.set();
+  if(bufChange) restart();
+  busGc();
+}
+function ocCardHTML(){
+  const rec = ocRecommend(), pick = ocPick || rec, voc = S.tracks.filter(t => t.preset !== 'instru' && t.buffer);
+  if(!voc.length) return '';
+  if(ocPrev) return `<div class="ocbox"><p class="clok">✓ Mix ${OC[ocPrev.key].n} posé : ${ocPrev.sum}.</p>
+    <div class="clab" role="group" aria-label="Comparer"><button data-oc="before" aria-pressed="${ocPrev.ab === 'before'}">🎧 Avant</button><button data-oc="after" aria-pressed="${ocPrev.ab !== 'before'}">🎧 Après</button></div>
+    <p class="mxnote">Lance la lecture ▶ et bascule pour comparer.</p>
+    <div class="mxbtns"><button class="sbtn primary" data-oc="keep">✓ Garder</button><button class="sbtn" data-oc="cancel">✕ Annuler</button></div></div>`;
+  return `<details class="mxacc ocacc" data-acc="oc" ${mxOpen.has('oc') || !mxOpen.has('oc-seen') ? 'open' : ''}><summary><span class="tt">⚡ Mix en un clic</span></summary><div class="mxbody">
+    <p class="mxnote">Je nettoie tes voix, je cale les niveaux, j'habille chaque piste selon son rôle et je règle le master. Tu retouches ce que tu veux après.</p>
+    <div class="ocgrid">${Object.keys(OC).map(k => `<button class="occ" data-ock="${k}" aria-pressed="${k === pick}"><b>${OC[k].n}</b><span>${OC[k].d}</span>${k === rec ? '<em>Conseillé</em>' : ''}</button>`).join('')}</div>
+    <div class="mxbtns"><button class="sbtn primary" data-oc="go" ${ocBusy ? 'disabled' : ''}>${ocBusy ? '⚡ Je mixe…' : '⚡ Appliquer ' + OC[pick].n.replace(/^\S+\s/, '« ') + ' »'}</button></div></div></details>`;
+}
+function renderOneClick(){ const el = $('#oneClick'); if(el) el.innerHTML = ocCardHTML(); }
+async function ocApply(key){
+  if(ocBusy || busy || clBusy) return;
+  const R = OC[key]; if(!R) return;
+  const voc = S.tracks.filter(t => t.preset !== 'instru' && t.buffer && !isLocked(t));
+  if(!voc.length){ toast('Enregistre ou importe une voix d\'abord.'); return; }
+  if(S.clPrev) clCancel(true);
+  ocBusy = true; renderOneClick();
+  const before = ocSnap();
+  pushUndo('le mix en un clic');
+  let nClean = 0;
+  try{
+    if(!flowGet().mixed) flowSet('mixed', true);
+    /* 1. nettoyage Normal des voix pas encore nettoyées */
+    for(const t of voc){
+      if(t.keep || clCleanedTake(t)) continue;
+      const An = await clAnalyseTrack(t, p => toast('🔍 J\'écoute « ' + t.name + ' »… ' + Math.round(p * 100) + ' %'));
+      const keys = An ? Object.keys(An.found) : []; if(!keys.length) continue;
+      const on = {}; keys.forEach(k => on[k] = true);
+      clBusy = true;
+      const res = await clBuild(t, on, 1, p => toast('🧽 Nettoyage de « ' + t.name + ' »… ' + Math.round(p * 100) + ' %'));
+      clBusy = false;
+      if(!res) continue;
+      const tuned = isTuned(t);
+      t.takes.push({ buffer: res.buf, offset: res.raw.offset, cl: { force: 1, on: keys }, src: clRawIdx(t) });
+      t.take = t.takes.length - 1; t.buffer = res.buf; t.offset = res.raw.offset;
+      if(tuned){ ocBusy = false; await applyAutotune(t); ocBusy = true; }
+      nClean++;
+    }
+    /* 2. chaque voix selon son rôle : égaliseur calé sur la voix, puis la couleur du mix */
+    for(const t of voc){
+      const role = roleOf(t), C = R[role] || R.lead, pr = OC_ROLE_PRESET[role] || 'lead';
+      const f = { ...FX[pr], sat: 0, rad: 0, dbl: 0, rev: 0, dly: 0 };
+      t.preset = pr; t.vstyle = null; t.fx = f;
+      if(t.vp) adaptFx(t);
+      Object.entries(C.eq || {}).forEach(([k, v]) => { t.fx[k] = k === 'hp' ? v : clamp((t.fx[k] || 0) + v, -12, 12); });
+      if(C.comp) Object.assign(t.fx, C.comp);
+      ['rev', 'dly', 'dbl', 'sat', 'rad'].forEach(k => { t.fx[k] = C[k] || 0; });
+      t.fx.p = JSON.parse(JSON.stringify(C.p || {}));
+      t.chain.set(t, audible(t), true);
+    }
+    /* 3. auto-tune pour le mix Aérien (sur les voix qui ne l'ont pas déjà) */
+    for(const t of voc){
+      if(t.keep) continue;
+      const m = R.at ? R.at[roleOf(t)] : null;
+      if(m != null){ t.at.speed = AT_SP[m]; if(!isTuned(t)){ t.ocAT = true; t.atOn = true; } ocBusy = false; await applyAutotune(t); ocBusy = true; }
+      else if(t.ocAT){ /* l'auto-tune posé par un autre mix en un clic s'en va ; celui que tu as mis toi-même reste */
+        t.ocAT = false; t.atOn = false;
+        if(isTuned(t)){ const src = t.takes[t.take].src; t.take = src; t.buffer = t.takes[src].buffer; t.offset = t.takes[src].offset; }
+      }
+    }
+    /* 4. niveaux : chaque piste à sa place, puis l'instru selon le mix */
+    for(const t of S.tracks){ if(isLocked(t) || !t.buffer) continue; t.vol = 0.85; await autoLevel(t); }
+    voc.forEach(t => { const C = R[roleOf(t)] || {}; if(C.vol) t.vol = clamp(t.vol * dbl(C.vol), 0, 2); });
+    S.tracks.filter(t => t.preset === 'instru' && t.buffer && !isLocked(t)).forEach(t => { t.vol = clamp(t.vol * dbl(R.ins), 0, 2); });
+    applyMix();
+    /* 5. master */
+    M.preset = R.master.preset; Object.assign(M, MPRE[M.preset]); M.target = R.master.target; mpre.set(); saveM();
+    busGc();
+  }catch(e){ toast('Mix impossible : ' + e.message); }
+  ocBusy = false; clBusy = false;
+  const sum = [nClean ? nClean + ' voix nettoyée' + (nClean > 1 ? 's' : '') : 'voix déjà propres', 'niveaux calés', 'master ' + ({ rap: 'Rap moderne', chaud: 'Chaud', naturel: 'Naturel' })[R.master.preset] + (R.master.target === -9 ? ' fort' : '')].join(', ');
+  ocPrev = { key, before, after: ocSnap(), ab: 'after', sum };
+  mxOpen.add('oc-seen'); store.set('mxOpen', [...mxOpen]);
+  track('mix-un-clic-' + key);
+  renderMix(); renderTracks(); renderMaster(); scheduleSave();
+  toast('⚡ Mix ' + R.n + ' posé. Lance la lecture et compare Avant / Après.');
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-ock],[data-oc]'); if(!b || !b.closest('#oneClick')) return;
+  if(b.dataset.ock){ ocPick = b.dataset.ock; renderOneClick(); return; }
+  const k = b.dataset.oc;
+  if(k === 'go') ocApply(ocPick || ocRecommend());
+  else if(k === 'before' || k === 'after'){ if(!ocPrev) return; ocPrev.ab = k; ocShow(k === 'before' ? ocPrev.before : ocPrev.after); document.querySelectorAll('#oneClick .clab button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.oc === k))); }
+  else if(k === 'keep'){ if(ocPrev?.ab === 'before') ocShow(ocPrev.after); ocPrev = null; renderMix(); renderMaster(); scheduleSave(); toast('✓ Mix gardé. Retouche ce que tu veux piste par piste.'); }
+  else if(k === 'cancel'){ ocPrev = null; undo(); }
 });
 
 /* ---------- Master ---------- */
@@ -7349,7 +7510,7 @@ const TOUR = [
   { sel: ['#zOut', '#zIn'], t: 'Le zoom', b: 'Les loupes zooment et dézooment la timeline. Zoome pour couper une phrase au poil près.' },
   { sel: ['#plusBtn'], t: 'Le bouton +', b: 'Ajoute une piste, pose un repère (couplet, refrain), lance une boucle pour refaire juste une phrase, et retrouve toutes tes sessions. Tout se sauvegarde tout seul.' },
   { sel: ['#bSet'], t: 'Réglages', b: 'Ils s\'ouvrent en plein écran ; « ✕ Fermer » (en haut ou tout en bas) te ramène où tu étais. Tout est rangé par rubriques : enregistrement (tempo, décompte, métronome, latence), et ta sauvegarde. Le reste se fait tout seul, et chaque chose se coupe sur place. Et si tu veux refaire ton premier son pas à pas : « 🎤 Premier son guidé ». Tout en bas : les infos légales (conditions, confidentialité) et le bouton pour couper les statistiques anonymes.' },
-  { sel: ['.nav [data-view=vMix]'], t: 'Mix', b: 'Ici tu peaufines ta voix. Choisis ta piste en haut, puis ouvre un titre pour la régler : 🧽 Nettoyage (souffle, P et B, S qui sifflent, respirations, pièce qui résonne, voix étouffée…), Volume, Style de voix, Effets, Auto-tune, Égaliseur. Deux appuis sur un effet ouvrent tous ses réglages. Pour régler juste un mot ou une phrase, glisse le doigt sur l\'onde : zoome avec la réglette ou à deux doigts, et écoute ton bout en boucle avec le lecteur du Mix. « Rééquilibrer » remet les niveaux d\'aplomb.' },
+  { sel: ['.nav [data-view=vMix]'], t: 'Mix', b: 'Ici tu peaufines ta voix. Le plus rapide : ⚡ Mix en un clic, 4 mixes complets au choix. Sinon choisis ta piste en haut, puis ouvre un titre pour la régler : 🧽 Nettoyage (souffle, P et B, S qui sifflent, respirations, pièce qui résonne, voix étouffée…), Volume, Style de voix, Effets, Auto-tune, Égaliseur. Deux appuis (ou un appui long) sur un effet ouvrent tous ses réglages. Pour régler juste un mot ou une phrase, glisse le doigt sur l\'onde : zoome avec la réglette ou à deux doigts, et écoute ton bout en boucle avec le lecteur du Mix. « Rééquilibrer » remet les niveaux d\'aplomb.' },
   { sel: ['.nav [data-view=vMaster]'], t: 'Master', b: 'La touche finale de ta maquette : un style et un volume (Streaming ou Fort). Ton son sort propre et fort, sans jamais saturer.' },
   { sel: ['.nav [data-view=vTexte]'], t: 'Texte', b: 'Écris tes lyrics ici, ou touche « 🎙️ Dicter mon texte » et dis-les : ils s\'écrivent tout seuls (relis, la dictée se trompe sur le rap). Le prompteur les fait défiler pendant que tu kickes. Je cale le texte tout seul : sur le tempo pendant ta première prise, puis pile sur ta voix une fois la prise posée. Tu peux toujours caler à la main. Le calage sort aussi en sous-titres dans tes Reels.\nEn haut, le petit lecteur : 🔁 répète 1 à 16 mesures pendant que t\'écris, et te montre sur quelle mesure et quel temps t\'es.' },
   { sel: ['.nav [data-view=vProjets]'], t: 'Projets', b: 'Prépare ton single, ton EP ou ton album : pochette, tracklist, et où en est chaque titre.' },
@@ -7762,18 +7923,19 @@ const HELP = {
     { sel: ['#list .row:nth-child(2) .swatch', '#list .row:nth-child(2) .name'], t: 'Couleur et nom', b: 'La pastille change la couleur de la piste. Le nom 🔒 est fixe (il sert au prompteur et au rangement des prises) : écris le tien dans l\'encadré juste en dessous.' },
     { sel: ['#list .row:nth-child(2) .chip'], t: 'R, M, S', b: 'R arme la piste : REC enregistre dessus. M la rend muette. S l\'écoute toute seule.' },
     { sel: ['#list .row:nth-child(2) .l2'], t: 'Volume, pan et ordre', b: 'VOL règle le niveau, PAN place la piste à gauche ou à droite. ↑ et ↓ montent ou descendent la piste dans la liste.' },
-    { t: 'Les effets', b: 'Reverb, écho, doubler, auto-tune, chaleur, radio… tout se règle dans l\'onglet Mix : sur toute la piste ou juste sur un bout. Tant que tu n\'es pas passé dans Mix, tes prises restent brutes (pas de reverb ni d\'écho) : l\'habillage se fait dans Mix. Un appui = les réglages simples, deux appuis sur un effet = tous ses réglages. Et en haut de chaque voix, 🧽 Nettoyage retire souffle, P/B, S qui sifflent, respirations, et corrige la pièce ou une voix étouffée.' },
+    { t: 'Les effets', b: 'Reverb, écho, doubler, auto-tune, chaleur, radio… tout se règle dans l\'onglet Mix : sur toute la piste ou juste sur un bout. Tant que tu n\'es pas passé dans Mix, tes prises restent brutes (pas de reverb ni d\'écho) : l\'habillage se fait dans Mix. Un appui = les réglages simples, deux appuis (ou un appui long) sur un effet = tous ses réglages. Pressé ? ⚡ Mix en un clic en haut de Mix pose un mix complet. Et en haut de chaque voix, 🧽 Nettoyage retire souffle, P/B, S qui sifflent, respirations, et corrige la pièce ou une voix étouffée.' },
     { sel: ['#list .row:nth-child(2) .l3'], t: 'Importer, cadenas, copie, poubelle', b: 'Importer : met un fichier audio sur la piste (remplace ce qu\'il y a). 🔓 verrouille une prise réussie. ⧉ duplique la piste. ✕ la supprime (touche deux fois pour confirmer).' },
     { sel: ['#list .row:nth-child(2) .lane'], t: 'La timeline', b: 'Glisse pour avancer. Une touche place la lecture. Appui long sur une phrase : elle est sélectionnée, et la barre du bas permet de l\'écouter, la supprimer, la copier ou la déplacer sur une autre piste. Deux touches sur une prise, ou sa loupe 🔍 : elle s\'ouvre en grand dans l\'éditeur.' },
     { t: 'L\'éditeur de prise', b: 'Dans l\'éditeur : pour couper pile au bon moment, lance l\'écoute et touche « Début ici » puis « Fin ici ». Tu peux aussi sélectionner au doigt et ajuster avec les poignées. Zoomé, glisse la bande sous l\'onde pour aller à droite ou à gauche. Chaque retouche s\'allume sur l\'onde. Tu écoutes en boucle ou la piste seule. Outils : supprimer, garder que la sélection, −3/+3 dB, fondus, répéter, à l\'envers, plus tôt/plus tard de 10 ms, niveau max, et « Couper les blancs » qui met en silence tout ce qui n\'est pas ta voix sans rien décaler (top pour les backs). Sans sélection, ça s\'applique à toute la prise. La barre du haut reste dispo : lecture, pause, REC.' }
   ],
   vMix: [
     { t: 'L\'onglet Mix', b: 'Ici tu règles chaque piste, ou juste un bout : un mot, une phrase, un couplet.' },
+    { sel: ['#oneClick'], t: '⚡ Mix en un clic', b: 'Pas envie de tout régler ? Choisis un mix : 🎯 Propre (voix devant, nette), 🖤 Lourd (sombre, gros refrain), ☁️ Aérien (auto-tune, espace) ou 📼 Old school (chaud, sec). En un appui je nettoie tes voix, je cale les niveaux, j\'habille chaque piste selon son rôle et je règle le master. Compare Avant / Après, puis Garder ou Annuler.' },
     { sel: ['#mixChips'], t: '1 · Choisis ta piste', b: 'Touche une piste : tout ce qui est en dessous la concerne.' },
     { sel: ['#mxW'], t: '2 · Choisis un bout (si tu veux)', b: 'Glisse le doigt sur l\'onde pour sélectionner un mot ou une phrase. Les bouts déjà réglés à part sont en violet : touche-les pour les reprendre. Zoome avec la réglette ou à deux doigts pour viser au poil. Sans sélection, tu règles toute la piste.' },
     { sel: ['#mxTarget'], t: 'À qui s\'appliquent tes réglages', b: 'Ici c\'est écrit : toute la piste, ou ta sélection. Le ✕ enlève la sélection.' },
     { sel: ['details[data-acc=clean]', '#strip'], t: '🧽 Nettoyage', b: 'En ouvrant Nettoyage, j\'écoute ta piste et je te dis ce que je trouve. Les bruits : souffle de fond, bourdonnement, « P » et « B » qui claquent, « S » qui sifflent, respirations. L\'atmosphère de la prise : pièce qui résonne, son de boîte, voix étouffée, trop fine, qualité téléphone. Coche ce que tu veux, choisis la force, touche « Nettoyer et comparer », puis bascule Avant / Après pendant la lecture. Tu gardes si ça te plaît, ↶ annule. « Nettoyer toutes les voix » fait tout d\'un coup.' },
-    { sel: ['#strip'], t: '3 · Règle', b: 'Sur un bout, « ⚡ Effets express » pose un effet tout prêt en un appui : écho throw, grosse reverb, voix lointaine, coupure… et sur l\'instru, couper le beat sous ta punchline. Sinon ouvre un titre (Volume, Style, Effets, Auto-tune, Égaliseur…), règle, referme. Chaque effet a des réglages simples (Pièce, Studio, Salle…) ; touche-le deux fois pour tous ses réglages : durée et pré-délai de la reverb, rythme et répétitions de l\'écho, voix et désaccord du doubler, type et mélange de la chaleur, vitesse de l\'auto-tune… L\'égaliseur a son bouton « ⚙️ Réglages poussés ». Sur une sélection : volume, reverb, écho, doubler et égaliseur, rien que pour ce bout. « ▶ Écouter le bout » pour entendre, « ↺ Remettre » pour annuler ce bout.' },
+    { sel: ['#strip'], t: '3 · Règle', b: 'Sur un bout, « ⚡ Effets express » pose un effet tout prêt en un appui : écho throw, grosse reverb, voix lointaine, coupure… et sur l\'instru, couper le beat sous ta punchline. Sinon ouvre un titre (Volume, Style, Effets, Auto-tune, Égaliseur…), règle, referme. Chaque effet a des réglages simples (Pièce, Studio, Salle…) ; touche-le deux fois (ou appuie longtemps) pour tous ses réglages : durée et pré-délai de la reverb, rythme et répétitions de l\'écho, voix et désaccord du doubler, type et mélange de la chaleur, vitesse de l\'auto-tune… L\'égaliseur a son bouton « ⚙️ Réglages poussés ». Sur une sélection : volume, reverb, écho, doubler et égaliseur, rien que pour ce bout. « ▶ Écouter le bout » pour entendre, « ↺ Remettre » pour annuler ce bout.' },
     { sel: ['#bLevel'], t: 'Rééquilibrer', b: 'Remet tous les niveaux d\'aplomb d\'un coup : l\'instru, le lead, les backs et l\'ambiance à leur juste place.' }
   ],
   vMaster: [
