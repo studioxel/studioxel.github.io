@@ -704,7 +704,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.5.6 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.5.7 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookie, sans garder ton adresse IP) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false">📊 Statistiques anonymes : activées</button>
@@ -1161,8 +1161,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 178; // numéro interne (jamais affiché)
-const APP_PUB = '2.5.6';
+const APP_VER = 179; // numéro interne (jamais affiché)
+const APP_PUB = '2.5.7';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -1965,14 +1965,16 @@ async function record0(){
   const RG = recGraph();
   rec = RG ? RG.r : new MediaRecorder(mic);
   rec.ondataavailable = e => { if(e.data.size) chunks.push(e.data); };
-  const started = new Promise(r => rec.onstart = () => r(ctx.currentTime));
+  let wallT0 = 0;
+  const started = new Promise(r => rec.onstart = () => { wallT0 = performance.now(); r(ctx.currentTime); });
   rec.onstop = async () => {
+    const wall = wallT0 ? (performance.now() - wallT0) / 1000 : 0;
     releaseMic();
     setTimeout(cleanupLive, 1500);
     try{
       const blob = new Blob(chunks, { type: rec.mimeType });
       try{ RG && RG.close(); }catch(e){}
-      let raw = await ctx.decodeAudioData(await blob.arrayBuffer());
+      let raw = await fixRate(await ctx.decodeAudioData(await blob.arrayBuffer()), wall);
       /* calage par le top : le vrai départ, au lieu de croire Safari */
       const mk = RG && RG.tm != null ? findMark(raw, RG.tm - recInfo.recStart) : null;
       if(mk != null){ recInfo.recStart = RG.tm - mk; recInfo.marked = true; }
@@ -2118,6 +2120,28 @@ function recGraph(){
     return g;
   }catch(e){ return null; }
 }
+/* sécurité vitesse : certains micros Bluetooth (AirPods en mode appel, CarPlay) donnent le son à un autre rythme que celui annoncé,
+   et la prise ressort accélérée. On compare la durée enregistrée au temps vraiment écoulé, et on remet à vitesse normale si ça ne colle pas. */
+async function fixRate(raw, wall){
+  try{
+    if(!(wall > 1.5) || !raw || !raw.length) return raw;
+    const ratio = raw.duration / wall;
+    if(ratio > 0.85 && ratio < 1.18) return raw;
+    const est = raw.length / wall, RATES = [8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000, 96000];
+    let tr = RATES.reduce((a, b) => Math.abs(b - est) < Math.abs(a - est) ? b : a);
+    if(Math.abs(tr - est) / est > 0.12) tr = Math.round(est);
+    tr = Math.max(3000, Math.min(384000, tr));
+    const nc = raw.numberOfChannels, sr = ctx.sampleRate;
+    const re = new OfflineAudioContext(nc, raw.length, tr).createBuffer(nc, raw.length, tr);
+    for(let c = 0; c < nc; c++) re.copyToChannel(raw.getChannelData(c), c);
+    const off = new OfflineAudioContext(nc, Math.ceil(raw.length * sr / tr), sr), sN = off.createBufferSource();
+    try{ off.destination.channelCount = nc; off.destination.channelInterpretation = 'discrete'; }catch(e){}
+    sN.buffer = re; sN.channelInterpretation = 'discrete'; sN.connect(off.destination); sN.start(0);
+    const out = await off.startRendering();
+    track('vitesse-reparee-' + (Math.round(ratio * 10) / 10));
+    return out;
+  }catch(e){ return raw; }
+}
 /* où est le top dans l'enregistrement (en secondes) : seulement si la 2e piste est bien là */
 function findMark(raw, guess){
   const sr = raw.sampleRate;
@@ -2201,7 +2225,7 @@ async function calibrateLat(){
     const lane = ov.querySelector('.callane'), hit = ov.querySelector('.calhit'), cnt = ov.querySelector('.calcnt');
     const RG = recGraph(), chunks = [], r = RG ? RG.r : new MediaRecorder(mic);
     r.ondataavailable = e => { if(e.data.size) chunks.push(e.data); };
-    const started = new Promise(res => r.onstart = () => res(ctx.currentTime)), stopped = new Promise(res => r.onstop = res);
+    let wT0 = 0, wT1 = 0; const started = new Promise(res => r.onstart = () => { wT0 = performance.now(); res(ctx.currentTime); }), stopped = new Promise(res => r.onstop = () => { wT1 = performance.now(); res(); });
     r.start(); let recStart = await started;
     if(RG) RG.mark(ctx.currentTime + 0.08);
     await new Promise(res => setTimeout(res, 300));
@@ -2242,7 +2266,7 @@ async function calibrateLat(){
     r.stop(); await stopped; releaseMic();
     setBusy(true, 'Je mesure…');
     try{ RG && RG.close(); }catch(e){}
-    let raw = await ctx.decodeAudioData(await new Blob(chunks, { type: r.mimeType }).arrayBuffer());
+    let raw = await fixRate(await ctx.decodeAudioData(await new Blob(chunks, { type: r.mimeType }).arrayBuffer()), wT0 && wT1 ? (wT1 - wT0) / 1000 : 0);
     const mk = RG && RG.tm != null ? findMark(raw, RG.tm - recStart) : null;
     if(mk != null) recStart = RG.tm - mk;
     if(RG) raw = voiceOnly(raw);
@@ -6260,10 +6284,15 @@ const EXT_MIC = /usb|lightning|rode|røde|shure|blue yeti|zoom|irig|boya|saramon
 /* Ce qu'on entend : écouteurs (pas de larsen possible), Bluetooth voiture/enceinte (larsen possible, décalage), ou le téléphone */
 function classifyRoute(labels){
   const lab = labels.filter(l => l);
-  const cp = lab.find(l => /carplay/i.test(l)); if(cp) return { kind: 'bt', name: 'CarPlay', wireless: true };
-  const ear = lab.find(l => EAR_MIC.test(l));
-  if(ear) return { kind: 'ecouteurs', name: ear.replace(/\s*\(.*\)\s*$/, ''), wireless: WIRELESS.test(ear) };
-  const other = lab.find(l => !BUILTIN_MIC.test(l) && !EXT_MIC.test(l));
+  /* les indices sont rangés du plus frais (le micro que le téléphone donne maintenant) au plus vieux : le premier qui parle décide.
+     Un vieux « CarPlay » resté dans la liste ne doit jamais passer devant des AirPods bien là. */
+  let builtinFirst = false;
+  for(const l of lab){
+    if(/carplay/i.test(l)){ if(builtinFirst) continue; return { kind: 'bt', name: 'CarPlay', wireless: true }; }
+    if(EAR_MIC.test(l)) return { kind: 'ecouteurs', name: l.replace(/\s*\(.*\)\s*$/, ''), wireless: WIRELESS.test(l) };
+    if(BUILTIN_MIC.test(l)) builtinFirst = true;
+  }
+  const other = lab.find(l => !BUILTIN_MIC.test(l) && !EXT_MIC.test(l) && !/carplay/i.test(l));
   if(other) return { kind: 'bt', name: other.replace(/\s*\(.*\)\s*$/, ''), wireless: true };
   return { kind: 'tel', name: '', wireless: false };
 }
@@ -6330,7 +6359,8 @@ async function probeDefault(){
   probing = (async () => {
     try{
       if(S.recording || S.playing || S.mon || !navigator.mediaDevices?.getUserMedia) return;
-      if(mic){ if(!S.btPhoneMic && S.micLabel) S.defLabel = S.micLabel; return; }
+      if(mic && mic.getAudioTracks().some(t => t.readyState === 'live')){ if(!S.btPhoneMic && S.micLabel) S.defLabel = S.micLabel; return; }
+      if(mic) return;
       const st = await navigator.mediaDevices.getUserMedia({ audio: true }); micTouched = true;
       S.defLabel = st.getAudioTracks()[0]?.label || S.defLabel;
       st.getTracks().forEach(t => t.stop()); audioSessionPlay();
@@ -6413,7 +6443,7 @@ $('#outSeg').addEventListener('click', e => {
   toast(S.outMode === 'auto' ? 'Écoute auto : l\'appli détecte toute seule si un casque est branché.' : S.outMode === 'casque' ? 'Mode casque forcé.' : 'Mode haut-parleur forcé : le retour voix reste coupé.');
 });
 function onDevChange(){
-  S.outMode = 'auto';
+  S.outMode = 'auto'; if(!mic) S.defLabel = null;
   if(S.recording || S.playing || S.mon){ S.needProbe = true; detectHeadset(false); return; }
   probeDefault().then(() => detectHeadset(false));
 }
