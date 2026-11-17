@@ -376,6 +376,10 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
 .welcome{position:fixed;inset:0;z-index:30;background:rgba(5,6,10,.78);display:flex;align-items:center;justify-content:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
 /* le test de latence et le choix de la sauvegarde passent devant tout, Réglages compris */
 .welcome.calw,.welcome.calrun,.welcome.bkdest{z-index:58}
+.welcome.legalw{z-index:59}.legalw .wpanel{max-height:86vh;overflow-y:auto;-webkit-overflow-scrolling:touch;text-align:left}
+.legal details{border:1px solid var(--line);border-radius:10px;margin:10px 0;background:var(--raise)}.legal summary{padding:12px 14px;font-weight:800;cursor:pointer}
+.legal details>p,.legal details>ul{margin:0 14px 10px;font-size:14px;line-height:1.5;color:var(--fg)}.legal ul{padding-left:18px}.legal li{margin-bottom:8px}
+.legalnote{text-align:center;margin-top:18px}.legalnote .wlink{font-size:13px}
 .wpanel{width:100%;max-width:440px;max-height:100%;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:10px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
 .wpanel h2{margin:0 0 6px;font:800 22px/1.2 var(--display)}
 .wbig{height:60px;border-radius:12px;border:0;background:var(--accent);color:#1a1405;font:800 19px var(--display)}
@@ -701,10 +705,11 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.5.0 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.5.1 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
-      <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookies) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
-      <button class="toggle" id="tNoTrack" aria-pressed="false" hidden>Ne pas compter mes visites</button>
+      <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookie, sans garder ton adresse IP) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
+      <button class="toggle" id="tNoTrack" aria-pressed="false">📊 Statistiques anonymes : activées</button>
+      <div class="bkrow"><button class="toggle" data-legal>📜 Mentions légales, conditions et confidentialité</button></div>
     </div>
     <button class="sbtn setclose setclose2" data-setclose>✕ Fermer les réglages</button>
   </div>
@@ -913,6 +918,7 @@ body.ed-open .wmark{z-index:41}
       <button class="sbtn" id="sessRecv">Recevoir une session</button>
       <input type="file" id="sessFile" hidden>
     </div>
+    <p class="note legalnote"><button class="wlink" data-legal>📜 Mentions légales · Conditions d'utilisation · Confidentialité</button></p>
   </div>
 </section>
 
@@ -1156,8 +1162,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 172; // numéro interne (jamais affiché)
-const APP_PUB = '2.5.0';
+const APP_VER = 173; // numéro interne (jamais affiché)
+const APP_PUB = '2.5.1';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -5690,6 +5696,54 @@ $('#bVideo').onclick = async () => {
 };
 
 
+/* ---------- Mentions légales, conditions d'utilisation, confidentialité ---------- */
+const LEGAL_MAJ = '17 novembre 2026';
+function legalHTML(){
+  const M = AVIS_MAIL;
+  return `<div class="wpanel legal">
+    <h2>📜 Infos légales</h2>
+    <p class="note">Mis à jour le ${LEGAL_MAJ}.</p>
+    <details data-sec="ml" open><summary>Mentions légales</summary>
+      <p><b>Éditeur.</b> StudioXel est un projet personnel, gratuit et non commercial, édité par un particulier. Comme le permet l'article 1-1 de la loi pour la confiance dans l'économie numérique (LCEN), son nom n'est pas publié ici.</p>
+      <p><b>Contact.</b> ${M}, ou le bouton « Donner mon avis ».</p>
+      <p><b>Hébergeur.</b> GitHub, Inc. (service GitHub Pages), 88 Colin P. Kelly Jr. Street, San Francisco, CA 94107, États-Unis. github.com</p>
+      <p><b>Propriété.</b> Le nom StudioXel, le logo, l'interface et le code appartiennent à l'éditeur. Tes sons, tes textes et ce que tu importes restent à toi.</p>
+    </details>
+    <details data-sec="cgu"><summary>Conditions d'utilisation</summary>
+      <p><b>1. L'appli.</b> StudioXel sert à enregistrer, mixer et partager des maquettes musicales depuis un navigateur. Elle est gratuite et sans compte. En l'utilisant, tu acceptes ces conditions.</p>
+      <p><b>2. Version bêta.</b> L'appli est fournie telle quelle. Elle peut évoluer, être interrompue ou arrêtée à tout moment, et peut mal fonctionner sur certains appareils.</p>
+      <p><b>3. Tes créations.</b> Tout ce que tu crées et importes (sons, prises, textes, images, vidéos) est rangé uniquement dans ton appareil. L'éditeur n'y a pas accès. Tu en restes propriétaire.</p>
+      <p><b>4. Les droits.</b> Tu garantis avoir le droit d'utiliser ce que tu importes : instrus, textes, voix, images, vidéos. Ce sont les tiens, ou une licence que tu as obtenue, ou des œuvres libres dont tu respectes les conditions (par exemple créditer le beatmaker). Tu es seul responsable de ce que tu publies. Les réseaux sociaux peuvent couper le son ou bloquer une vidéo qui contient une œuvre protégée.</p>
+      <p><b>5. Respect des autres.</b> Interdit d'utiliser StudioXel pour des contenus illicites : haine, harcèlement, menaces, atteinte à la vie privée ou à l'image d'autrui, contrefaçon.</p>
+      <p><b>6. Les Reels.</b> Les vidéos créées avec StudioXel portent sa signature : bandeau, QR code et #StudioXel. Utiliser la fonction Reel, c'est accepter cette signature.</p>
+      <p><b>7. Sauvegarde.</b> Tes sons peuvent disparaître (données du navigateur effacées, téléphone changé ou perdu…). Fais régulièrement « 💾 Sauvegarder tous mes sons ». L'éditeur n'a pas de copie et ne peut rien récupérer.</p>
+      <p><b>8. Responsabilité.</b> Dans les limites prévues par la loi, l'éditeur ne peut être tenu responsable d'une perte de données ou d'un dommage lié à l'utilisation de l'appli.</p>
+      <p><b>9. Changements.</b> Ces conditions peuvent évoluer. La version en vigueur est toujours ici.</p>
+      <p><b>10. Loi applicable.</b> Le droit français s'applique. En cas de souci, écris d'abord à ${M} pour trouver une solution à l'amiable.</p>
+    </details>
+    <details data-sec="conf"><summary>Confidentialité et données</summary>
+      <p><b>Le principe.</b> StudioXel tourne dans ton téléphone. Pas de compte, pas de pub, rien n'est vendu.</p>
+      <p><b>Ce qui reste dans ton appareil.</b> Tes sons, prises, textes, réglages, ton blaze, ta ville et ton @. Ils ne sont jamais envoyés à l'éditeur. Le micro et la caméra ne servent qu'à enregistrer, dans ton appareil.</p>
+      <p><b>Ce qui sort de ton appareil :</b></p>
+      <ul>
+        <li><b>Statistiques anonymes (GoatCounter).</b> L'appli compte les visites et quelques actions (par exemple « enregistrement » ou « Reel créé ») pour savoir ce qui sert et ce qui bloque. Pas de cookie, ton adresse IP n'est pas gardée, et tu n'es pas suivi sur d'autres sites. Tu peux les couper dans Réglages → Appli.</li>
+        <li><b>« Donner mon avis », seulement si tu l'envoies.</b> Ta note, ton message, ton blaze, ton type de téléphone et la version de l'appli partent par Web3Forms (serveurs aux États-Unis, qui ne gardent pas les messages) jusqu'à la boîte mail de l'éditeur, ou par ta propre appli mail. C'est gardé le temps de traiter ton avis, 12 mois au plus. Moins de 15 ans ? Demande d'abord l'accord d'un parent.</li>
+        <li><b>Ce qui fait marcher l'appli.</b> En ouvrant StudioXel, ton navigateur contacte GitHub (qui héberge l'appli), Google Fonts (les polices d'écriture) et, pour l'export MP3, jsDelivr (l'encodeur). Comme pour n'importe quel site, ces services voient ton adresse IP le temps de la connexion.</li>
+        <li><b>Ce que tu partages.</b> Quand tu partages un son, un Reel ou une session, c'est toi qui choisis l'appli de destination, et ses propres règles s'appliquent.</li>
+      </ul>
+      <p><b>Tes droits.</b> Tu peux demander l'accès, la correction ou l'effacement des données de ton avis, ou t'y opposer, en écrivant à ${M}. Tu peux aussi faire une réclamation auprès de la CNIL (cnil.fr).</p>
+    </details>
+    <button class="wbig" data-legalclose>OK</button>
+  </div>`;
+}
+function openLegal(sec){
+  const w = document.createElement('div'); w.className = 'welcome legalw'; w.setAttribute('role', 'dialog'); w.setAttribute('aria-label', 'Infos légales');
+  w.innerHTML = legalHTML();
+  if(sec){ w.querySelectorAll('details').forEach(d => d.open = d.dataset.sec === sec); }
+  w.addEventListener('click', e => { if(e.target === w || e.target.closest('[data-legalclose]')) w.remove(); });
+  document.body.appendChild(w);
+}
+document.addEventListener('click', e => { const b = e.target.closest('[data-legal]'); if(b){ e.preventDefault(); openLegal(b.dataset.legal || ''); } });
 /* ---------- Partage par réseau + avis ---------- */
 /* une seule légende pour tous les réseaux : #StudioXel toujours en premier, 5 hashtags maximum (la limite d'Instagram) */
 const AUTO_TAGS = ['#homestudio', '#recording', '#rap', '#musique'];
@@ -5760,6 +5814,7 @@ function openAvis(){
     <textarea id="avTxt" rows="5" placeholder="Ce qui marche, ce qui bloque, ce qui manque…"></textarea>
     <button class="wbig" id="avSend">Envoyer au Xel</button>
     <p class="avmail">${AVIS_KEY ? 'Ça part direct, rien d\'autre à faire.' : 'Ça ouvre ton appli mail.'} Souci ? Écris à : ${AVIS_MAIL}</p>
+    <p class="avmail">🔒 Ta note, ton message, ton blaze et ton type de téléphone partent par Web3Forms (serveurs aux États-Unis, rien n'y est gardé) jusqu'à la boîte mail du Xel. Moins de 15 ans ? Demande d'abord à un parent. <button class="wlink" data-legal="conf" style="display:inline;padding:0">En savoir plus</button></p>
     <button class="wlink" id="avClose">Plus tard</button>
   </div>`;
   document.body.appendChild(w);
@@ -6342,7 +6397,7 @@ const TOUR = [
   { sel: ['#list .row:nth-child(2) .lane'], t: 'La timeline', b: 'Glisse le doigt pour avancer dans le morceau. Une touche place la lecture. Un appui long sur une phrase la sélectionne : tu peux la supprimer, la déplacer ou l\'envoyer sur une autre piste.\nPour bosser au poil : touche deux fois une prise, ou sa loupe 🔍. Elle s\'ouvre en grand : tu sélectionnes au doigt, tu écoutes en boucle, et tu coupes, montes le son, fais un fondu, répètes un passage, coupes tous les blancs d\'un coup (parfait pour les backs) ou recales la prise de 10 ms en 10 ms. La barre du haut (lecture, pause, REC) reste là.' },
   { sel: ['#zOut', '#zIn'], t: 'Le zoom', b: 'Les loupes zooment et dézooment la timeline. Zoome pour couper une phrase au poil près.' },
   { sel: ['#plusBtn'], t: 'Le bouton +', b: 'Ajoute une piste, pose un repère (couplet, refrain), lance une boucle pour refaire juste une phrase, et retrouve toutes tes sessions. Tout se sauvegarde tout seul.' },
-  { sel: ['#bSet'], t: 'Réglages', b: 'Ils s\'ouvrent en plein écran ; « ✕ Fermer » (en haut ou tout en bas) te ramène où tu étais. Tout est rangé par rubriques : enregistrement (tempo, décompte, métronome, latence), écoute (Auto, Casque ou Haut-parleur) si la pastille d\'écoute se trompe, et ta sauvegarde. Le reste se fait tout seul, et chaque chose se coupe sur place. Et si tu veux refaire ton premier son pas à pas : « 🎤 Premier son guidé ».' },
+  { sel: ['#bSet'], t: 'Réglages', b: 'Ils s\'ouvrent en plein écran ; « ✕ Fermer » (en haut ou tout en bas) te ramène où tu étais. Tout est rangé par rubriques : enregistrement (tempo, décompte, métronome, latence), écoute (Auto, Casque ou Haut-parleur) si la pastille d\'écoute se trompe, et ta sauvegarde. Le reste se fait tout seul, et chaque chose se coupe sur place. Et si tu veux refaire ton premier son pas à pas : « 🎤 Premier son guidé ». Tout en bas : les infos légales (conditions, confidentialité) et le bouton pour couper les statistiques anonymes.' },
   { sel: ['.nav [data-view=vMix]'], t: 'Mix', b: 'Ici tu peaufines ta voix. Choisis ta piste en haut, puis ouvre un titre pour la régler : Volume, Style de voix, Effets, Auto-tune, Égaliseur. Pour régler juste un mot ou une phrase, glisse le doigt sur l\'onde : zoome avec la réglette ou à deux doigts, et écoute ton bout en boucle avec le lecteur du Mix. « Rééquilibrer » remet les niveaux d\'aplomb.' },
   { sel: ['.nav [data-view=vMaster]'], t: 'Master', b: 'La touche finale de ta maquette : un style et un volume (Streaming ou Fort). Ton son sort propre et fort, sans jamais saturer.' },
   { sel: ['.nav [data-view=vTexte]'], t: 'Texte', b: 'Écris tes lyrics ici, ou touche « 🎙️ Dicter mon texte » et dis-les : ils s\'écrivent tout seuls (relis, la dictée se trompe sur le rap). Le prompteur les fait défiler pendant que tu kickes. Je cale le texte tout seul : sur le tempo pendant ta première prise, puis pile sur ta voix une fois la prise posée. Tu peux toujours caler à la main. Le calage sort aussi en sous-titres dans tes Reels.\nEn haut, le petit lecteur : 🔁 répète 1 à 16 mesures pendant que t\'écris, et te montre sur quelle mesure et quel temps t\'es.' },
@@ -7335,11 +7390,10 @@ function syncRecMode(){ document.querySelectorAll('#recModeSeg [data-rm2]').forE
 $('#recModeSeg').addEventListener('click', e => { const b = e.target.closest('[data-rm2]'); if(!b) return; store.set('recMode', b.dataset.rm2); syncRecMode(); stepKey = ''; toast(b.dataset.rm2 === 'parts' ? '✂️ Partie par partie : ça s\'arrête à la fin de chaque couplet ou refrain.' : '🎙️ Tout d\'un coup : je range couplets et refrains sur leur piste.'); });
 syncRecMode();
 setTimeout(showBeta, 300);
-{ const b = $('#tNoTrack'); b.setAttribute('aria-pressed', String(store.get('noTrack', false)));
-  b.hidden = !store.get('noTrackShow', false);
-  let taps = 0, tapT = 0;
-  $('#ver').addEventListener('click', () => { const now = Date.now(); taps = now - tapT < 800 ? taps + 1 : 1; tapT = now; if(taps >= 5){ taps = 0; b.hidden = !b.hidden; store.set('noTrackShow', !b.hidden); } });
-  b.onclick = () => { const v = !store.get('noTrack', false); if(!v) store.set('noTrack', false); else track('compteur-coupe'); if(v) store.set('noTrack', true); b.setAttribute('aria-pressed', String(v)); toast(v ? 'Tes visites ne sont plus comptées sur cet appareil.' : 'Tes visites sont de nouveau comptées.'); }; }
+{ const b = $('#tNoTrack');
+  const lab = () => { const off = !!store.get('noTrack', false); b.setAttribute('aria-pressed', String(!off)); b.textContent = off ? '📊 Statistiques anonymes : coupées' : '📊 Statistiques anonymes : activées'; };
+  lab();
+  b.onclick = () => { const off = !store.get('noTrack', false); if(off) track('compteur-coupe'); store.set('noTrack', off); lab(); toast(off ? 'Statistiques coupées : rien n\'est plus compté sur cet appareil.' : 'Statistiques réactivées, merci 🙏'); }; }
 setTimeout(() => { if(window.SX_PREV && window.SX_PREV !== 'ok') track('plantage-' + window.SX_PREV + '-v' + APP_PUB); }, 1600);
 if(window.SX_PREV === 'sauvegarde') setTimeout(() => toast('⚠️ Ta dernière sauvegarde ne s\'est pas terminée : le téléphone a manqué de mémoire, donc elle n\'a pas été faite. Réessaie depuis Réglages.'), 2500);
 setTimeout(() => { if(!S.recording) boot('ok'); }, 8000);
