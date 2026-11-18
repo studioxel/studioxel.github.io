@@ -729,7 +729,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.7.7 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.7.8 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookie, sans garder ton adresse IP) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze. Coupées, elles arrêtent aussi les rapports techniques (erreurs et mesures du son, jamais ta voix).</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false">📊 Statistiques anonymes : activées</button>
@@ -1187,8 +1187,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 198; // numéro interne (jamais affiché)
-const APP_PUB = '2.7.7';
+const APP_VER = 199; // numéro interne (jamais affiché)
+const APP_PUB = '2.7.8';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -1937,6 +1937,39 @@ function pause(){
   try{ unschedRegs(); }catch(e){}
   clearInterval(metroTimer); setPlayIcon();
   if(S.recording) finishRec();
+}
+/* ---------- Glisser dans une piste, partout dans l'appli : vif, avec élan, la lecture s'arrête pendant le geste et reprend où tu lâches ---------- */
+function scrubber(o){
+  /* o.spp() = secondes par pixel à l'écran ; o.get() = position ; o.set(p) = place la tête (renvoie la position retenue) ; o.done(wasPlaying) */
+  let d = null, gl = null;
+  return {
+    down(e){ gl = null; d = { sx: e.clientX, lx: e.clientX, lt: performance.now(), vel: 0, moved: false, play: S.playing && !S.recording, p: 0 }; },
+    move(e){
+      if(!d) return false;
+      if(!d.moved){ if(Math.abs(e.clientX - d.sx) < 4) return false; d.moved = true; if(d.play) pause(); d.p = o.get(); d.lx = e.clientX; d.lt = performance.now(); return true; }
+      const tn = performance.now(), ddx = e.clientX - d.lx, dtm = Math.max(1, tn - d.lt), sp = Math.abs(ddx) / dtm;
+      const k = 2 + 3 * Math.min(1, sp / 1.2), dp = -ddx * o.spp() * k;
+      d.vel = 0.6 * d.vel + 0.4 * (dp / dtm); d.lx = e.clientX; d.lt = tn; d.p = o.set(d.p + dp); return true;
+    },
+    up(){
+      if(!d) return false; const dd = d; d = null; if(!dd.moved) return false;
+      let v = performance.now() - dd.lt < 80 ? dd.vel : 0, p = dd.p; const end = () => { gl = null; o.done(dd.play); };
+      if(Math.abs(v) < 0.0004){ end(); return true; }
+      let last = performance.now(); const g = gl = {};
+      const step = () => { if(gl !== g) return; const tn = performance.now(), dtm = tn - last; last = tn; const q = o.set(p + v * dtm); const hit = Math.abs(q - (p + v * dtm)) > 1e-6; p = q; v *= Math.pow(0.994, dtm); if(Math.abs(v) < 0.0002 || hit) end(); else requestAnimationFrame(step); };
+      requestAnimationFrame(step); return true;
+    },
+    stop(){ d = null; gl = null; },
+    get active(){ return !!(d && d.moved); }
+  };
+}
+/* barres de progression : la lecture s'arrête pendant que tu tires, et reprend où tu lâches (plus de son haché) */
+function barScrub(bar, at, after, guard){
+  let drag = null;
+  bar.addEventListener('pointerdown', e => { if(S.recording || (guard && !guard())) return; drag = { play: S.playing }; if(S.playing) pause(); bar.setPointerCapture(e.pointerId); seek(at(e)); after && after(); });
+  bar.addEventListener('pointermove', e => { if(drag){ seek(at(e)); after && after(); } });
+  const up = () => { if(!drag) return; const d = drag; drag = null; if(d.play){ audioSessionPlay(); unlockSpeaker(); play(); } after && after(); };
+  bar.addEventListener('pointerup', up); bar.addEventListener('pointercancel', up);
 }
 function seek(t){
   if(S.recording) return;
@@ -3282,9 +3315,7 @@ let iLastT = 0;
   const at = e => { const ins = trRole('instru'); if(!ins?.buffer) return 0; const r = cv.getBoundingClientRect(), dur = ins.offset + ins.buffer.duration, fx = clamp((e.clientX - r.left) / r.width, 0, 1);
     if(e.clientY - r.top < 26 || chk) { iView = null; return fx * dur; }
     const bar = 4 * 60 / S.bpm, span = Math.min(dur, 8 * bar), v0 = iView ?? 0; return v0 + fx * span; };
-  cv.addEventListener('pointerdown', e => { drag = true; cv.setPointerCapture(e.pointerId); seek(at(e)); });
-  cv.addEventListener('pointermove', e => { if(drag) seek(at(e)); });
-  cv.addEventListener('pointerup', () => { drag = false; }); cv.addEventListener('pointercancel', () => { drag = false; });
+  barScrub(cv, at);
   $('#iPlay').onclick = () => $('#bPlay').click();
   $('#iHere').onclick = () => { S.tsUser = true; const p = S.playing ? now() : S.pos; const b = 4 * 60 / S.bpm, sg = startSugs(), g0 = sg.length ? sg[0].t % b : 0; const snap = Math.max(0, Math.round((p - g0) / b) * b + g0); setTextStart(Math.abs(snap - p) < 0.6 ? snap : p); renderSugs(); toast('📍 Le texte démarre à ' + fmt(S.textStart, true) + (Math.abs(snap - p) < 0.6 ? ' (calé sur le 1er temps de la mesure).' : '.')); };
   window.__liveSecs = () => {
@@ -3577,7 +3608,7 @@ function fxRowHTML(t, k, label, hint){
   return `<div class="fxrow">
     <button class="fxbtn" data-fx="${k}" aria-pressed="${on}">${label}</button>
     ${on ? `<div class="notch" data-fx="${k}" role="group" aria-label="Dose">${LVN[k].map((n, i) => `<button data-l="${i}" aria-pressed="${i === li}">${n}</button>`).join('')}</div>` : ''}
-    ${on && typeof FX_SHEET !== 'undefined' && FX_SHEET[k] ? `<button class="fxgear" data-deep="${k}" aria-label="Tous les réglages de ${label}">⚙️ Réglages</button>` : ''}
+    ${typeof FX_SHEET !== 'undefined' && FX_SHEET[k] ? `<button class="fxgear" data-deep="${k}" aria-label="Tous les réglages de ${label}">⚙️ Réglages</button>` : ''}
     ${on && hint ? `<div class="fxhint">${hint}</div>` : ''}
   </div>`;
 }
@@ -3639,7 +3670,7 @@ function renderMix(){
           ${fxRowHTML(cur, 'rev', 'Reverb')}
           ${fxRowHTML(cur, 'dly', 'Écho')}</div><p class="mxnote">⚙️ Réglages (ou deux appuis, ou un appui long sur l'effet) : tous ses réglages.</p>`) : '')
       + (cur.preset !== 'instru' ? mxAcc('at', '🤖 Auto-tune', `<div class="fxlist"><div class="fxrow">
-          <button class="fxbtn" data-fx="at" aria-pressed="${tuned}">Auto-tune</button>${tuned ? '<button class="fxgear" data-deep="at" aria-label="Tous les réglages de l\'auto-tune">⚙️ Réglages</button>' : ''}
+          <button class="fxbtn" data-fx="at" aria-pressed="${tuned}">Auto-tune</button><button class="fxgear" data-deep="at" aria-label="Tous les réglages de l\'auto-tune">⚙️ Réglages</button>
           <p class="mxnote atlab">Effet : le son auto-tune du rap d'aujourd'hui</p>
           <div class="ocgrid">${AT_CH.filter(c => c.st).map(c => `<button class="occ" data-atch="${c.k}" aria-pressed="${tuned && atChoice(cur) === c.k}"><b>${c.n}</b><span>${c.d}</span></button>`).join('')}</div>
           ${tuned && cur.at.style ? `<div class="fxrow"><span class="fxlab">Dose de l'effet</span><div class="notch" role="group" aria-label="Dose de l'effet">${AT_DOSE.map((n, i) => `<button data-atd="${i}" aria-pressed="${(cur.at.dose ?? 1) === i}">${n}</button>`).join('')}</div></div>` : ''}
@@ -3781,10 +3812,8 @@ function txCntUI(){
   if(n >= 8) box.innerHTML = `<div class="txbig">Mesure ${k + 1} <span>/ ${n}</span>${dots(beat)}</div><div class="txstrip">${Array.from({ length: n }, (_, i) => `<i class="${i < k ? 'p' : i === k ? 'n' : ''}"></i>`).join('')}</div>`;
   else box.innerHTML = Array.from({ length: n }, (_, i) => `<span class="c${i === k ? ' on' : ''}">${dots(i < k ? 4 : i === k ? beat : -1)}</span>`).join('');
 }
-{ const bar = $('#txBar'); let drag = false; const at = e => { const r = bar.getBoundingClientRect(); return clamp((e.clientX - r.left) / r.width, 0, 1) * Math.max(trackEnd(), 1); };
-  bar.addEventListener('pointerdown', e => { drag = true; bar.setPointerCapture(e.pointerId); seek(at(e)); txPlayerUI(); });
-  bar.addEventListener('pointermove', e => { if(drag){ seek(at(e)); txPlayerUI(); } });
-  bar.addEventListener('pointerup', () => { drag = false; }); bar.addEventListener('pointercancel', () => { drag = false; }); }
+{ const bar = $('#txBar'); const at = e => { const r = bar.getBoundingClientRect(); return clamp((e.clientX - r.left) / r.width, 0, 1) * Math.max(trackEnd(), 1); };
+  barScrub(bar, at, () => txPlayerUI()); }
 function txPlayerUI(){
   const pb = document.querySelector('#txPlayer .txplay'); if(!pb) return;
   const t = S.playing ? '⏸' : '▶'; if(pb._t !== t){ pb._t = t; pb.textContent = t; }
@@ -4241,7 +4270,7 @@ document.addEventListener('pointermove', e => { if(fxLong && Math.hypot(e.client
 ['pointerup', 'pointercancel'].forEach(ev => document.addEventListener(ev, () => { if(fxLong){ clearTimeout(fxLong.tm); fxLong = null; } }, true));
 document.addEventListener('click', e => {
   const deep = e.target.closest('[data-deep]');
-  if(deep){ const t = selTrack(); if(t){ e.preventDefault(); openFxSheet(t, deep.dataset.deep); } return; }
+  if(deep){ const t = deep.dataset.tid ? trackById(+deep.dataset.tid) : selTrack(); if(t){ e.preventDefault(); openFxSheet(t, deep.dataset.deep); } return; }
   const x = fxTarget(e.target); if(!x) return;
   if(fxDeep && fxDeep.k === x.k && fxDeep.id === x.t.id && performance.now() < fxDeep.until){
     /* 2e appui (ou fin d'appui long) : on n'éteint pas l'effet, on ouvre ses réglages */
@@ -4295,7 +4324,7 @@ function fxZoneHTML(t){
   if(!lk && doseOpen && doseOpen.id === t.id && tfxOn(t, doseOpen.k)){
     const k = doseOpen.k, names = k === 'at' ? AT_CH.map(c => c.n) : LVN[k];
     const cur = k === 'at' ? AT_CH.findIndex(c => c.k === atChoice(t)) : nearest(LV[k], fxGet(t, k));
-    h += `<div class="dose" data-tfx="${k}" role="group" aria-label="Dose de ${TFX_NAMES[k]}">${names.map((n, i) => `<button data-l="${i}" aria-pressed="${i === cur}">${n}</button>`).join('')}<button class="off" data-l="off" aria-label="Couper ${TFX_NAMES[k]}">✕ Couper</button></div>`;
+    h += `<div class="dose" data-tfx="${k}" role="group" aria-label="Dose de ${TFX_NAMES[k]}">${names.map((n, i) => `<button data-l="${i}" aria-pressed="${i === cur}">${n}</button>`).join('')}<button class="off" data-l="off" aria-label="Couper ${TFX_NAMES[k]}">✕ Couper</button>${FX_SHEET[k] ? `<button class="fxgear" data-deep="${k}" data-tid="${t.id}" aria-label="Tous les réglages de ${TFX_NAMES[k]}">⚙️ Réglages</button>` : ''}</div>`;
   }
   return h;
 }
@@ -8190,7 +8219,7 @@ function openEditor(t, a, b){
       <button class="sbtn" data-op="early">⇠ Plus tôt</button><button class="sbtn" data-op="late">⇢ Plus tard</button>
       <button class="sbtn" data-op="norm">📏 Niveau max</button><button class="sbtn" data-op="gate">🔇 Couper les blancs</button>
     </div>
-    <p class="note" id="edHint">Pour couper pile où tu veux : lance l'écoute et touche « Début ici » puis « Fin ici » au bon moment (ou place le curseur d'une touche sur l'onde). Tu peux aussi glisser le doigt sur l'onde et tirer les poignées. Zoomé, glisse la bande du dessous (ou le haut de l'onde, là où il y a les temps) pour aller à droite ou à gauche. Sans sélection, les outils s'appliquent à toute la prise.</p>`;
+    <p class="note" id="edHint">Pour couper pile où tu veux : lance l'écoute et touche « Début ici » puis « Fin ici » au bon moment (ou place le curseur d'une touche sur l'onde). Glisse sur l'onde pour te balader dans la prise (vif, avec élan) ; appui long puis glisse pour choisir un bout, et tire ses poignées rondes. Zoomé, glisse la bande du dessous (ou le haut de l'onde, là où il y a les temps) pour aller à droite ou à gauche. Sans sélection, les outils s'appliquent à toute la prise.</p>`;
   $('#settings').hidden = true; $('#bSet').setAttribute('aria-expanded', 'false');
   document.body.appendChild(w); ed.el = w; document.body.classList.add('ed-open');
   edFit(); window.addEventListener('resize', edFit);
@@ -8240,12 +8269,25 @@ function edDown(e){
   let mode = 'new';
   if(e.clientY - r.top < 26){ ed.drag = { mode: 'pan', x0: x, v0: ed.v0, moved: false }; return; }
   if(ed.a != null){ if(Math.abs(x - edT2X(ed.a)) < 24) mode = 'a'; else if(Math.abs(x - edT2X(ed.b)) < 24) mode = 'b'; }
+  if(mode === 'new'){
+    /* glisser = avancer / reculer (vif, avec élan) ; appui long puis glisser = choisir un bout */
+    edScrub.down(e); const dr = ed.drag = { mode: 'nav', x0: x, t0: edX2T(x), moved: false };
+    dr.lp = setTimeout(() => { if(ed && ed.drag === dr && !edScrub.active){ edScrub.stop(); ed.drag = { mode: 'new', x0: x, t0: dr.t0, moved: false, lpOn: true }; try{ navigator.vibrate && navigator.vibrate(15); }catch(x2){} toast('✂️ Glisse pour choisir ton bout'); } }, 450);
+    return;
+  }
   ed.drag = { mode, x0: x, t0: edX2T(x), moved: false };
 }
+const edScrub = scrubber({
+  spp: () => (ed.v1 - ed.v0) / Math.max(1, $('#edCv').clientWidth), get: () => ed.cur,
+  set: p => { const t = edT(); if(!t) return p; const d = t.buffer.duration; p = clamp(p, 0, d); const span = ed.v1 - ed.v0;
+    ed.v0 = clamp(ed.v0 + (p - ed.cur), 0, Math.max(0, d - span)); ed.v1 = ed.v0 + span; ed.cur = p; S.pos = t.offset + p; edDraw(); return p; },
+  done: was => { const t = edT(); if(!t) return; S.pos = t.offset + ed.cur; if(was){ ed.start = S.pos; ed.end = null; ed.fromEd = true; unlockSpeaker(); play(); } edDraw(); }
+});
 function edMove(e){
   if(!ed?.drag) return;
   const r = e.currentTarget.getBoundingClientRect(), x = e.clientX - r.left, d = edT().buffer.duration;
   const tm = clamp(edX2T(x), 0, d);
+  if(ed.drag.mode === 'nav'){ if(edScrub.move(e)){ ed.drag.moved = true; clearTimeout(ed.drag.lp); } return; }
   if(Math.abs(x - ed.drag.x0) > 6) ed.drag.moved = true;
   if(!ed.drag.moved) return;
   if(ed.drag.mode === 'pan'){ const span = ed.v1 - ed.v0, W = e.currentTarget.clientWidth; ed.v0 = clamp(ed.drag.v0 - (x - ed.drag.x0) / W * span, 0, Math.max(0, d - span)); ed.v1 = ed.v0 + span; edDraw(); return; }
@@ -8256,7 +8298,9 @@ function edMove(e){
 }
 function edUp(e){
   if(!ed?.drag) return;
-  const dr = ed.drag; ed.drag = null;
+  const dr = ed.drag; ed.drag = null; clearTimeout(dr.lp);
+  if(dr.mode === 'nav'){ if(edScrub.up()) return; dr.mode = 'new'; }
+  if(dr.lpOn && !dr.moved){ edDraw(); return; }
   if(dr.mode === 'pan' && !dr.moved){ const t = edT(); ed.cur = clamp(edX2T(dr.x0), 0, t.buffer.duration); if(S.playing) pause(); edDraw(); return; }
   if(!dr.moved){
     const t = edT(), tm = clamp(dr.t0, 0, t.buffer.duration);
@@ -8562,14 +8606,14 @@ const HELP = {
     { sel: ['#routeDd'], t: 'Ton écoute', b: 'Le duo que je détecte : ce que t\'écoutes · le micro qui enregistre (✅ bon son, 🟡 correct, ❌ mauvais son). Ça change tout seul quand tu branches ou ranges tes écouteurs ; sinon touche 🔄. Le test de timing est dans Réglages. Le meilleur son : un casque filaire.' },
     { sel: ['#zOut', '#zIn'], t: 'Zoom', b: 'Les loupes resserrent ou élargissent la timeline. Zoome pour bosser une phrase, dézoome pour voir tout le morceau.' },
     { sel: ['#plusBtn'], t: 'Le +', b: 'Ajouter une piste, poser un repère (couplet, refrain), lancer une boucle de quelques mesures pour refaire une phrase, renommer ta session, la lier à un projet et retrouver toutes tes sessions.' },
-    { sel: ['#ruler'], t: 'La règle', b: 'Touche-la pour placer la lecture à un endroit précis. Le trait vertical, c\'est la tête de lecture.' },
+    { sel: ['#ruler'], t: 'La règle', b: 'Touche-la pour placer la lecture à un endroit précis, ou glisse dessus pour te balader dans le son (vif, avec élan, la lecture reprend où tu lâches). Le trait vertical, c\'est la tête de lecture.' },
     { sel: ['#list .row:nth-child(2) .swatch', '#list .row:nth-child(2) .name'], t: 'Couleur et nom', b: 'La pastille change la couleur de la piste. Le nom 🔒 est fixe (il sert au prompteur et au rangement des prises) : écris le tien dans l\'encadré juste en dessous.' },
     { sel: ['#list .row:nth-child(2) .chip'], t: 'R, M, S', b: 'R arme la piste : REC enregistre dessus. M la rend muette. S l\'écoute toute seule.' },
     { sel: ['#list .row:nth-child(2) .l2'], t: 'Volume, pan et ordre', b: 'VOL règle le niveau, PAN place la piste à gauche ou à droite. ↑ et ↓ montent ou descendent la piste dans la liste.' },
     { t: 'Les effets', b: 'Reverb, écho, auto-tune… tout se règle dans l\'onglet Mix : sur toute la piste ou juste sur un bout. Tant que tu n\'es pas passé dans Mix, tes prises restent brutes (pas de reverb ni d\'écho) : l\'habillage se fait dans Mix. Un appui = les réglages simples, ⚙️ Réglages à côté de l\'effet = tous ses réglages. Et en haut de chaque voix, 🧽 Nettoyage retire souffle, P/B, S qui sifflent, respirations, et corrige la pièce ou une voix étouffée.' },
     { sel: ['#list .row:nth-child(2) .l3'], t: 'Importer, cadenas, copie, poubelle', b: 'Importer : met un fichier audio sur la piste (remplace ce qu\'il y a). 🔓 verrouille une prise réussie. ⧉ duplique la piste. ✕ la supprime (touche deux fois pour confirmer).' },
     { sel: ['#list .row:nth-child(2) .lane'], t: 'La timeline', b: 'Glisse pour avancer. Une touche place la lecture. Appui long sur une phrase : elle est sélectionnée, et la barre du bas permet de l\'écouter, la supprimer, la copier ou la déplacer sur une autre piste. Deux touches sur une prise, ou sa loupe 🔍 : elle s\'ouvre en grand dans l\'éditeur.' },
-    { t: 'L\'éditeur de prise', b: 'Dans l\'éditeur : pour couper pile au bon moment, lance l\'écoute et touche « Début ici » puis « Fin ici ». Tu peux aussi sélectionner au doigt et ajuster avec les poignées. Zoomé, glisse la bande sous l\'onde pour aller à droite ou à gauche. Chaque retouche s\'allume sur l\'onde. Tu écoutes en boucle ou la piste seule. Outils : supprimer, garder que la sélection, −3/+3 dB, fondus, répéter, à l\'envers, plus tôt/plus tard de 10 ms, niveau max, et « Couper les blancs » qui met en silence tout ce qui n\'est pas ta voix sans rien décaler (top pour les backs). Sans sélection, ça s\'applique à toute la prise. La barre du haut reste dispo : lecture, pause, REC.' }
+    { t: 'L\'éditeur de prise', b: 'Dans l\'éditeur : pour couper pile au bon moment, lance l\'écoute et touche « Début ici » puis « Fin ici ». Glisse sur l\'onde pour te balader (vif, avec élan) ; appui long puis glisse pour sélectionner, et ajuste avec les poignées. Zoomé, glisse la bande sous l\'onde pour aller à droite ou à gauche. Chaque retouche s\'allume sur l\'onde. Tu écoutes en boucle ou la piste seule. Outils : supprimer, garder que la sélection, −3/+3 dB, fondus, répéter, à l\'envers, plus tôt/plus tard de 10 ms, niveau max, et « Couper les blancs » qui met en silence tout ce qui n\'est pas ta voix sans rien décaler (top pour les backs). Sans sélection, ça s\'applique à toute la prise. La barre du haut reste dispo : lecture, pause, REC.' }
   ],
   vMix: [
     { t: 'L\'onglet Mix', b: 'Ici tu règles chaque piste, ou juste un bout : un mot, une phrase, un couplet.' },
@@ -9302,7 +9346,19 @@ $('#bMon').onclick = () => { if(S.mon){ S.monUserOff = true; S.monAuto = false; 
 
 $('#zIn').onclick = () => { S.pps = Math.min(200, S.pps * 1.5); renderTracks(); };
 $('#zOut').onclick = () => { S.pps = Math.max(8, S.pps / 1.5); renderTracks(); };
-$('#ruler').addEventListener('click', e => seek(e.offsetX / S.pps));
+{ const rc = $('#ruler'); let justDragged = 0;
+  const sr = scrubber({
+    spp: () => 1 / S.pps, get: () => S.pos,
+    set: p => { p = clamp(p, 0, Math.max(trackEnd(), 0.1)); sc.scrollLeft += (p - S.pos) * S.pps; S.pos = p; uiPokeAt = performance.now(); return p; },
+    done: was => { seek(S.pos); if(was){ audioSessionPlay(); unlockSpeaker(); play(); } }
+  });
+  rc.style.touchAction = 'none';
+  rc.addEventListener('pointerdown', e => { if(S.recording) return; sr.down(e); try{ rc.setPointerCapture(e.pointerId); }catch(x){} });
+  rc.addEventListener('pointermove', e => { if(sr.move(e)) e.preventDefault(); });
+  const up = () => { if(sr.up()) justDragged = performance.now(); };
+  rc.addEventListener('pointerup', up); rc.addEventListener('pointercancel', up);
+  rc.addEventListener('click', e => { if(performance.now() - justDragged < 400) return; seek(e.offsetX / S.pps); });
+}
 $('#addTrack').onclick = () => { pushUndo('l\'ajout de piste'); claimNext = true; addTrack('Piste ' + (S.tracks.length + 1), 'neutre'); renderTracks(); };
 document.addEventListener('keydown', e => {
   if(e.target.matches('textarea, input, select')) return;
@@ -9328,12 +9384,9 @@ function updProg(p){
   if(key !== progKey){ progKey = key; $('#tpMk').innerHTML = S.markers.map(m => `<i style="left:${clamp(m.t / tot, 0, 1) * 100}%" title="${esc(m.name)}"></i>`).join(''); }
 }
 (() => {
-  const bar = $('#tpBar'); let drag = false;
+  const bar = $('#tpBar');
   const at = e => { const r = bar.getBoundingClientRect(); return clamp((e.clientX - r.left) / r.width, 0, 1) * Math.max(trackEnd(), 1); };
-  bar.addEventListener('pointerdown', e => { if(S.recording) return; drag = true; bar.setPointerCapture(e.pointerId); seek(at(e)); });
-  bar.addEventListener('pointermove', e => { if(drag) seek(at(e)); });
-  bar.addEventListener('pointerup', () => { drag = false; });
-  bar.addEventListener('pointercancel', () => { drag = false; });
+  barScrub(bar, at);
   $('#tProg').addEventListener('keydown', e => { if(e.key === 'ArrowRight') seek(now() + 5); if(e.key === 'ArrowLeft') seek(Math.max(0, now() - 5)); });
 })();
 /* La prise se dessine sur la piste pendant que tu kickes */
