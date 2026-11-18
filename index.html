@@ -1188,8 +1188,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 206; // numéro interne (jamais affiché)
-const APP_PUB = '2.8.5';
+const APP_VER = 207; // numéro interne (jamais affiché)
+const APP_PUB = '2.8.6';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -3592,7 +3592,7 @@ const AT_CH = [
   { k: 'planant', n: '🛸 Planant', d: 'collé + petits sauts de note, mélodieux', st: 1 },
   { k: 'cristal', n: '💎 Cristal', d: 'collé + voix plus claire et brillante', st: 1 },
   { k: 'grave', n: '🌑 Grave', d: 'collé + voix plus sombre, plus lourde', st: 1 },
-  { k: 'vocodeur', n: '🎹 Vocodeur', d: 'un synthé qui chante tes mots, façon Daft Punk', st: 1 },
+  { k: 'vocodeur', n: '🎹 Vocodeur', d: 'un synthé qui chante tes mots + ta voix auto-tunée, façon Daft Punk', st: 1 },
   { k: 'naturel', n: 'Naturel', c: 0 },
   { k: 'marque', n: 'Marqué', c: 1 }
 ];
@@ -4708,7 +4708,7 @@ async function atHarmonies(out, an, sh, at, kind){
    Le moteur reprend la conception du vocodeur Web Audio de Chris Wilson (licence MIT, github.com/cwilso/Vocoder) :
    ta voix est découpée en 28 bandes de fréquences ; dans chaque bande on mesure son niveau (multiplication par une sinusoïde,
    redressement, filtre lent) et ce niveau ouvre la même bande d'un synthé. Ici il est calculé hors temps réel, sur toute la prise. */
-async function atVocoder(src, an, sh, dose){
+async function atVocoder(src, an, sh, dose, tuned){
   const sr = src.sampleRate, n = src.length, tm = atTunedMidi(an, sh), F = tm.length, hop = an.hopS / an.sr, off = an.offS / an.sr;
   const ac = new OfflineAudioContext(2, n, sr);
   const NB = 28, lo = 55, hi = Math.min(7040, sr * 0.42), Q = 6;
@@ -4741,8 +4741,9 @@ async function atVocoder(src, an, sh, dose){
   });
   /* les « s » et « ch » de ta voix, ajoutés tels quels au-dessus de 8 kHz : sans eux on ne comprend plus les mots */
   const hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 7000; hp.Q.value = 0.7; const hpg = ac.createGain(); hpg.gain.value = 0.6; modIn.connect(hp); hp.connect(hpg); hpg.connect(ac.destination);
-  /* la dose : un peu de ta vraie voix reste dessous en Léger et Moyen */
-  const dry = ac.createGain(); dry.gain.value = [0.5, 0.22, 0][dose ?? 1]; modIn.connect(dry); dry.connect(ac.destination);
+  /* la dose : ta voix reste dessous en Léger et Moyen, auto-tunée Robot (le son vocodeur + auto-tune) ; brute seulement si l'auto-tune n'a pas pu se faire */
+  const dry = ac.createGain(); dry.gain.value = [0.5, 0.22, 0][dose ?? 1]; dry.connect(ac.destination);
+  if(tuned && dry.gain.value > 0){ const ds = ac.createBufferSource(); ds.buffer = tuned; ds.connect(dry); ds.start(0); } else modIn.connect(dry);
   mod.start(0);
   const r = await ac.startRendering();
   /* même niveau que ta voix */
@@ -4923,9 +4924,9 @@ async function applyAutotune(t){
       : { ...t.at, mode, amount: mode === 0 ? (rapLike ? 70 : 100) : 100 };
     const sh = shiftCurve(an.f0, eff, an.hopS / an.sr);
     /* Naturel et Marqué : Signalsmith (plus juste, timbre gardé). Robot et Planant : PSOLA, qui colle la note plus sec (c'est l'effet voulu). */
-    let out = voc ? null : (eff.mode <= 1 ? await ssTune(src.buffer, an, sh) : null) || await psola(src.buffer, an, sh);
+    let out = (voc && dose === 2) ? null : (eff.mode <= 1 ? await ssTune(src.buffer, an, sh) : null) || await psola(src.buffer, an, sh);
     /* Vocodeur : un synthé joue les notes justes de ta voix, ta voix lui donne les mots */
-    if(voc){ toast('Vocodeur… (quelques secondes)'); await tick(); out = await atVocoder(src.buffer, an, sh, dose); }
+    if(voc){ toast('Vocodeur… (quelques secondes)'); await tick(); out = await atVocoder(src.buffer, an, sh, dose, out); }
     /* Cristal / Grave : la couleur de la voix change, la note reste */
     if(st === 'cristal' || st === 'grave'){
       const v = Array.from(an.f0).filter(f => f > 0).sort((a, b) => a - b);
@@ -8814,7 +8815,7 @@ const HELP = {
     { sel: ['#mxW'], t: '2 · Choisis un bout (si tu veux)', b: 'Touche ta partie enregistrée : elle est choisie en entier, du début à la fin, et tu l\'ajustes avec les poignées rondes ◀ ▶. Glisse sur l\'onde pour avancer ou reculer dans ta piste. Pour sélectionner un mot ou une phrase précise : appui long, puis glisse. Les bouts déjà réglés à part sont en violet : touche-les pour les reprendre. Zoome avec la réglette ou à deux doigts pour viser au poil. Sans sélection, tu règles toute la piste.' },
     { sel: ['#mxTarget'], t: 'À qui s\'appliquent tes réglages', b: 'Ici c\'est écrit : toute la piste, ou ta sélection. Le ✕ enlève la sélection.' },
     { sel: ['details[data-acc=clean]', '#strip'], t: '🧽 Nettoyage', b: 'En ouvrant Nettoyage, j\'écoute ta piste et je te dis ce que je trouve. Les bruits : souffle de fond, bourdonnement, « P » et « B » qui claquent, « S » qui sifflent, respirations. L\'atmosphère de la prise : pièce qui résonne, son de boîte, voix étouffée, trop fine, qualité téléphone ou manque d\'air (micro qui s\'arrête vers 10 kHz). Le souffle et le bruit de fond sont retirés par une IA (DeepFilterNet, logiciel libre) qui tourne sur ton téléphone : rien n\'est envoyé. La première fois, elle se télécharge (18 Mo, une seule fois). Coche ce que tu veux, choisis la force, touche « Nettoyer et comparer », puis bascule Avant / Après pendant la lecture. Tu gardes si ça te plaît, ↶ annule. « Nettoyer toutes les voix » fait tout d\'un coup.' },
-    { sel: ['#strip'], t: '3 · Règle', b: 'Ouvre un titre (Nettoyage, Volume, Effets, Auto-tune, Égaliseur), règle, referme. L\'essentiel est en façade ; le reste est derrière ⚙️ Réglages. Auto-tune : en haut, l\'effet de style du rap d\'aujourd\'hui (🤖 Robot, la note collée net ; 🛸 Planant, avec les petits sauts de note ; 💎 Cristal, voix plus claire ; 🌑 Grave, voix plus sombre ; 🎹 Vocodeur, un synthé qui chante tes mots façon Daft Punk, d\'après le vocodeur libre de Chris Wilson), avec sa dose (Léger, Moyen, À fond) et les Harmonies (Sans, Tierce : une 2e voix juste au-dessus ; Accord : deux voix en plus, à gauche et à droite) ; en dessous, la simple correction (Naturel, Marqué), qui garde le timbre de ta voix (moteur Signalsmith Stretch, logiciel libre). Avec 🎧 Retour, tu t\'entends auto-tuné pendant que tu kickes (le Vocodeur et les Harmonies s\'ajoutent à la fin de la prise). Dans Auto-tune, « 🔄 Reprendre la note de ma voix » réécoute ta prise et recale la tonalité ; elle est reprise toute seule à chaque nouvelle prise. La reverb et l\'écho ont des réglages simples (Pièce, Studio, Salle…) ; Studio est une vraie plaque de studio (algorithme de Dattorro, logiciel libre) ; touche « ⚙️ Réglages » à côté (ou deux appuis sur l\'effet) pour tous ses réglages : durée et pré-délai de la reverb, rythme et répétitions de l\'écho, vitesse et tonalité de l\'auto-tune… L\'égaliseur a son bouton « ⚙️ Réglages poussés ». Sur une sélection : volume, reverb, écho et égaliseur, rien que pour ce bout. « ▶ Écouter le bout » pour entendre, « ↺ Remettre » pour annuler ce bout.' },
+    { sel: ['#strip'], t: '3 · Règle', b: 'Ouvre un titre (Nettoyage, Volume, Effets, Auto-tune, Égaliseur), règle, referme. L\'essentiel est en façade ; le reste est derrière ⚙️ Réglages. Auto-tune : en haut, l\'effet de style du rap d\'aujourd\'hui (🤖 Robot, la note collée net ; 🛸 Planant, avec les petits sauts de note ; 💎 Cristal, voix plus claire ; 🌑 Grave, voix plus sombre ; 🎹 Vocodeur, un synthé qui chante tes mots façon Daft Punk, avec ta voix auto-tunée Robot dessous en Léger et Moyen (synthé seul en À fond), d\'après le vocodeur libre de Chris Wilson), avec sa dose (Léger, Moyen, À fond) et les Harmonies (Sans, Tierce : une 2e voix juste au-dessus ; Accord : deux voix en plus, à gauche et à droite) ; en dessous, la simple correction (Naturel, Marqué), qui garde le timbre de ta voix (moteur Signalsmith Stretch, logiciel libre). Avec 🎧 Retour, tu t\'entends auto-tuné pendant que tu kickes (le Vocodeur et les Harmonies s\'ajoutent à la fin de la prise). Dans Auto-tune, « 🔄 Reprendre la note de ma voix » réécoute ta prise et recale la tonalité ; elle est reprise toute seule à chaque nouvelle prise. La reverb et l\'écho ont des réglages simples (Pièce, Studio, Salle…) ; Studio est une vraie plaque de studio (algorithme de Dattorro, logiciel libre) ; touche « ⚙️ Réglages » à côté (ou deux appuis sur l\'effet) pour tous ses réglages : durée et pré-délai de la reverb, rythme et répétitions de l\'écho, vitesse et tonalité de l\'auto-tune… L\'égaliseur a son bouton « ⚙️ Réglages poussés ». Sur une sélection : volume, reverb, écho et égaliseur, rien que pour ce bout. « ▶ Écouter le bout » pour entendre, « ↺ Remettre » pour annuler ce bout.' },
     { sel: ['#bLevel'], t: 'Rééquilibrer', b: 'Remet tous les niveaux d\'aplomb d\'un coup : l\'instru, le lead, les backs et l\'ambiance à leur juste place.' }
   ],
   vMaster: [
