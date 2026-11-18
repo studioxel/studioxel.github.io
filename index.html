@@ -727,7 +727,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.7.1 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.7.2 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookie, sans garder ton adresse IP) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze. Coupées, elles arrêtent aussi les rapports techniques (erreurs et mesures du son, jamais ta voix).</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false">📊 Statistiques anonymes : activées</button>
@@ -1185,8 +1185,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 192; // numéro interne (jamais affiché)
-const APP_PUB = '2.7.1';
+const APP_VER = 193; // numéro interne (jamais affiché)
+const APP_PUB = '2.7.2';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -4713,6 +4713,112 @@ async function clAnalyse(chs, sr, onProg){
 }
 
 /* ---------- Traitement ---------- */
+/* ---------- Nettoyage par IA : DeepFilterNet 3 (logiciel libre, licence MIT), sur le téléphone, rien n'est envoyé ---------- */
+/* Le moteur (paquet « denoise-voice-clarity », 18 Mo, téléchargé une seule fois puis gardé en cache) enlève le bruit de fond
+   mieux qu'un filtre classique : il reconnaît la voix et laisse passer ce qui en est, même pendant que tu parles.
+   Ce paquet ajoute derrière l'IA sa propre chaîne « clarté » (égaliseur, montée de niveau automatique, compresseur) :
+   on la connaît exactement, on la défait échantillon par échantillon pour ne garder que le travail de l'IA (vérifié à −80 dB près). */
+const DFN_URL = 'https://cdn.jsdelivr.net/npm/denoise-voice-clarity@0.2.2/dist/wasm/';
+const DFN_ATT = [12, 18, 26]; /* réduction maximale du bruit (dB) : Léger, Normal, Fort */
+const DFN_DELAY = 1440;       /* l'IA rend le son avec 30 ms de retard : on le remet pile à sa place */
+const DFN_WK = `
+let mod = null;
+function unclarity(y){
+  const fs = 48000, tc = ms => Math.exp(-1 / (ms * 0.001 * fs)), ca = tc(5), cr = tc(80), cg = tc(150), mk = Math.pow(10, 2 / 20);
+  let agc = 1, env = -120, floor = -60, hang = 0;
+  const n = y.length, d = new Float32Array(n), u = new Float64Array(480);
+  for(let s = 0; s < n; s += 480){
+    const m = Math.min(480, n - s); let su = 0;
+    for(let i = 0; i < m; i++){
+      const yy = y[s + i], ay = Math.abs(yy);
+      const out = a => { const lv = 20 * Math.log10(a + 1e-9), c = lv > env ? ca : cr, en = c * env + (1 - c) * lv, ov = en + 18; return [a * Math.pow(10, -(ov > 0 ? ov * (2 / 3) : 0) / 20) * mk, en]; };
+      let lo = 0, hi = Math.max(1e-9, ay * 20);
+      while(out(hi)[0] < ay && hi < 1e3) hi *= 2;
+      for(let k = 0; k < 50; k++){ const mid = (lo + hi) / 2; if(out(mid)[0] < ay) lo = mid; else hi = mid; }
+      const a = (lo + hi) / 2; env = out(a)[1]; u[i] = yy < 0 ? -a : a; su += a * a;
+    }
+    const ru = Math.sqrt(su / m);
+    let fl = floor, hg = hang, ag = agc;
+    for(let it = 0; it < 6; it++){
+      const rms = ru / ag, L = 20 * Math.log10(rms + 1e-9);
+      fl = L < floor ? 0.95 * floor + 0.05 * L : 0.995 * floor + 0.005 * L;
+      let sp; if(L > fl + 9){ hg = 20; sp = true; } else if(hang > 0){ hg = hang - 1; sp = true; } else { hg = 0; sp = false; }
+      ag = (sp && rms > 1e-9) ? cg * agc + (1 - cg) * Math.pow(10, Math.min(18, Math.max(0, -20 - L)) / 20) : agc;
+    }
+    floor = fl; hang = hg; agc = ag;
+    for(let i = 0; i < m; i++) d[s + i] = u[i] / agc;
+  }
+  return d;
+}
+onmessage = async e => {
+  const { id, url, data, att, delay } = e.data;
+  try{
+    if(!mod){ mod = await import(url + 'denoise_voice_core.js'); await mod.default({ module_or_path: url + 'denoise_voice_core_bg.wasm' }); }
+    if(!data){ postMessage({ id, ok: true }); return; }
+    const v = new mod.VoiceClarityWasm(); v.set_attenuation_limit_db(att); v.set_presence_gain_db(0);
+    const F = v.frame_size, n = data.length, T = n + delay, y = new Float32Array(T), fr = new Float32Array(F);
+    for(let s = 0, k = 0; s < T; s += F, k++){
+      fr.fill(0); if(s < n) fr.set(data.subarray(s, Math.min(n, s + F)));
+      v.process(fr); y.set(fr.subarray(0, Math.min(F, T - s)), s);
+      if(k % 100 === 0) postMessage({ id, prog: s / T });
+    }
+    v.free();
+    const out = unclarity(y).slice(delay, delay + n);
+    postMessage({ id, out }, [out.buffer]);
+  }catch(err){ postMessage({ id, err: String(err && err.message || err) }); }
+};`;
+let dfnW = null, dfnSeq = 0, dfnDead = false;
+function dfnCall(msg, onProg, ms){
+  return new Promise((res, rej) => {
+    if(dfnDead) return rej(new Error('indisponible'));
+    try{ if(!dfnW) dfnW = new Worker(URL.createObjectURL(new Blob([DFN_WK], { type: 'application/javascript' })), { type: 'module' }); }
+    catch(e){ dfnDead = true; return rej(e); }
+    const id = ++dfnSeq;
+    const to = setTimeout(() => { dfnW.removeEventListener('message', h); rej(new Error('trop long')); }, ms);
+    const h = e => {
+      const d = e.data; if(d.id !== id) return;
+      if(d.prog != null){ onProg && onProg(d.prog); return; }
+      clearTimeout(to); dfnW.removeEventListener('message', h);
+      if(d.err) rej(new Error(d.err)); else res(d);
+    };
+    dfnW.addEventListener('message', h);
+    dfnW.postMessage({ ...msg, id, url: DFN_URL, delay: DFN_DELAY }, msg.data ? [msg.data.buffer] : []);
+  });
+}
+/* passe un son à 48 kHz (le moteur ne travaille qu'à 48 kHz), et retour */
+async function dfnRate(x, from, to){
+  if(from === to) return x;
+  const n = Math.round(x.length * to / from), off = new OfflineAudioContext(1, n, to), b = off.createBuffer(1, x.length, from);
+  b.copyToChannel(x, 0); const s = off.createBufferSource(); s.buffer = b; s.connect(off.destination); s.start();
+  const r = await off.startRendering(); return r.getChannelData(0).slice(0);
+}
+/* nettoie chaque canal (une seule fois si la prise est en mono déguisée en stéréo) ; null si le moteur n'a pas pu se charger */
+async function dfnDenoise(chs, sr, force, onProg){
+  if(dfnDead || typeof Worker === 'undefined' || typeof WebAssembly === 'undefined') return null;
+  try{
+    onProg && onProg(-1);
+    await dfnCall({}, null, 90000);
+    const same = chs.length > 1 && chs[1].every((v, i) => Math.abs(v - chs[0][i]) < 1e-6);
+    const list = same ? [chs[0]] : chs, out = [];
+    for(let c = 0; c < list.length; c++){
+      const x48 = await dfnRate(Float32Array.from(list[c]), sr, 48000);
+      const r = await dfnCall({ data: x48, att: DFN_ATT[force ?? 1] }, p => onProg && onProg((c + p) / list.length), 300000);
+      let y = await dfnRate(r.out, 48000, sr);
+      if(y.length !== list[c].length){ const z = new Float32Array(list[c].length); z.set(y.subarray(0, z.length)); y = z; }
+      /* une pointe du son d'origine, 6 dB sous la limite : le fond qui reste est stable et naturel, sans « gargouillis » dans les blancs */
+      const k = Math.pow(10, -(DFN_ATT[force ?? 1] + 6) / 20), x0 = list[c];
+      for(let i = 0; i < y.length; i++) y[i] += k * x0[i];
+      out.push(y);
+    }
+    jr('i', 'nettoyage IA : ' + (list.length) + ' canal(aux), ' + (chs[0].length / sr).toFixed(1) + ' s, force ' + (force ?? 1));
+    return same ? chs.map(() => out[0]) : out;
+  }catch(e){
+    jr('w', 'nettoyage IA indisponible : ' + e.message);
+    if(/import|fetch|Failed|network|indisponible|module/i.test(e.message)){ try{ dfnW && dfnW.terminate(); }catch(x){} dfnW = null; }
+    return null;
+  }
+}
+
 const CL_FORCE = [
   { nr: 8, over: 1.0, dr: 0.5, drFloor: 6, ds: 5, dsT: 9, br: 6, eq: 0.6, plHz: 110, ex: 0.7 },
   { nr: 12, over: 1.15, dr: 0.8, drFloor: 9, ds: 8, dsT: 6, br: 11, eq: 1, plHz: 160, ex: 1 },
@@ -4739,7 +4845,13 @@ async function clProcess(chs, sr, R, on, force, onProg){
     }
   }
   /* 3. passe spectrale : souffle (Wiener à décision dirigée), pièce (réverbe tardive estimée), S (bande aiguë dynamique), couleur (courbe fixe) */
-  const doNR = on.noise && R.found.noise, doDR = on.room && R.found.room, doDS = on.sib && R.found.sib;
+  let doNR = on.noise && R.found.noise, aiNR = false;
+  const doDR = on.room && R.found.room, doDS = on.sib && R.found.sib;
+  /* souffle et bruit de fond : d'abord l'IA (DeepFilterNet). Si elle ne peut pas se charger (pas de réseau la première fois…), le filtre classique prend le relais. */
+  if(doNR){
+    const r = await dfnDenoise(out, sr, force, p => step(p < 0 ? -1 : 0.05 + 0.6 * p));
+    if(r){ r.forEach((d, c) => out[c].set(d)); doNR = false; aiNR = true; }
+  }
   const eq = new Float64Array(K).fill(1);
   const fOf = b => b * sr / N;
   if(on.boxy && R.found.boxy){ const f0 = R.found.boxy.f, g = -Math.min(8, Math.max(2, (R.found.boxy.bump ?? R.found.boxy.db) * 0.8)) * Pf.eq;
@@ -4822,7 +4934,7 @@ async function clProcess(chs, sr, R, on, force, onProg){
         for(let i = 0; i < N; i++){ const j = o + i + pad; acc[j] += r2[i] * win[i]; }
         if(c === 0) for(let i = 0; i < N; i++) wsum[o + i + pad] += win[i] * win[i];
       }
-      if(f % 300 === 0){ step(0.1 + 0.75 * f / nF); await CL_TICK(); }
+      if(f % 300 === 0){ step(aiNR ? 0.65 + 0.25 * f / nF : 0.1 + 0.75 * f / nF); await CL_TICK(); }
     }
     for(let c = 0; c < nc; c++){ const acc = accs[c], d = out[c]; for(let i = 0; i < n; i++){ const w = wsum[i + pad]; d[i] = w > 1e-6 ? acc[i + pad] / w : 0; } }
   }
@@ -4865,7 +4977,7 @@ async function clProcess(chs, sr, R, on, force, onProg){
 
 /* ---------- Nettoyage dans Mix : ce qu'on a trouvé, Avant / Après, Garder ---------- */
 const CL_CAT = {
-  noise: { g: 'b', n: 'Souffle de fond', d: 'Le bruit de la pièce entre tes phrases et sous ta voix.' },
+  noise: { g: 'b', n: 'Souffle de fond', d: 'Le bruit de la pièce entre tes phrases et sous ta voix. Retiré par une IA, sur ton téléphone.' },
   hum: { g: 'b', n: 'Bourdonnement électrique', d: 'Le « mmmm » d\'un chargeur ou d\'une prise.' },
   plos: { g: 'b', n: '« P » et « B » qui claquent', d: 'Le souffle qui tape dans le micro.' },
   sib: { g: 'b', n: '« S » qui sifflent', d: 'Adoucis seulement quand ils piquent, la voix reste claire.' },
@@ -4979,7 +5091,7 @@ async function clRun(t){
   let res = null;
   try{
     const el = () => document.querySelector('[data-cl=run]');
-    res = await clBuild(t, on, st.force, p => { const b = el(); if(b) b.textContent = '🧽 Nettoyage… ' + Math.round(p * 100) + ' %'; });
+    res = await clBuild(t, on, st.force, p => { const b = el(); if(b) b.textContent = p < 0 ? '🧠 Chargement du nettoyage IA (18 Mo, une seule fois)…' : '🧽 Nettoyage… ' + Math.round(p * 100) + ' %'; });
   }catch(e){ toast('Nettoyage impossible : ' + e.message); }
   clBusy = false; setBusy(false);
   if(!res){ renderMix(); return; }
@@ -5023,7 +5135,7 @@ async function clAll(){
       const keys = R ? Object.keys(R.found) : [];
       if(!keys.length) continue;
       const on = {}; keys.forEach(k => on[k] = true);
-      const res = await clBuild(t, on, 1, p => toast('🧽 Nettoyage de « ' + t.name + ' »… ' + Math.round(p * 100) + ' %'));
+      const res = await clBuild(t, on, 1, p => toast(p < 0 ? '🧠 Chargement du nettoyage IA (18 Mo, une seule fois)…' : '🧽 Nettoyage de « ' + t.name + ' »… ' + Math.round(p * 100) + ' %'));
       if(!res) continue;
       const tuned = isTuned(t);
       t.takes.push({ buffer: res.buf, offset: res.raw.offset, cl: { force: 1, on: keys }, src: clRawIdx(t) });
@@ -5142,7 +5254,7 @@ async function ocApply(key){
       const keys = An ? Object.keys(An.found) : []; if(!keys.length) continue;
       const on = {}; keys.forEach(k => on[k] = true);
       clBusy = true;
-      const res = await clBuild(t, on, 1, p => toast('🧽 Nettoyage de « ' + t.name + ' »… ' + Math.round(p * 100) + ' %'));
+      const res = await clBuild(t, on, 1, p => toast(p < 0 ? '🧠 Chargement du nettoyage IA (18 Mo, une seule fois)…' : '🧽 Nettoyage de « ' + t.name + ' »… ' + Math.round(p * 100) + ' %'));
       clBusy = false;
       if(!res) continue;
       const tuned = isTuned(t);
@@ -7015,7 +7127,7 @@ function legalHTML(){
         <li><b>Statistiques anonymes (GoatCounter).</b> L'appli compte les visites et quelques actions (par exemple « enregistrement » ou « Reel créé ») pour savoir ce qui sert et ce qui bloque. Pas de cookie, ton adresse IP n'est pas gardée, et tu n'es pas suivi sur d'autres sites. Tu peux les couper dans Réglages → Appli.</li>
         <li><b>Rapports techniques (si les statistiques sont activées).</b> Quand l'appli rencontre une erreur qu'elle n'avait jamais eue, et au plus une fois par semaine, elle envoie à l'éditeur un rapport technique par Web3Forms (serveurs aux États-Unis) : les erreurs, les actions faites dans l'appli, ton type de téléphone, les versions, et des mesures du son de tes prises (niveau de bruit, couleur moyenne de la voix, bande passante du micro). Jamais ta voix, tes textes, tes sons ni ton blaze. Ça sert uniquement à corriger les bugs et à améliorer l'enregistrement et le mixage, c'est gardé 12 mois au plus, et ça s'arrête si tu coupes les statistiques dans Réglages → Appli.</li>
         <li><b>« Donner mon avis », seulement si tu l'envoies.</b> Ta note, ton message, ton blaze, ton type de téléphone et la version de l'appli partent par Web3Forms (serveurs aux États-Unis, qui ne gardent pas les messages) jusqu'à la boîte mail de l'éditeur, ou par ta propre appli mail. C'est gardé le temps de traiter ton avis, 12 mois au plus. Moins de 15 ans ? Demande d'abord l'accord d'un parent.</li>
-        <li><b>Ce qui fait marcher l'appli.</b> En ouvrant StudioXel, ton navigateur contacte GitHub (qui héberge l'appli), Google Fonts (les polices d'écriture) et, pour l'export MP3, jsDelivr (l'encodeur). Comme pour n'importe quel site, ces services voient ton adresse IP le temps de la connexion.</li>
+        <li><b>Ce qui fait marcher l'appli.</b> En ouvrant StudioXel, ton navigateur contacte GitHub (qui héberge l'appli), Google Fonts (les polices d'écriture) et jsDelivr (l'encodeur pour l'export MP3, et l'IA du Nettoyage, téléchargée une fois ; ta voix reste sur ton téléphone). Comme pour n'importe quel site, ces services voient ton adresse IP le temps de la connexion.</li>
         <li><b>Ce que tu partages.</b> Quand tu partages un son, un Reel ou une session, c'est toi qui choisis l'appli de destination, et ses propres règles s'appliquent.</li>
       </ul>
       <p><b>Tes droits.</b> Tu peux demander l'accès, la correction ou l'effacement des données de ton avis, ou t'y opposer, en écrivant à ${M}. Tu peux aussi faire une réclamation auprès de la CNIL (cnil.fr).</p>
@@ -8178,7 +8290,7 @@ const HELP = {
     { sel: ['#mixChips'], t: '1 · Choisis ta piste', b: 'Touche une piste : tout ce qui est en dessous la concerne.' },
     { sel: ['#mxW'], t: '2 · Choisis un bout (si tu veux)', b: 'Glisse le doigt sur l\'onde pour sélectionner un mot ou une phrase. Les bouts déjà réglés à part sont en violet : touche-les pour les reprendre. Zoome avec la réglette ou à deux doigts pour viser au poil. Sans sélection, tu règles toute la piste.' },
     { sel: ['#mxTarget'], t: 'À qui s\'appliquent tes réglages', b: 'Ici c\'est écrit : toute la piste, ou ta sélection. Le ✕ enlève la sélection.' },
-    { sel: ['details[data-acc=clean]', '#strip'], t: '🧽 Nettoyage', b: 'En ouvrant Nettoyage, j\'écoute ta piste et je te dis ce que je trouve. Les bruits : souffle de fond, bourdonnement, « P » et « B » qui claquent, « S » qui sifflent, respirations. L\'atmosphère de la prise : pièce qui résonne, son de boîte, voix étouffée, trop fine, qualité téléphone ou manque d\'air (micro qui s\'arrête vers 10 kHz). Coche ce que tu veux, choisis la force, touche « Nettoyer et comparer », puis bascule Avant / Après pendant la lecture. Tu gardes si ça te plaît, ↶ annule. « Nettoyer toutes les voix » fait tout d\'un coup.' },
+    { sel: ['details[data-acc=clean]', '#strip'], t: '🧽 Nettoyage', b: 'En ouvrant Nettoyage, j\'écoute ta piste et je te dis ce que je trouve. Les bruits : souffle de fond, bourdonnement, « P » et « B » qui claquent, « S » qui sifflent, respirations. L\'atmosphère de la prise : pièce qui résonne, son de boîte, voix étouffée, trop fine, qualité téléphone ou manque d\'air (micro qui s\'arrête vers 10 kHz). Le souffle et le bruit de fond sont retirés par une IA (DeepFilterNet, logiciel libre) qui tourne sur ton téléphone : rien n\'est envoyé. La première fois, elle se télécharge (18 Mo, une seule fois). Coche ce que tu veux, choisis la force, touche « Nettoyer et comparer », puis bascule Avant / Après pendant la lecture. Tu gardes si ça te plaît, ↶ annule. « Nettoyer toutes les voix » fait tout d\'un coup.' },
     { sel: ['#strip'], t: '3 · Règle', b: 'Ouvre un titre (Nettoyage, Volume, Effets, Auto-tune, Égaliseur), règle, referme. L\'essentiel est en façade ; le reste est derrière ⚙️ Réglages. Dans Auto-tune, « 🔄 Reprendre la note de ma voix » réécoute ta prise et recale la tonalité ; elle est reprise toute seule à chaque nouvelle prise. La reverb et l\'écho ont des réglages simples (Pièce, Studio, Salle…) ; touche « ⚙️ Réglages » à côté (ou deux appuis sur l\'effet) pour tous ses réglages : durée et pré-délai de la reverb, rythme et répétitions de l\'écho, vitesse et tonalité de l\'auto-tune… L\'égaliseur a son bouton « ⚙️ Réglages poussés ». Sur une sélection : volume, reverb, écho et égaliseur, rien que pour ce bout. « ▶ Écouter le bout » pour entendre, « ↺ Remettre » pour annuler ce bout.' },
     { sel: ['#bLevel'], t: 'Rééquilibrer', b: 'Remet tous les niveaux d\'aplomb d\'un coup : l\'instru, le lead, les backs et l\'ambiance à leur juste place.' }
   ],
