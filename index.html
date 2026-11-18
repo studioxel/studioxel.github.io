@@ -727,7 +727,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.7.2 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.7.3 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookie, sans garder ton adresse IP) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze. Coupées, elles arrêtent aussi les rapports techniques (erreurs et mesures du son, jamais ta voix).</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false">📊 Statistiques anonymes : activées</button>
@@ -1185,8 +1185,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 193; // numéro interne (jamais affiché)
-const APP_PUB = '2.7.2';
+const APP_VER = 194; // numéro interne (jamais affiché)
+const APP_PUB = '2.7.3';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -4334,6 +4334,77 @@ function fixOctaves(f0){
   }
   return f0;
 }
+/* ---------- Moteur de l'auto-tune : Signalsmith Stretch (logiciel libre, licence MIT), sur le téléphone ---------- */
+/* Il déplace la note de ta voix en gardant son timbre (les formants) : la voix ne prend pas l'effet « canard » ni « robot » quand on ne le veut pas.
+   On le pilote directement (pas en temps réel) : pour chaque petit bloc de 128 échantillons, on lui donne la correction voulue à cet instant.
+   Si le moteur ne peut pas se charger, l'ancien (PSOLA) prend le relais. */
+const SS_URL = 'https://cdn.jsdelivr.net/npm/signalsmith-stretch@1.3.2/SignalsmithStretch.mjs';
+let ssP = null, ssDead = false;
+function ssLoad(){
+  if(ssDead) return Promise.resolve(null);
+  if(!ssP) ssP = (async () => {
+    const r = await fetch(SS_URL); if(!r.ok) throw new Error('HTTP ' + r.status);
+    let src = await r.text();
+    /* on ne garde que le moteur lui-même (la partie « nœud audio temps réel » ne nous sert pas) */
+    const cut = src.indexOf('\nif (typeof exports === \'object\' && typeof module === \'object\')');
+    if(cut < 0) throw new Error('format inattendu');
+    src = src.slice(0, cut) + '\nexport default SignalsmithStretch;\n';
+    const url = URL.createObjectURL(new Blob([src], { type: 'application/javascript' }));
+    const mod = await import(url); URL.revokeObjectURL(url);
+    return mod.default;
+  })().catch(e => { ssDead = true; ssP = null; jr('w', 'auto-tune : moteur Signalsmith indisponible (' + e.message + '), PSOLA à la place'); return null; });
+  return ssP;
+}
+/* là où la voix chante et où il y a vraiment quelque chose à corriger : ailleurs (consonnes, souffle, blancs) on garde la prise telle quelle */
+function atMask(n, sr, an, shift){
+  const F = an.f0.length, hop = an.hopS;
+  const fpos = t => Math.min(F - 1.001, Math.max(0, (t - an.offS) / hop));
+  const f0At = t => { const p = fpos(t), k = Math.floor(p), u = p - k, a = an.f0[k], b = an.f0[k + 1]; return a > 0 && b > 0 ? a + (b - a) * u : (a > 0 ? a : b); };
+  const shAt = t => { const p = fpos(t), k = Math.floor(p), u = p - k; return shift[k] + (shift[k + 1] - shift[k]) * u; };
+  const mask = new Float32Array(n);
+  for(let i = 0; i < n; i++){ const f = f0At(i); mask[i] = f > 0 && Math.abs(shAt(i)) > 0.015 ? 1 : 0; }
+  const a = 1 - Math.exp(-1 / (sr * 0.006)); let y = 0;
+  for(let i = 0; i < n; i++){ y += a * (mask[i] - y); mask[i] = y; }
+  y = 0; for(let i = n - 1; i >= 0; i--){ y += a * (mask[i] - y); mask[i] = Math.min(1, y); }
+  return { mask, shAt };
+}
+async function ssTune(buf, an, shift){
+  const Fac = await ssLoad(); if(!Fac) return null;
+  const M = await Fac(); if(M._main) try{ M._main(0, 0); }catch(e){}
+  const sr = buf.sampleRate, n = buf.length, nc = buf.numberOfChannels, B = 128;
+  const chs = []; for(let c = 0; c < nc; c++) chs.push(buf.getChannelData(c));
+  M._presetDefault(nc, sr);
+  const inL = M._inputLatency(), outL = M._outputLatency(), lat = inL + outL;
+  const ptr = M._setBuffers(nc, B);
+  /* timbre de la voix gardé : base des formants = hauteur habituelle de cette voix */
+  const v = Array.from(an.f0).filter(f => f > 0).sort((a, b) => a - b), base = v.length ? v[v.length >> 1] : 0;
+  const { mask, shAt } = atMask(n, sr, an, shift);
+  const T = n + lat + B, outs = []; for(let c = 0; c < nc; c++) outs.push(new Float32Array(T));
+  const blk = new Float32Array(B);
+  for(let s = 0, k = 0; s < T; s += B, k++){
+    /* la correction de l'instant que le moteur est en train de traiter (il travaille avec un temps d'avance sur sa sortie) */
+    const ti = Math.max(0, Math.min(n - 1, s + B / 2 - outL));
+    M._setTransposeSemitones(shAt(ti), 8000 / sr);
+    M._setFormantSemitones(0, true);
+    M._setFormantBase(base / sr);
+    const heap = new Float32Array(M.HEAP8.buffer);
+    for(let c = 0; c < nc; c++){
+      blk.fill(0); if(s < n) blk.set(chs[c].subarray(s, Math.min(n, s + B)));
+      heap.set(blk, (ptr >> 2) + B * c);
+    }
+    M._process(B, B);
+    const h2 = new Float32Array(M.HEAP8.buffer);
+    for(let c = 0; c < nc; c++){ const o = (ptr >> 2) + B * (nc + c); outs[c].set(h2.subarray(o, o + Math.min(B, T - s)), s); }
+    if(k % 2000 === 0){ toast('Correction… ' + Math.round(s / T * 100) + ' %'); await tick(); }
+  }
+  const res = (typeof ctx !== 'undefined' && ctx ? ctx : new OfflineAudioContext(1, 1, sr)).createBuffer(nc, n, sr);
+  for(let c = 0; c < nc; c++){
+    const o = outs[c], src = chs[c], dst = res.getChannelData(c);
+    for(let i = 0; i < n; i++){ const m = mask[i]; dst[i] = m > 0.001 ? o[i + lat] * m + src[i] * (1 - m) : src[i]; }
+  }
+  return res;
+}
+
 async function psola(buf, an, shift){
   const sr = buf.sampleRate, n = buf.length, nc = buf.numberOfChannels;
   const chs = []; for(let c = 0; c < nc; c++) chs.push(buf.getChannelData(c));
@@ -4475,7 +4546,8 @@ async function applyAutotune(t){
     const eff = A ? { ...t.at, mode: A.retune < 3 ? 2 : 1, amount: A.amount ?? 100, speedS: (A.retune ?? 20) / 1000, keepVib: (A.human ?? 0) / 100 }
       : { ...t.at, mode, amount: mode === 0 ? (rapLike ? 70 : 100) : 100 };
     const sh = shiftCurve(an.f0, eff, an.hopS / an.sr);
-    const out = await psola(src.buffer, an, sh);
+    /* Naturel et Marqué : Signalsmith (plus juste, timbre gardé). Robot et Planant : PSOLA, qui colle la note plus sec (c'est l'effet voulu). */
+    const out = (eff.mode <= 1 ? await ssTune(src.buffer, an, sh) : null) || await psola(src.buffer, an, sh);
     const take = { buffer: out, offset: src.offset ?? t.offset, tuned: true, src: srcIdx };
     if(cur?.tuned) t.takes[t.take] = take; else { t.takes.push(take); t.take = t.takes.length - 1; }
     t.buffer = out; t.offset = take.offset;
@@ -7127,7 +7199,7 @@ function legalHTML(){
         <li><b>Statistiques anonymes (GoatCounter).</b> L'appli compte les visites et quelques actions (par exemple « enregistrement » ou « Reel créé ») pour savoir ce qui sert et ce qui bloque. Pas de cookie, ton adresse IP n'est pas gardée, et tu n'es pas suivi sur d'autres sites. Tu peux les couper dans Réglages → Appli.</li>
         <li><b>Rapports techniques (si les statistiques sont activées).</b> Quand l'appli rencontre une erreur qu'elle n'avait jamais eue, et au plus une fois par semaine, elle envoie à l'éditeur un rapport technique par Web3Forms (serveurs aux États-Unis) : les erreurs, les actions faites dans l'appli, ton type de téléphone, les versions, et des mesures du son de tes prises (niveau de bruit, couleur moyenne de la voix, bande passante du micro). Jamais ta voix, tes textes, tes sons ni ton blaze. Ça sert uniquement à corriger les bugs et à améliorer l'enregistrement et le mixage, c'est gardé 12 mois au plus, et ça s'arrête si tu coupes les statistiques dans Réglages → Appli.</li>
         <li><b>« Donner mon avis », seulement si tu l'envoies.</b> Ta note, ton message, ton blaze, ton type de téléphone et la version de l'appli partent par Web3Forms (serveurs aux États-Unis, qui ne gardent pas les messages) jusqu'à la boîte mail de l'éditeur, ou par ta propre appli mail. C'est gardé le temps de traiter ton avis, 12 mois au plus. Moins de 15 ans ? Demande d'abord l'accord d'un parent.</li>
-        <li><b>Ce qui fait marcher l'appli.</b> En ouvrant StudioXel, ton navigateur contacte GitHub (qui héberge l'appli), Google Fonts (les polices d'écriture) et jsDelivr (l'encodeur pour l'export MP3, et l'IA du Nettoyage, téléchargée une fois ; ta voix reste sur ton téléphone). Comme pour n'importe quel site, ces services voient ton adresse IP le temps de la connexion.</li>
+        <li><b>Ce qui fait marcher l'appli.</b> En ouvrant StudioXel, ton navigateur contacte GitHub (qui héberge l'appli), Google Fonts (les polices d'écriture) et jsDelivr (l'encodeur pour l'export MP3, l'IA du Nettoyage et le moteur de l'auto-tune, téléchargés une fois ; ta voix reste sur ton téléphone). Comme pour n'importe quel site, ces services voient ton adresse IP le temps de la connexion.</li>
         <li><b>Ce que tu partages.</b> Quand tu partages un son, un Reel ou une session, c'est toi qui choisis l'appli de destination, et ses propres règles s'appliquent.</li>
       </ul>
       <p><b>Tes droits.</b> Tu peux demander l'accès, la correction ou l'effacement des données de ton avis, ou t'y opposer, en écrivant à ${M}. Tu peux aussi faire une réclamation auprès de la CNIL (cnil.fr).</p>
@@ -8291,7 +8363,7 @@ const HELP = {
     { sel: ['#mxW'], t: '2 · Choisis un bout (si tu veux)', b: 'Glisse le doigt sur l\'onde pour sélectionner un mot ou une phrase. Les bouts déjà réglés à part sont en violet : touche-les pour les reprendre. Zoome avec la réglette ou à deux doigts pour viser au poil. Sans sélection, tu règles toute la piste.' },
     { sel: ['#mxTarget'], t: 'À qui s\'appliquent tes réglages', b: 'Ici c\'est écrit : toute la piste, ou ta sélection. Le ✕ enlève la sélection.' },
     { sel: ['details[data-acc=clean]', '#strip'], t: '🧽 Nettoyage', b: 'En ouvrant Nettoyage, j\'écoute ta piste et je te dis ce que je trouve. Les bruits : souffle de fond, bourdonnement, « P » et « B » qui claquent, « S » qui sifflent, respirations. L\'atmosphère de la prise : pièce qui résonne, son de boîte, voix étouffée, trop fine, qualité téléphone ou manque d\'air (micro qui s\'arrête vers 10 kHz). Le souffle et le bruit de fond sont retirés par une IA (DeepFilterNet, logiciel libre) qui tourne sur ton téléphone : rien n\'est envoyé. La première fois, elle se télécharge (18 Mo, une seule fois). Coche ce que tu veux, choisis la force, touche « Nettoyer et comparer », puis bascule Avant / Après pendant la lecture. Tu gardes si ça te plaît, ↶ annule. « Nettoyer toutes les voix » fait tout d\'un coup.' },
-    { sel: ['#strip'], t: '3 · Règle', b: 'Ouvre un titre (Nettoyage, Volume, Effets, Auto-tune, Égaliseur), règle, referme. L\'essentiel est en façade ; le reste est derrière ⚙️ Réglages. Dans Auto-tune, « 🔄 Reprendre la note de ma voix » réécoute ta prise et recale la tonalité ; elle est reprise toute seule à chaque nouvelle prise. La reverb et l\'écho ont des réglages simples (Pièce, Studio, Salle…) ; touche « ⚙️ Réglages » à côté (ou deux appuis sur l\'effet) pour tous ses réglages : durée et pré-délai de la reverb, rythme et répétitions de l\'écho, vitesse et tonalité de l\'auto-tune… L\'égaliseur a son bouton « ⚙️ Réglages poussés ». Sur une sélection : volume, reverb, écho et égaliseur, rien que pour ce bout. « ▶ Écouter le bout » pour entendre, « ↺ Remettre » pour annuler ce bout.' },
+    { sel: ['#strip'], t: '3 · Règle', b: 'Ouvre un titre (Nettoyage, Volume, Effets, Auto-tune, Égaliseur), règle, referme. L\'essentiel est en façade ; le reste est derrière ⚙️ Réglages. L\'auto-tune garde le timbre de ta voix (moteur Signalsmith Stretch, logiciel libre, sur ton téléphone). Dans Auto-tune, « 🔄 Reprendre la note de ma voix » réécoute ta prise et recale la tonalité ; elle est reprise toute seule à chaque nouvelle prise. La reverb et l\'écho ont des réglages simples (Pièce, Studio, Salle…) ; touche « ⚙️ Réglages » à côté (ou deux appuis sur l\'effet) pour tous ses réglages : durée et pré-délai de la reverb, rythme et répétitions de l\'écho, vitesse et tonalité de l\'auto-tune… L\'égaliseur a son bouton « ⚙️ Réglages poussés ». Sur une sélection : volume, reverb, écho et égaliseur, rien que pour ce bout. « ▶ Écouter le bout » pour entendre, « ↺ Remettre » pour annuler ce bout.' },
     { sel: ['#bLevel'], t: 'Rééquilibrer', b: 'Remet tous les niveaux d\'aplomb d\'un coup : l\'instru, le lead, les backs et l\'ambiance à leur juste place.' }
   ],
   vMaster: [
