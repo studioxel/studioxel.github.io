@@ -381,6 +381,7 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
 .occ b{font-size:15px}.occ span{font-size:12px;color:var(--muted);line-height:1.35}.occ em{font-style:normal;font-size:10.5px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:.05em}.occ[aria-pressed=true]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--raise))}
 #oneClick{margin-bottom:10px}#oneClick:empty{display:none}.ocbox{border:1px solid var(--accent);border-radius:12px;padding:12px;background:var(--panel)}
 .fxgear{height:34px;padding:0 12px;border-radius:17px;border:1px solid var(--line);background:var(--raise);color:var(--fg);font:700 13px system-ui,-apple-system,sans-serif;touch-action:manipulation;margin-left:auto}
+.jrlog{font:12px ui-monospace,monospace;line-height:1.5;background:#0f1218;border:1px solid var(--line);border-radius:10px;padding:10px;color:#c9cfdb;overflow-wrap:anywhere}.jrlog i{font-style:normal;color:var(--muted)}.jrlog .jre{color:#ff6b6f}.jrlog .jrw{color:#f2c94c}.jrlog .jrm{color:#7fd8ff}
 .fxsh{position:fixed;inset:0;z-index:57;background:rgba(5,7,10,.55);display:flex;align-items:flex-end;justify-content:center}
 .fxshp{width:100%;max-width:560px;max-height:84vh;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-bottom:0;border-radius:18px 18px 0 0;padding-bottom:env(safe-area-inset-bottom,0px)}
 .shhead{display:flex;align-items:center;gap:10px;padding:14px 16px 8px}.shhead h3{margin:0;font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:0 1 auto}.shhead span{color:var(--muted);font-size:13px;flex:1 1 0;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.shx{flex:none}.shx{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--raise);color:var(--fg)}
@@ -725,9 +726,9 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.6.3 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.6.5 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
-      <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookie, sans garder ton adresse IP) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze.</p>
+      <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookie, sans garder ton adresse IP) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze. Coupées, elles arrêtent aussi les rapports techniques (erreurs et mesures du son, jamais ta voix).</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false">📊 Statistiques anonymes : activées</button>
       <div class="bkrow"><button class="toggle" data-legal>📜 Mentions légales, conditions et confidentialité</button></div>
     </div>
@@ -1183,8 +1184,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 184; // numéro interne (jamais affiché)
-const APP_PUB = '2.6.3';
+const APP_VER = 186; // numéro interne (jamais affiché)
+const APP_PUB = '2.6.5';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -1210,6 +1211,136 @@ try{
     document.head.appendChild(sc);
   }
 }catch(e){} // numéro public
+/* ---------- Journal interne (invisible pour les utilisateurs) : plantages, anomalies audio, actions, mesures du son ---------- */
+/* Rien de la voix, du texte ou des sons : seulement des erreurs, des actions et des chiffres. Accès caché : 7 appuis sur la version. */
+const JR = (() => {
+  const K = 'sx.jr', MAX = 600;
+  let L = []; try{ L = JSON.parse(localStorage.getItem(K) || '[]') || []; }catch(e){ L = []; }
+  let dirty = false;
+  const save = () => { if(!dirty) return; dirty = false; try{ localStorage.setItem(K, JSON.stringify(L.slice(-MAX))); }catch(e){ L = L.slice(-200); try{ localStorage.setItem(K, JSON.stringify(L)); }catch(e2){} } };
+  setInterval(save, 5000);
+  addEventListener('pagehide', save);
+  document.addEventListener('visibilitychange', () => { if(document.hidden) save(); });
+  return {
+    add(k, m, x){ L.push(x ? { t: Date.now(), k, m: String(m).slice(0, 400), x } : { t: Date.now(), k, m: String(m).slice(0, 400) }); if(L.length > MAX + 60) L = L.slice(-MAX); dirty = true; if(k === 'e') save(); },
+    all: () => L,
+    clear(){ L = []; dirty = true; save(); },
+    save
+  };
+})();
+const jr = (k, m, x) => { try{ JR.add(k, m, x); }catch(e){} };
+/* actions et petits soucis remontés par les statistiques : on les garde aussi dans le journal */
+const JR_WARN = /plantage|reparee|muet|impossible|erreur|refuse|coupe-son/;
+const trackRaw = track;
+track = ev => { jr(JR_WARN.test(ev) ? 'w' : 'a', ev); trackRaw(ev); };
+/* plantages : erreurs JavaScript et promesses rejetées, avec l'endroit dans le code */
+const jrWhere = (stack, file, line, col) => {
+  const s = String(stack || '').split('\n').map(x => x.trim()).filter(x => /\d+:\d+/.test(x)).slice(0, 3).map(x => x.replace(/https?:\/\/[^ )]*\//g, '').replace(/^at /, '')).join(' ← ');
+  return s || ((line ? 'ligne ' + line + ':' + (col || 0) : '') );
+};
+addEventListener('error', e => { if(!e || !e.message) return; const w = jrWhere(e.error && e.error.stack, e.filename, e.lineno, e.colno); jr('e', '❌ ' + e.message + (w ? ' · ' + w : '')); jrUnusual(e.message, w); });
+addEventListener('unhandledrejection', e => { const r = e && e.reason; const msg = (r && (r.message || r.name)) || String(r); if(/AbortError|NotAllowedError/.test(msg)) { jr('w', '⚠️ refus : ' + msg); return; } const w = jrWhere(r && r.stack); jr('e', '❌ promesse : ' + msg + (w ? ' · ' + w : '')); jrUnusual(msg, w); });
+/* arrêt brutal à l'ouverture précédente (page tuée par l'iPhone, mémoire pleine, plantage) */
+if(window.SX_PREV && window.SX_PREV !== 'ok' && window.SX_PREV !== 'page') setTimeout(() => { jr('e', '❌ arrêt brutal pendant : ' + window.SX_PREV); jrUnusual('arret-' + window.SX_PREV, ''); }, 1500);
+/* état du son : coupé par l'iPhone (appel, Siri, autre appli), suspendu… */
+{ let last = '';
+  setInterval(() => { try{ if(!window.ctx && typeof ctx === 'undefined') return; const st = ctx.state; if(st !== last){ if(last && st !== 'running' && (S.playing || S.recording)) jr('w', '⚠️ son ' + st + (S.recording ? ' pendant un REC' : ' pendant la lecture')); else if(last) jr('i', 'son : ' + st); last = st; } }catch(e){} }, 1500); }
+/* ---- Envois au créateur (Web3Forms, comme les avis), seulement si les statistiques sont activées ---- */
+const JR_ST = 'sx.jrSend';
+const jrSt = () => { try{ return JSON.parse(localStorage.getItem(JR_ST) || '{}') || {}; }catch(e){ return {}; } };
+const jrStSet = o => { try{ localStorage.setItem(JR_ST, JSON.stringify(o)); }catch(e){} };
+const jrDay = () => new Date().toISOString().slice(0, 10), jrMonth = () => new Date().toISOString().slice(0, 7);
+const jrFmtT = t => { const d = new Date(t); return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }) + ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }); };
+function jrHead(){ return 'StudioXel v' + APP_PUB + ' (#' + APP_VER + ') · ' + (typeof envLine === 'function' ? envLine() : navigator.userAgent); }
+function jrText(list){ return list.map(e => jrFmtT(e.t) + ' ' + (e.k === 'm' ? '📏 ' : '') + e.m + (e.x ? ' ' + JSON.stringify(e.x) : '')).join('\n'); }
+/* plafonds par téléphone : 3 envois par jour, 8 par mois (le quota gratuit est partagé avec les avis) */
+/* mode créateur : sur le téléphone du créateur, les rapports partent tout seuls même avec les statistiques coupées */
+const jrDev = () => { try{ return localStorage.getItem('sx.jrDev') === '1'; }catch(e){ return false; } };
+function jrCanSend(st){
+  if(!/github\.io$/.test(location.hostname) || (noTrack() && !jrDev()) || !navigator.onLine || typeof AVIS_KEY === 'undefined') return false;
+  if(st.day !== jrDay()){ st.day = jrDay(); st.dayN = 0; }
+  if(st.month !== jrMonth()){ st.month = jrMonth(); st.monthN = 0; }
+  return (st.dayN || 0) < 3 && (st.monthN || 0) < 8;
+}
+async function jrPost(subject, message, force){
+  const st = jrSt();
+  if(!force && !jrCanSend(st)) return false;
+  try{
+    const r = await fetch('https://api.web3forms.com/submit', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ access_key: AVIS_KEY, subject, from_name: 'StudioXel · journal', message: message.slice(0, 20000) }) });
+    const j = await r.json(); if(!j.success) return false;
+    const s2 = jrSt(); if(s2.day !== jrDay()){ s2.day = jrDay(); s2.dayN = 0; } if(s2.month !== jrMonth()){ s2.month = jrMonth(); s2.monthN = 0; }
+    s2.dayN = (s2.dayN || 0) + 1; s2.monthN = (s2.monthN || 0) + 1; jrStSet(s2);
+    return true;
+  }catch(e){ return false; }
+}
+/* anomalie inhabituelle : une erreur que ce téléphone n'avait jamais eue → un mail tout de suite (une seule fois) */
+function jrSig(msg, where){ const s = (String(msg).replace(/\d+/g, '#') + '|' + String(where || '').split(' ← ')[0].replace(/:\d+/g, '')).slice(0, 160); let h = 0; for(let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return 'x' + (h >>> 0).toString(36); }
+function jrUnusual(msg, where){
+  try{
+    const sig = jrSig(msg, where), st = jrSt(); st.sigs = st.sigs || [];
+    if(st.sigs.includes(sig)) return;
+    st.sigs.push(sig); if(st.sigs.length > 80) st.sigs = st.sigs.slice(-80); jrStSet(st);
+    setTimeout(() => {
+      const last = JR.all().slice(-25);
+      jrPost('StudioXel · anomalie inhabituelle · v' + APP_PUB, jrHead() + '\n\nNouvelle erreur sur ce téléphone :\n' + msg + (where ? '\n' + where : '') + '\n\nCe qui s\'est passé juste avant :\n' + jrText(last));
+    }, 3000);
+  }catch(e){}
+}
+/* rapport complet de la semaine : tout ce qui s'est passé depuis le dernier, s'il s'est passé quelque chose */
+function jrReport(since){
+  const L = JR.all().filter(e => e.t > (since || 0));
+  const n = k => L.filter(e => e.k === k).length;
+  const acts = {}; L.filter(e => e.k === 'a').forEach(e => { const k = e.m.replace(/-v[\d.]+$/, ''); acts[k] = (acts[k] || 0) + 1; });
+  const top = Object.entries(acts).sort((a, b) => b[1] - a[1]).slice(0, 40).map(([k, v]) => '  ' + k + ' × ' + v).join('\n');
+  const meas = L.filter(e => e.k === 'm');
+  return [jrHead(), 'Du ' + (L[0] ? jrFmtT(L[0].t) : '—') + ' au ' + jrFmtT(Date.now()), '',
+    'Plantages : ' + n('e') + ' · Soucis : ' + n('w') + ' · Mesures de prises : ' + meas.length + ' · Actions : ' + n('a'), '',
+    '— Plantages et soucis —', jrText(L.filter(e => e.k === 'e' || e.k === 'w')) || '(aucun)', '',
+    '— Mesures du son des prises (aucun son, que des chiffres) —', jrText(meas) || '(aucune)', '',
+    '— Actions les plus faites —', top || '(aucune)', '',
+    '— Déroulé (infos) —', jrText(L.filter(e => e.k === 'i').slice(-60)) || '(rien)'].join('\n');
+}
+async function jrWeekly(force){
+  const st = jrSt(), since = st.week || 0;
+  if(!force && Date.now() - since < 7 * 86400000) return false;
+  const L = JR.all().filter(e => e.t > since);
+  if(!force && !L.length) return false;
+  if(!since && !force){ st.week = Date.now(); jrStSet(st); return false; }
+  const ok = await jrPost('StudioXel · rapport de la semaine · v' + APP_PUB, jrReport(since), force);
+  if(ok){ const s2 = jrSt(); s2.week = Date.now(); jrStSet(s2); }
+  return ok;
+}
+setTimeout(() => jrWeekly(false), 20000);
+setInterval(() => jrWeekly(false), 3600000);
+/* ---- Accès caché : 7 appuis rapides sur « Version … » dans Réglages ---- */
+{ let taps = [];
+  document.addEventListener('click', e => {
+    if(!e.target.closest('#ver')) return;
+    const now = Date.now(); taps = taps.filter(t => now - t < 4000); taps.push(now);
+    if(taps.length >= 7){ taps = []; openJournal(); }
+  }, true);
+}
+function openJournal(){
+  JR.save(); document.querySelectorAll('.jrw').forEach(x => x.remove());
+  const L = JR.all(), n = k => L.filter(e => e.k === k).length, st = jrSt();
+  const w = document.createElement('div'); w.className = 'fxsh jrw'; w.setAttribute('role', 'dialog'); w.setAttribute('aria-label', 'Journal interne');
+  const lines = L.slice(-300).reverse().map(e => `<div class="jr${e.k}"><i>${esc(jrFmtT(e.t))}</i> ${esc(e.m)}${e.x ? ' <i>' + esc(JSON.stringify(e.x)) + '</i>' : ''}</div>`).join('');
+  w.innerHTML = `<div class="fxshp"><div class="shhead"><h3>🧰 Journal interne</h3><span>${esc(jrHead())}</span><button class="shx" data-jr="close" aria-label="Fermer">✕</button></div>
+    <div class="shbody"><p class="mxnote">Plantages ${n('e')} · Soucis ${n('w')} · Mesures ${n('m')} · Actions ${n('a')} · Envois ce mois ${st.month === jrMonth() ? st.monthN || 0 : 0}/8 · Dernier rapport ${st.week ? jrFmtT(st.week) : 'jamais'}${noTrack() && !jrDev() ? ' · statistiques coupées : rien ne part tout seul' : ''}</p>
+    <button class="toggle" data-jr="dev" aria-pressed="${jrDev()}">🛠️ Mode créateur : ${jrDev() ? 'activé (mes rapports partent tout seuls)' : 'coupé'}</button>
+    <div class="jrlog">${lines || '<i>Rien pour l\'instant.</i>'}</div></div>
+    <div class="shfoot"><button class="sbtn primary" data-jr="copy">📋 Copier</button><button class="sbtn" data-jr="send">📤 Envoyer</button><button class="sbtn" data-jr="clear">Vider</button></div></div>`;
+  document.body.appendChild(w);
+  w.addEventListener('click', async ev => {
+    const b = ev.target.closest('[data-jr]'); if(ev.target === w || (b && b.dataset.jr === 'close')){ w.remove(); return; }
+    if(!b) return;
+    if(b.dataset.jr === 'dev'){ const on = !jrDev(); try{ localStorage.setItem('sx.jrDev', on ? '1' : '0'); }catch(e){} b.setAttribute('aria-pressed', String(on)); b.textContent = '🛠️ Mode créateur : ' + (on ? 'activé (mes rapports partent tout seuls)' : 'coupé'); toast(on ? '🛠️ Mode créateur : tes plantages et ton rapport de la semaine arrivent tout seuls dans ta boîte.' : 'Mode créateur coupé.'); return; }
+    if(b.dataset.jr === 'copy'){ const t = jrReport(0); try{ await navigator.clipboard.writeText(t); toast('📋 Journal copié : colle-le à Claude.'); }catch(e){ const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); toast('📋 Journal copié.'); }catch(e2){} ta.remove(); } }
+    else if(b.dataset.jr === 'send'){ b.disabled = true; const ok = await jrWeekly(true); toast(ok ? '📤 Rapport envoyé dans ta boîte mail.' : 'Envoi impossible (pas de réseau ?).'); b.disabled = false; }
+    else if(b.dataset.jr === 'clear'){ if(b.dataset.ok){ JR.clear(); w.remove(); toast('Journal vidé.'); } else { b.dataset.ok = 1; b.textContent = 'Sûr ? Retouche'; } }
+  });
+}
 try{ const li = document.querySelector('link[rel="apple-touch-icon"]'); if(li) document.getElementById('wmLogo').src = li.href; }catch(e){}
 const COLORS = ['#6fa8ff','#f2b544','#c58bff','#4fd1b5','#ff8a65','#9be15d','#ff7eb6'];
 let HDR = 216; const CEIL = Math.pow(10, -1 / 20);
@@ -2066,7 +2197,7 @@ async function record0(){
   if(mic && micEC !== wantEC() && !S.mon) releaseMic(true);
   const freshMic = !mic;
   try{ await getMic(); }
-  catch(e){ toast(e.name === 'NotAllowedError' ? 'Accès au micro refusé. Il faut ouvrir la page en ligne (https) et autoriser le micro.' : (e.message || 'Micro introuvable.')); return; }
+  catch(e){ jr('w', '⚠️ micro : ' + (e.name || '') + ' ' + (e.message || '')); toast(e.name === 'NotAllowedError' ? 'Accès au micro refusé. Il faut ouvrir la page en ligne (https) et autoriser le micro.' : (e.message || 'Micro introuvable.')); return; }
   /* micro ouvert : si c'est un nouveau montage (ex. AirPods + micro du téléphone), il faut caler son timing à lui */
   if(!calDone()){
     await forceCal(false);
@@ -2163,7 +2294,7 @@ async function record0(){
   if(usePre) toast('⏪ Pré-roulement : écoute ta prise, l\'enregistrement démarre à ' + fmt(punchAt, true) + '.');
   play(t0);
 }
-function finishRec(){ S.recording = false; boot('ok'); setRecUI(); hideRecLyrics(); if(rec && rec.state !== 'inactive') rec.stop(); }
+function finishRec(){ jr('i', 'fin du REC · ' + (S.routeInfo ? routeShort(S.routeInfo) : '?') + (recInfo && recInfo.t0 != null ? ' · ' + Math.round((now() - recInfo.t0) * 10) / 10 + ' s' : '')); S.recording = false; boot('ok'); setRecUI(); hideRecLyrics(); if(rec && rec.state !== 'inactive') rec.stop(); }
 
 /* ---------- Calage automatique (latence) ---------- */
 function routeKey(){
@@ -3793,6 +3924,7 @@ async function fxDo(t, k, i){
     refreshFx(); scheduleSave(); return;
   }
   pushUndo('l\'effet');
+  jr('a', 'effet ' + k + (i === undefined ? (fxGet(t, k) > 0 ? ' coupé' : ' allumé') : ' niveau ' + i));
   t.lv = t.lv || {};
   if(i === undefined){
     if(fxGet(t, k) > 0){ t.lv[k] = nearest(LV[k], fxGet(t, k)); fxSet(t, k, 0); }
@@ -4761,13 +4893,23 @@ function clBodyHTML(t){
   if(nVoc > 1) h += `<div class="mxbtns"><button class="sbtn" data-cl="all">🧽 Nettoyer toutes les voix</button></div>`;
   return h;
 }
+/* mesures du son d'une prise pour le journal interne : que des chiffres, aucun son */
+function jrMeasure(t, R){
+  try{
+    if(!R || R.empty) return;
+    const d = R.dev || [], av = (lo, hi) => { let s0 = 0, c = 0; CL_BANDS.forEach((f, i) => { if(f >= lo && f <= hi && d[i] != null){ s0 += d[i]; c++; } }); return c ? Math.round(s0 / c) : null; };
+    const raw = clRawTake(t);
+    jr('m', 'prise ' + roleOf(t), { dur: Math.round((raw?.buffer?.duration || 0) * 10) / 10, sr: R.sr, mat: S.routeInfo ? routeShort(S.routeInfo) : '?', snr: Math.round(R.snr), cut: R.cut, rt: Math.round((R.rt || 0) * 100) / 100, sib: Math.round(R.sib ?? 0), grave: av(125, 250), corps: av(250, 630), presence: av(2500, 6300), air: av(8000, 12500), trouve: Object.keys(R.found) });
+  }catch(e){}
+}
 /* écoute de la piste dès qu'on ouvre le Nettoyage */
 async function clEnsure(t){
   if(!clVocal(t) || clBusy) return;
   const raw = clRawTake(t); if(!raw?.buffer || clCache.has(raw.buffer)) return;
   clBusy = true;
   try{
-    await clAnalyseTrack(t, p => { const el = $('#clProg'); if(el) el.textContent = '🔍 J\'écoute ta piste… ' + Math.round(p * 100) + ' %'; });
+    const Rm = await clAnalyseTrack(t, p => { const el = $('#clProg'); if(el) el.textContent = '🔍 J\'écoute ta piste… ' + Math.round(p * 100) + ' %'; });
+    jrMeasure(t, Rm);
   }catch(e){ clCache.set(raw.buffer, { found: {}, empty: true }); }
   clBusy = false;
   if(selTrack() === t && !$('#vMix').hidden) renderMix();
@@ -4816,6 +4958,7 @@ async function clKeep(t, pv){
   pv = pv || S.clPrev; if(!pv) return;
   pushUndo('le nettoyage');
   S.clPrev = null; t.abAlt = null; t.abG = null;
+  jr('i', 'nettoyage gardé : ' + Object.keys(pv.on).filter(k => pv.on[k]).join(', ') + ' · ' + CL_FN[pv.force]);
   t.takes.push({ buffer: pv.buf, offset: pv.raw.offset, cl: { force: pv.force, on: Object.keys(pv.on).filter(k => pv.on[k]) }, src: pv.rawIdx });
   t.take = t.takes.length - 1; t.buffer = pv.buf; t.offset = pv.raw.offset;
   if(pv.wasTuned && !t.keep){ restart(); await applyAutotune(t); }
@@ -4869,7 +5012,7 @@ document.addEventListener('click', e => {
   if(k === 'run') clRun(t);
   else if(k === 'before' || k === 'after'){ clSetAB(k); document.querySelectorAll('.clab button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.cl === k))); }
   else if(k === 'keep') clKeep(t);
-  else if(k === 'cancel'){ clCancel(); toast('Nettoyage annulé : ta prise n\'a pas bougé.'); }
+  else if(k === 'cancel'){ jr('i', 'nettoyage annulé après comparaison'); clCancel(); toast('Nettoyage annulé : ta prise n\'a pas bougé.'); }
   else if(k === 'orig') clOrig(t);
   else if(k === 'all') clAll();
 });
@@ -5027,8 +5170,8 @@ document.addEventListener('click', e => {
   const k = b.dataset.oc;
   if(k === 'go') ocApply(ocPick || ocRecommend());
   else if(k === 'before' || k === 'after'){ if(!ocPrev) return; ocPrev.ab = k; ocShow(k === 'before' ? ocPrev.before : ocPrev.after); document.querySelectorAll('#oneClick .clab button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.oc === k))); }
-  else if(k === 'keep'){ if(ocPrev?.ab === 'before') ocShow(ocPrev.after); ocPrev = null; renderMix(); renderMaster(); scheduleSave(); toast('✓ Mix gardé. Retouche ce que tu veux piste par piste.'); }
-  else if(k === 'cancel'){ ocPrev = null; undo(); }
+  else if(k === 'keep'){ jr('i', 'mix en un clic gardé : ' + ocPrev?.key); if(ocPrev?.ab === 'before') ocShow(ocPrev.after); ocPrev = null; renderMix(); renderMaster(); scheduleSave(); toast('✓ Mix gardé. Retouche ce que tu veux piste par piste.'); }
+  else if(k === 'cancel'){ jr('i', 'mix en un clic annulé : ' + ocPrev?.key); ocPrev = null; undo(); }
 });
 
 /* ---------- Master ---------- */
@@ -6835,6 +6978,7 @@ function legalHTML(){
       <p><b>Ce qui sort de ton appareil :</b></p>
       <ul>
         <li><b>Statistiques anonymes (GoatCounter).</b> L'appli compte les visites et quelques actions (par exemple « enregistrement » ou « Reel créé ») pour savoir ce qui sert et ce qui bloque. Pas de cookie, ton adresse IP n'est pas gardée, et tu n'es pas suivi sur d'autres sites. Tu peux les couper dans Réglages → Appli.</li>
+        <li><b>Rapports techniques (si les statistiques sont activées).</b> Quand l'appli rencontre une erreur qu'elle n'avait jamais eue, et au plus une fois par semaine, elle envoie à l'éditeur un rapport technique par Web3Forms (serveurs aux États-Unis) : les erreurs, les actions faites dans l'appli, ton type de téléphone, les versions, et des mesures du son de tes prises (niveau de bruit, couleur moyenne de la voix, bande passante du micro). Jamais ta voix, tes textes, tes sons ni ton blaze. Ça sert uniquement à corriger les bugs et à améliorer l'enregistrement et le mixage, c'est gardé 12 mois au plus, et ça s'arrête si tu coupes les statistiques dans Réglages → Appli.</li>
         <li><b>« Donner mon avis », seulement si tu l'envoies.</b> Ta note, ton message, ton blaze, ton type de téléphone et la version de l'appli partent par Web3Forms (serveurs aux États-Unis, qui ne gardent pas les messages) jusqu'à la boîte mail de l'éditeur, ou par ta propre appli mail. C'est gardé le temps de traiter ton avis, 12 mois au plus. Moins de 15 ans ? Demande d'abord l'accord d'un parent.</li>
         <li><b>Ce qui fait marcher l'appli.</b> En ouvrant StudioXel, ton navigateur contacte GitHub (qui héberge l'appli), Google Fonts (les polices d'écriture) et, pour l'export MP3, jsDelivr (l'encodeur). Comme pour n'importe quel site, ces services voient ton adresse IP le temps de la connexion.</li>
         <li><b>Ce que tu partages.</b> Quand tu partages un son, un Reel ou une session, c'est toi qui choisis l'appli de destination, et ses propres règles s'appliquent.</li>
@@ -7358,8 +7502,10 @@ const selFill = (sel, opts, val) => { const sig = JSON.stringify(opts); if(sel._
 function earKey(r){ r = r || { kind: 'tel' }; return r.kind === 'ecouteurs' ? (r.wireless ? 'bt' : 'casque') : r.kind === 'bt' ? 'car' : 'hp'; }
 const voiceKey = l => !l || isPhoneMic(l) || /t[ée]l[ée]phone/i.test(l) ? 'tel' : EAR_MIC.test(l) || /carplay/i.test(l) ? 'ecout' : 'usb';
 function routeVerdict(){ const r = S.routeInfo || { kind: 'tel' }, e = earKey(r); let v = voiceKey(micNow()); if(v === 'ecout' && (e === 'hp')) v = 'tel'; return gearVerdict(e, v); }
+let jrRoute = '';
 function showRoute(){
   const t = $('#outTxt'); if(!t) return;
+  try{ const rr = routeShort(S.routeInfo || { kind: 'tel' }) + ' · ' + micTiny(micNow()); if(rr !== jrRoute){ if(jrRoute) jr('i', 'matériel : ' + rr); jrRoute = rr; } }catch(e){}
   const r = S.routeInfo || { kind: 'tel' }, m = micNow(), vd = routeVerdict(), L = GLV[vd.lv];
   const ic = r.kind === 'ecouteurs' ? '🎧' : r.kind === 'bt' ? '🚗' : '📱';
   setTxt(t, ic + ' ' + routeShort(r) + ' · 🎙️ ' + micTiny(m) + ' ' + L.ic);
