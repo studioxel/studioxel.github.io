@@ -728,7 +728,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.7.4 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.7.5 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookie, sans garder ton adresse IP) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze. Coupées, elles arrêtent aussi les rapports techniques (erreurs et mesures du son, jamais ta voix).</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false">📊 Statistiques anonymes : activées</button>
@@ -850,7 +850,7 @@ body.ed-open .wmark{z-index:41}
       <button data-v="-14" aria-pressed="false">Streaming</button>
       <button data-v="-9" aria-pressed="false">Fort</button>
     </div>
-    <p class="note">Streaming pour Spotify, Deezer, YouTube. Fort pour les soirées et les enceintes.</p>
+    <p class="note">Volume mesuré à la norme des plateformes (ITU-R BS.1770), vrai pic gardé sous −1 dBTP. Streaming pour Spotify, Deezer, YouTube. Fort pour les soirées et les enceintes.</p>
     <div class="btns">
       <button class="sbtn" id="bAB" aria-pressed="false">Écouter sans master</button>
     </div>
@@ -1186,8 +1186,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 195; // numéro interne (jamais affiché)
-const APP_PUB = '2.7.4';
+const APP_VER = 196; // numéro interne (jamais affiché)
+const APP_PUB = '2.7.5';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -1345,7 +1345,7 @@ function openJournal(){
 }
 try{ const li = document.querySelector('link[rel="apple-touch-icon"]'); if(li) document.getElementById('wmLogo').src = li.href; }catch(e){}
 const COLORS = ['#6fa8ff','#f2b544','#c58bff','#4fd1b5','#ff8a65','#9be15d','#ff7eb6'];
-let HDR = 216; const CEIL = Math.pow(10, -1 / 20);
+let HDR = 216; const CEIL = Math.pow(10, -1 / 20), CEIL0 = CEIL;
 const store = {
   get(k, d){ try{ const v = localStorage.getItem('cabine.' + k); return v === null ? d : JSON.parse(v); }catch(e){ return d; } },
   set(k, v){ try{ localStorage.setItem('cabine.' + k, JSON.stringify(v)); }catch(e){} }
@@ -1433,9 +1433,54 @@ const REV_TYPE = [
   { build: 0.028, er: [[12, .5], [19, .42], [27, .38], [34, .3], [46, .28], [55, .22], [63, .2], [78, .15]], hf: 0.8, out: 0.75 },
   { build: 0.06, er: [[22, .45], [37, .4], [55, .34], [74, .28], [96, .22], [121, .16]], hf: 0.65, out: 0.7 }
 ];
-const revKey = P => [P.type, Math.round(P.rt * 20), Math.round(P.tone / 5), Math.round(P.width / 5)].join(':');
+/* ---------- Modules libres « audiojs » (licence MIT), chargés une fois depuis jsDelivr ----------
+   Reverb Plaque = plaque de Dattorro (l'algorithme de référence des réverbes de studio) ;
+   mastering = mesure de volume exacte (norme ITU-R BS.1770-4) et contrôle du vrai pic (−1 dBTP, la règle des plateformes). */
+const AJ = { dat: null, lufs: null, tp: null, p: null };
+function ajLoad(){
+  if(!AJ.p) AJ.p = Promise.all([
+    import('https://cdn.jsdelivr.net/npm/@audio/reverb-dattorro@1.1.3/+esm').then(m => { AJ.dat = m.default; }),
+    import('https://cdn.jsdelivr.net/npm/@audio/loudness-lufs@1.2.0/+esm').then(m => { AJ.lufs = m.default; }),
+    import('https://cdn.jsdelivr.net/npm/@audio/loudness-truepeak@1.1.7/+esm').then(m => { AJ.tp = m.default; })
+  ].map(p => p.catch(e => jr('w', 'module libre indisponible : ' + e.message)))).then(() => {
+    /* la plaque passe sur Dattorro : les réverbes en cours sont refaites avec */
+    if(AJ.dat){ for(const k in irCache) if(k.split(':')[1] === '1') delete irCache[k]; try{ if(ctx) applyMix(); }catch(e){} }
+  });
+  return AJ.p;
+}
+const revKey = P => [P.type, Math.round(P.rt * 20), Math.round(P.tone / 5), Math.round(P.width / 5), P.type === 1 && AJ.dat ? 'D' : ''].join(':');
+/* décroissance de la plaque pour obtenir la durée voulue (mesurée sur sa réponse, comme en studio : T30) */
+const datCache = {};
+function datIR(sr, rt, damping, n){
+  const L = new Float32Array(n), Rr = new Float32Array(n); L[0] = 1; Rr[0] = 1;
+  AJ.dat([L, Rr], { decay: rt, damping, mix: 1, fs: sr }); return [L, Rr];
+}
+function datRT(d, sr){
+  let e = 0; const n = d.length, E = new Float64Array(n); for(let i = n - 1; i >= 0; i--){ e += d[i] * d[i]; E[i] = e; }
+  let a = -1, b = -1; for(let i = 0; i < n; i++){ const v = 10 * Math.log10(E[i] / E[0] + 1e-30); if(a < 0 && v < -5) a = i; if(v < -25){ b = i; break; } }
+  return b > 0 ? (b - a) / sr * 3 : 99;
+}
+function datDecay(sr, rt, damping){
+  const key = sr + ':' + Math.round(rt * 20) + ':' + damping.toFixed(2);
+  if(datCache[key] != null) return datCache[key];
+  let lo = 0.05, hi = 0.97; const n = Math.floor(sr * Math.min(6, rt * 1.2 + 0.4));
+  for(let it = 0; it < 9; it++){ const mid = (lo + hi) / 2; if(datRT(datIR(sr, mid, damping, n)[0], sr) < rt) lo = mid; else hi = mid; }
+  return datCache[key] = (lo + hi) / 2;
+}
 function irBuild(ac, P){
   const sr = ac.sampleRate, key = sr + ':' + revKey(P);
+  if(!irCache[key] && P.type === 1 && AJ.dat){
+    try{
+      const rt = Math.max(0.2, Math.min(8, P.rt)), len = Math.min(9, rt * 1.35 + 0.15), n = Math.floor(sr * len);
+      const damping = Math.max(0.05, Math.min(0.7, 0.62 - 0.5 * (P.tone ?? 60) / 100));
+      const [L, Rr] = datIR(sr, datDecay(sr, rt, damping), damping, n);
+      const w = Math.max(0, Math.min(1, (P.width ?? 90) / 100)), a = (1 + w) / 2, b = (1 - w) / 2;
+      const oL = new Float32Array(n), oR = new Float32Array(n);
+      const fo = Math.floor(sr * Math.min(0.3, len * 0.12));
+      for(let i = 0; i < n; i++){ const f = i >= n - fo ? (n - i) / fo : 1; oL[i] = (L[i] * a + Rr[i] * b) * f; oR[i] = (Rr[i] * a + L[i] * b) * f; }
+      irCache[key] = [oL, oR];
+    }catch(e){ jr('w', 'plaque Dattorro : ' + e.message); }
+  }
   if(!irCache[key]){
     const T = REV_TYPE[P.type] || REV_TYPE[1], rt = Math.max(0.2, Math.min(8, P.rt)), len = Math.min(9, rt * 1.35 + 0.15), n = Math.floor(sr * len);
     const rtL = rt * 1.15, rtM = rt, rtH = Math.max(0.12, rt * (0.25 + 0.65 * (P.tone ?? 60) / 100) * T.hf);
@@ -5575,6 +5620,12 @@ $('#bLevel').onclick = async () => {
   for(const t of S.tracks){ if(isLocked(t)) continue; t.vol = 0.85; await autoLevel(t); }
   setBusy(false); renderTracks(); renderMix(); toast('Niveaux rééquilibrés : voix devant, instru derrière.');
 };
+/* mesure exacte (module libre) si chargé, sinon la nôtre */
+async function lufsX(buf){
+  if(AJ.lufs){ try{ const ch = []; for(let c = 0; c < buf.numberOfChannels; c++) ch.push(buf.getChannelData(c)); const v = AJ.lufs(ch, { fs: buf.sampleRate }); if(v != null) return v; }catch(e){} }
+  return lufs(buf);
+}
+function tpX(buf){ try{ const ch = []; for(let c = 0; c < buf.numberOfChannels; c++) ch.push(buf.getChannelData(c)); return AJ.tp(ch, { fs: buf.sampleRate }); }catch(e){ return -Infinity; } }
 async function lufs(buf){
   const off = new OfflineAudioContext(buf.numberOfChannels, buf.length, buf.sampleRate);
   const s = off.createBufferSource(); s.buffer = buf;
@@ -5597,7 +5648,8 @@ async function lufs(buf){
   return L(g2.reduce((a, b) => a + b, 0) / g2.length);
 }
 /* Limiteur à anticipation (5 ms), relâchement 80 ms, plafond −1 dB */
-function gainLimit(raw, gdB){
+function gainLimit(raw, gdB, ceil){
+  const CEIL = ceil || CEIL0;
   const sr = raw.sampleRate, n = raw.length, nc = raw.numberOfChannels, lin = dbl(gdB);
   const ch = []; for(let c = 0; c < nc; c++) ch.push(raw.getChannelData(c));
   const req = k => { let p = 0; for(let c = 0; c < nc; c++){ const v = Math.abs(ch[c][k]); if(v > p) p = v; } p *= lin; return p > CEIL * 0.99 ? CEIL * 0.99 / p : 1; };
@@ -5641,10 +5693,22 @@ async function runMaster(){
   if(!trackEnd()){ toast('Rien à traiter : importe ou enregistre une piste.'); return null; }
   ensureCtx();
   const raw = await renderRaw(true);
-  const L0 = await lufs(raw);
+  await Promise.race([ajLoad(), new Promise(r => setTimeout(r, 8000))]);
+  const L0 = await lufsX(raw);
   if(!isFinite(L0)){ toast('Le mix est silencieux.'); return null; }
-  let g = M.target - L0, out = gainLimit(raw, g), L1 = await lufs(out);
-  g += M.target - L1; out = gainLimit(raw, g); L1 = await lufs(out);
+  /* on vise la cible au dixième près, en gardant le vrai pic sous −1 dBTP (sinon ça craque après conversion MP3 / streaming) */
+  /* jamais plus de 6 dB (9 dB en Fort) écrasés par le limiteur : au-delà le son pompe et s'aplatit (on préfère un master un peu moins fort mais propre) */
+  let pk0 = 0; for(let c = 0; c < raw.numberOfChannels; c++){ const d = raw.getChannelData(c); for(let i = 0; i < d.length; i++){ const v = d[i] < 0 ? -d[i] : d[i]; if(v > pk0) pk0 = v; } }
+  const gMax = 20 * Math.log10(CEIL0 / Math.max(pk0, 1e-6)) + (M.target > -12 ? 9 : 6);
+  let g = Math.min(gMax, M.target - L0), ceil = CEIL0, out = null, L1 = L0, tp = -Infinity;
+  for(let it = 0; it < 6; it++){
+    out = gainLimit(raw, g, ceil);
+    if(AJ.tp){ tp = tpX(out); if(tp > -1.0){ ceil *= Math.pow(10, (-1.05 - tp) / 20); out = gainLimit(raw, g, ceil); tp = tpX(out); } }
+    L1 = await lufsX(out);
+    if((Math.abs(M.target - L1) < 0.15 && !(tp > -1.0)) || it === 5 || (g >= gMax && L1 < M.target)) break;
+    g = Math.min(gMax, g + M.target - L1);
+  }
+  jr('i', 'master : ' + L1.toFixed(1) + ' LUFS (cible ' + M.target + '), vrai pic ' + (isFinite(tp) ? tp.toFixed(1) : '?') + ' dBTP, gain ' + g.toFixed(1) + ' dB');
   M.gain = g; preGain.gain.setTargetAtTime(dbl(g), ctx.currentTime, 0.05); saveM();
   return out;
 }
@@ -7262,7 +7326,7 @@ function legalHTML(){
         <li><b>Statistiques anonymes (GoatCounter).</b> L'appli compte les visites et quelques actions (par exemple « enregistrement » ou « Reel créé ») pour savoir ce qui sert et ce qui bloque. Pas de cookie, ton adresse IP n'est pas gardée, et tu n'es pas suivi sur d'autres sites. Tu peux les couper dans Réglages → Appli.</li>
         <li><b>Rapports techniques (si les statistiques sont activées).</b> Quand l'appli rencontre une erreur qu'elle n'avait jamais eue, et au plus une fois par semaine, elle envoie à l'éditeur un rapport technique par Web3Forms (serveurs aux États-Unis) : les erreurs, les actions faites dans l'appli, ton type de téléphone, les versions, et des mesures du son de tes prises (niveau de bruit, couleur moyenne de la voix, bande passante du micro). Jamais ta voix, tes textes, tes sons ni ton blaze. Ça sert uniquement à corriger les bugs et à améliorer l'enregistrement et le mixage, c'est gardé 12 mois au plus, et ça s'arrête si tu coupes les statistiques dans Réglages → Appli.</li>
         <li><b>« Donner mon avis », seulement si tu l'envoies.</b> Ta note, ton message, ton blaze, ton type de téléphone et la version de l'appli partent par Web3Forms (serveurs aux États-Unis, qui ne gardent pas les messages) jusqu'à la boîte mail de l'éditeur, ou par ta propre appli mail. C'est gardé le temps de traiter ton avis, 12 mois au plus. Moins de 15 ans ? Demande d'abord l'accord d'un parent.</li>
-        <li><b>Ce qui fait marcher l'appli.</b> En ouvrant StudioXel, ton navigateur contacte GitHub (qui héberge l'appli), Google Fonts (les polices d'écriture) et jsDelivr (l'encodeur pour l'export MP3, l'IA du Nettoyage et le moteur de l'auto-tune, téléchargés une fois ; ta voix reste sur ton téléphone). Comme pour n'importe quel site, ces services voient ton adresse IP le temps de la connexion.</li>
+        <li><b>Ce qui fait marcher l'appli.</b> En ouvrant StudioXel, ton navigateur contacte GitHub (qui héberge l'appli), Google Fonts (les polices d'écriture) et jsDelivr (l'encodeur pour l'export MP3, l'IA du Nettoyage, le moteur de l'auto-tune, la réverbe plaque et les mesures du master, téléchargés une fois ; ta voix reste sur ton téléphone). Comme pour n'importe quel site, ces services voient ton adresse IP le temps de la connexion.</li>
         <li><b>Ce que tu partages.</b> Quand tu partages un son, un Reel ou une session, c'est toi qui choisis l'appli de destination, et ses propres règles s'appliquent.</li>
       </ul>
       <p><b>Tes droits.</b> Tu peux demander l'accès, la correction ou l'effacement des données de ton avis, ou t'y opposer, en écrivant à ${M}. Tu peux aussi faire une réclamation auprès de la CNIL (cnil.fr).</p>
@@ -8003,7 +8067,7 @@ const TOUR = [
   { sel: ['#plusBtn'], t: 'Le bouton +', b: 'Ajoute une piste, pose un repère (couplet, refrain), lance une boucle pour refaire juste une phrase, et retrouve toutes tes sessions. Tout se sauvegarde tout seul.' },
   { sel: ['#bSet'], t: 'Réglages', b: 'Ils s\'ouvrent en plein écran ; « ✕ Fermer » (en haut ou tout en bas) te ramène où tu étais. Tout est rangé par rubriques : enregistrement (tempo, décompte, métronome, latence), et ta sauvegarde. Le reste se fait tout seul, et chaque chose se coupe sur place. Et si tu veux refaire ton premier son pas à pas : « 🎤 Premier son guidé ». Tout en bas : les infos légales (conditions, confidentialité) et le bouton pour couper les statistiques anonymes.' },
   { sel: ['.nav [data-view=vMix]'], t: 'Mix', b: 'Ici tu peaufines ta voix. Choisis ta piste en haut, puis ouvre un titre pour la régler : 🧽 Nettoyage (souffle, P et B, S qui sifflent, respirations, pièce qui résonne, voix étouffée…), Volume, Effets, Auto-tune, Égaliseur. Le bouton ⚙️ Réglages d\'un effet ouvre tous ses réglages. Pour régler juste un mot ou une phrase, glisse le doigt sur l\'onde : zoome avec la réglette ou à deux doigts, et écoute ton bout en boucle avec le lecteur du Mix. « Rééquilibrer » remet les niveaux d\'aplomb.' },
-  { sel: ['.nav [data-view=vMaster]'], t: 'Master', b: 'La touche finale de ta maquette : un style et un volume (Streaming ou Fort). Ton son sort propre et fort, sans jamais saturer.' },
+  { sel: ['.nav [data-view=vMaster]'], t: 'Master', b: 'La touche finale de ta maquette : un style et un volume (Streaming ou Fort). Le volume est mesuré à la norme des plateformes et le vrai pic reste sous −1 dBTP : ton son ne craque pas après conversion MP3 ou sur Spotify. Le limiteur n\'écrase jamais plus de 6 dB (9 en Fort) : si ton mix ne peut pas monter plus sans s\'aplatir, il reste un peu moins fort, mais propre.' },
   { sel: ['.nav [data-view=vTexte]'], t: 'Texte', b: 'Écris tes lyrics ici, ou touche « 🎙️ Dicter mon texte » et dis-les : ils s\'écrivent tout seuls (relis, la dictée se trompe sur le rap). Le prompteur les fait défiler pendant que tu kickes. Je cale le texte tout seul : sur le tempo pendant ta première prise, puis pile sur ta voix une fois la prise posée. Tu peux toujours caler à la main. Le calage sort aussi en sous-titres dans tes Reels.\nEn haut, le petit lecteur : 🔁 répète 1 à 16 mesures pendant que t\'écris, et te montre sur quelle mesure et quel temps t\'es.' },
   { sel: ['.nav [data-view=vProjets]'], t: 'Projets', b: 'Prépare ton single, ton EP ou ton album : pochette, tracklist, et où en est chaque titre.' },
   { sel: ['.nav [data-view=vPartager]'], t: 'Partager', b: 'Exporte ton son en MP3, monte un Reel avec ta photo, ta vidéo ou un selfie, et envoie ta session à un collègue pour qu\'il pose son couplet.' },
@@ -8426,7 +8490,7 @@ const HELP = {
     { sel: ['#mxW'], t: '2 · Choisis un bout (si tu veux)', b: 'Glisse le doigt sur l\'onde pour sélectionner un mot ou une phrase. Les bouts déjà réglés à part sont en violet : touche-les pour les reprendre. Zoome avec la réglette ou à deux doigts pour viser au poil. Sans sélection, tu règles toute la piste.' },
     { sel: ['#mxTarget'], t: 'À qui s\'appliquent tes réglages', b: 'Ici c\'est écrit : toute la piste, ou ta sélection. Le ✕ enlève la sélection.' },
     { sel: ['details[data-acc=clean]', '#strip'], t: '🧽 Nettoyage', b: 'En ouvrant Nettoyage, j\'écoute ta piste et je te dis ce que je trouve. Les bruits : souffle de fond, bourdonnement, « P » et « B » qui claquent, « S » qui sifflent, respirations. L\'atmosphère de la prise : pièce qui résonne, son de boîte, voix étouffée, trop fine, qualité téléphone ou manque d\'air (micro qui s\'arrête vers 10 kHz). Le souffle et le bruit de fond sont retirés par une IA (DeepFilterNet, logiciel libre) qui tourne sur ton téléphone : rien n\'est envoyé. La première fois, elle se télécharge (18 Mo, une seule fois). Coche ce que tu veux, choisis la force, touche « Nettoyer et comparer », puis bascule Avant / Après pendant la lecture. Tu gardes si ça te plaît, ↶ annule. « Nettoyer toutes les voix » fait tout d\'un coup.' },
-    { sel: ['#strip'], t: '3 · Règle', b: 'Ouvre un titre (Nettoyage, Volume, Effets, Auto-tune, Égaliseur), règle, referme. L\'essentiel est en façade ; le reste est derrière ⚙️ Réglages. Auto-tune : en haut, l\'effet de style du rap d\'aujourd\'hui (🤖 Robot, la note collée net ; 🛸 Planant, avec les petits sauts de note ; 💎 Cristal, voix plus claire ; 🌑 Grave, voix plus sombre), avec sa dose (Léger, Moyen, À fond) ; en dessous, la simple correction (Naturel, Marqué), qui garde le timbre de ta voix (moteur Signalsmith Stretch, logiciel libre). Avec 🎧 Retour, tu t\'entends auto-tuné pendant que tu kickes. Dans Auto-tune, « 🔄 Reprendre la note de ma voix » réécoute ta prise et recale la tonalité ; elle est reprise toute seule à chaque nouvelle prise. La reverb et l\'écho ont des réglages simples (Pièce, Studio, Salle…) ; touche « ⚙️ Réglages » à côté (ou deux appuis sur l\'effet) pour tous ses réglages : durée et pré-délai de la reverb, rythme et répétitions de l\'écho, vitesse et tonalité de l\'auto-tune… L\'égaliseur a son bouton « ⚙️ Réglages poussés ». Sur une sélection : volume, reverb, écho et égaliseur, rien que pour ce bout. « ▶ Écouter le bout » pour entendre, « ↺ Remettre » pour annuler ce bout.' },
+    { sel: ['#strip'], t: '3 · Règle', b: 'Ouvre un titre (Nettoyage, Volume, Effets, Auto-tune, Égaliseur), règle, referme. L\'essentiel est en façade ; le reste est derrière ⚙️ Réglages. Auto-tune : en haut, l\'effet de style du rap d\'aujourd\'hui (🤖 Robot, la note collée net ; 🛸 Planant, avec les petits sauts de note ; 💎 Cristal, voix plus claire ; 🌑 Grave, voix plus sombre), avec sa dose (Léger, Moyen, À fond) ; en dessous, la simple correction (Naturel, Marqué), qui garde le timbre de ta voix (moteur Signalsmith Stretch, logiciel libre). Avec 🎧 Retour, tu t\'entends auto-tuné pendant que tu kickes. Dans Auto-tune, « 🔄 Reprendre la note de ma voix » réécoute ta prise et recale la tonalité ; elle est reprise toute seule à chaque nouvelle prise. La reverb et l\'écho ont des réglages simples (Pièce, Studio, Salle…) ; Studio est une vraie plaque de studio (algorithme de Dattorro, logiciel libre) ; touche « ⚙️ Réglages » à côté (ou deux appuis sur l\'effet) pour tous ses réglages : durée et pré-délai de la reverb, rythme et répétitions de l\'écho, vitesse et tonalité de l\'auto-tune… L\'égaliseur a son bouton « ⚙️ Réglages poussés ». Sur une sélection : volume, reverb, écho et égaliseur, rien que pour ce bout. « ▶ Écouter le bout » pour entendre, « ↺ Remettre » pour annuler ce bout.' },
     { sel: ['#bLevel'], t: 'Rééquilibrer', b: 'Remet tous les niveaux d\'aplomb d\'un coup : l\'instru, le lead, les backs et l\'ambiance à leur juste place.' }
   ],
   vMaster: [
@@ -9010,6 +9074,8 @@ setTimeout(() => { track(isStandalone() ? 'ouverture-appli-installee' : 'ouvertu
 
 
 try{ if('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {}); }catch(e){}
+/* modules libres (plaque de Dattorro, mesures du master) : chargés en fond, sans gêner le démarrage */
+setTimeout(() => { try{ ajLoad(); }catch(e){} }, 2500);
 let instEvt = null;
 function instHide(days){ $('#instBar').hidden = true; if(days) store.set('instSnooze', Date.now() + days * 86400000); }
 function instShow(){
