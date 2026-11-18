@@ -730,7 +730,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.8.1 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.8.2 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookie, sans garder ton adresse IP) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze. Coupées, elles arrêtent aussi les rapports techniques (erreurs et mesures du son, jamais ta voix).</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false">📊 Statistiques anonymes : activées</button>
@@ -1188,8 +1188,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 202; // numéro interne (jamais affiché)
-const APP_PUB = '2.8.1';
+const APP_VER = 203; // numéro interne (jamais affiché)
+const APP_PUB = '2.8.2';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -1448,7 +1448,7 @@ function ajLoad(){
     import('https://cdn.jsdelivr.net/npm/@audio/loudness-truepeak@1.1.7/+esm').then(m => { AJ.tp = m.default; })
   ].map(p => p.catch(e => jr('w', 'module libre indisponible : ' + e.message)))).then(() => {
     /* la plaque passe sur Dattorro : les réverbes en cours sont refaites avec */
-    if(AJ.dat){ for(const k in irCache) if(k.split(':')[1] === '1') delete irCache[k]; try{ if(ctx) applyMix(); }catch(e){} }
+    if(AJ.dat){ for(const k in irCache) if(k.split(':')[1] === '1') delete irCache[k]; const go = () => { if(S.recording || S.recPrep){ setTimeout(go, 2000); return; } try{ if(ctx) applyMix(); }catch(e){} }; go(); }
   });
   return AJ.p;
 }
@@ -2517,9 +2517,11 @@ async function fixRate(raw, wall){
     const ratio = raw.duration / wall;
     if(ratio > 0.85 && ratio < 1.18) return raw;
     const est = raw.length / wall, RATES = [8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000, 96000];
-    let tr = RATES.reduce((a, b) => Math.abs(b - est) < Math.abs(a - est) ? b : a);
-    if(Math.abs(tr - est) / est > 0.12) tr = Math.round(est);
-    tr = Math.max(3000, Math.min(384000, tr));
+    const tr = RATES.reduce((a, b) => Math.abs(b - est) < Math.abs(a - est) ? b : a);
+    /* on ne corrige que le vrai défaut Bluetooth : le son arrive pile à une autre fréquence standard (16 000, 24 000…).
+       Un écart qui ne tombe sur aucune fréquence standard vient d'un téléphone occupé qui a noté le départ ou l'arrêt en retard :
+       la prise est bonne, on n'y touche pas (avant, on la « réparait » et elle ressortait accélérée). */
+    if(Math.abs(tr - est) / est > 0.04 || tr === raw.sampleRate){ jr('w', 'vitesse : écart ' + ratio.toFixed(2) + ' sans fréquence standard, prise gardée telle quelle'); return raw; }
     const nc = raw.numberOfChannels, sr = ctx.sampleRate;
     const re = new OfflineAudioContext(nc, raw.length, tr).createBuffer(nc, raw.length, tr);
     for(let c = 0; c < nc; c++) re.copyToChannel(raw.getChannelData(c), c);
@@ -9245,7 +9247,7 @@ setTimeout(() => { track(isStandalone() ? 'ouverture-appli-installee' : 'ouvertu
 
 try{ if('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {}); }catch(e){}
 /* modules libres (plaque de Dattorro, mesures du master) : chargés en fond, sans gêner le démarrage */
-setTimeout(() => { try{ ajLoad(); }catch(e){} }, 12000); /* après le démarrage : l'ouverture reste légère */
+setTimeout(function aj(){ if(S.recording || S.recPrep){ setTimeout(aj, 3000); return; } try{ ajLoad(); }catch(e){} }, 12000); /* après le démarrage : l'ouverture reste légère */
 let instEvt = null;
 function instHide(days){ $('#instBar').hidden = true; if(days) store.set('instSnooze', Date.now() + days * 86400000); }
 function instShow(){
