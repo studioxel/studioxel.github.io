@@ -730,7 +730,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.8.2 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.8.3 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookie, sans garder ton adresse IP) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze. Coupées, elles arrêtent aussi les rapports techniques (erreurs et mesures du son, jamais ta voix).</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false">📊 Statistiques anonymes : activées</button>
@@ -1188,8 +1188,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 203; // numéro interne (jamais affiché)
-const APP_PUB = '2.8.2';
+const APP_VER = 204; // numéro interne (jamais affiché)
+const APP_PUB = '2.8.3';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -2076,6 +2076,21 @@ function audioSessionRec(){ try{ if(navigator.audioSession) navigator.audioSessi
 let silentEl = null;
 /* iPhone : une fois le micro utilisé, la sortie reste parfois en mode « appel » (son étouffé dans l'écouteur du haut).
    Avant de rejouer, on recrée une sortie audio neuve, en mode musique, sur le haut-parleur. */
+/* l'horloge du son doit avancer comme une montre : sinon (bug de l'iPhone quand les écouteurs changent de mode), tout joue accéléré ou ralenti */
+let clk = null, clkFix = [];
+setInterval(() => {
+  if(!ctx || !S.playing || S.recording || document.hidden || ctx.state !== 'running'){ clk = null; return; }
+  const w = performance.now(), c = ctx.currentTime;
+  if(!clk){ clk = { w, c, bad: 0 }; return; }
+  const dw = (w - clk.w) / 1000, dc = c - clk.c; if(dw < 1.5) return;
+  const r = dc / dw; clk.w = w; clk.c = c;
+  if(Math.abs(r - 1) > 0.08){
+    if(++clk.bad < 2) return;
+    clk = null; clkFix = clkFix.filter(x => w - x < 60000); if(clkFix.length >= 2){ jr('w', 'horloge du son faussée : x' + r.toFixed(2) + ' (déjà recalée 2 fois, on attend)'); return; } clkFix.push(w); jr('w', 'horloge du son faussée : x' + r.toFixed(2) + ' (fréq. ' + ctx.sampleRate + ') · son recalé');
+    const p = now(); pause(); S.pos = p; micTouched = false; rebuildAudio(); setTimeout(() => { audioSessionPlay(); play(); }, 150);
+    toast('🔧 Le son de l\'iPhone s\'était déréglé (changement d\'écouteurs) : je l\'ai recalé.');
+  } else clk.bad = 0;
+}, 1000);
 function freshAudio(){
   if(!micTouched || S.recording || S.mon || mic || S.playing || dict) return;
   micTouched = false;
@@ -2354,16 +2369,18 @@ async function record0(){
   const RG = recGraph();
   rec = RG ? RG.r : new MediaRecorder(mic);
   rec.ondataavailable = e => { if(e.data.size) chunks.push(e.data); };
-  let wallT0 = 0;
-  const started = new Promise(r => rec.onstart = () => { wallT0 = performance.now(); r(ctx.currentTime); });
+  let wallT0 = 0, ctxT0 = 0; let micSet = {}; try{ micSet = mic.getAudioTracks()[0].getSettings() || {}; }catch(e){}
+  const started = new Promise(r => rec.onstart = () => { wallT0 = performance.now(); ctxT0 = ctx.currentTime; r(ctx.currentTime); });
   rec.onstop = async () => {
-    const wall = wallT0 ? (performance.now() - wallT0) / 1000 : 0;
+    const wall = wallT0 ? (performance.now() - wallT0) / 1000 : 0, ctxDur = ctx.currentTime - ctxT0;
     releaseMic();
     setTimeout(cleanupLive, 1500);
     try{
       const blob = new Blob(chunks, { type: rec.mimeType });
       try{ RG && RG.close(); }catch(e){}
-      let raw = await fixRate(await ctx.decodeAudioData(await blob.arrayBuffer()), wall);
+      const dec = await ctx.decodeAudioData(await blob.arrayBuffer());
+      jr('i', 'REC vitesse · fichier ' + dec.duration.toFixed(2) + ' s · réel ' + wall.toFixed(2) + ' s · horloge son ' + ctxDur.toFixed(2) + ' s · fréq. appli ' + ctx.sampleRate + ' · fichier ' + dec.sampleRate + ' · micro ' + (micSet.sampleRate || '?') + ' · ' + (S.micLabel || '?'));
+      let raw = await fixRate(dec, wall);
       /* calage par le top : le vrai départ, au lieu de croire Safari */
       const mk = RG && RG.tm != null ? findMark(raw, RG.tm - recInfo.recStart) : null;
       if(mk != null){ recInfo.recStart = RG.tm - mk; recInfo.marked = true; }
