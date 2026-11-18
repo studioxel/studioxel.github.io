@@ -1188,8 +1188,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 205; // numéro interne (jamais affiché)
-const APP_PUB = '2.8.4';
+const APP_VER = 206; // numéro interne (jamais affiché)
+const APP_PUB = '2.8.5';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -3592,6 +3592,7 @@ const AT_CH = [
   { k: 'planant', n: '🛸 Planant', d: 'collé + petits sauts de note, mélodieux', st: 1 },
   { k: 'cristal', n: '💎 Cristal', d: 'collé + voix plus claire et brillante', st: 1 },
   { k: 'grave', n: '🌑 Grave', d: 'collé + voix plus sombre, plus lourde', st: 1 },
+  { k: 'vocodeur', n: '🎹 Vocodeur', d: 'un synthé qui chante tes mots, façon Daft Punk', st: 1 },
   { k: 'naturel', n: 'Naturel', c: 0 },
   { k: 'marque', n: 'Marqué', c: 1 }
 ];
@@ -3614,6 +3615,13 @@ async function atSet(t, k){
   if(!on){ await toggleAT(t); }
   else if(isTuned(t) && !(S.recording && t.arm)) await applyAutotune(t);
   remon(); refreshFx(); scheduleSave(); renderMix();
+}
+async function atHarm(t, h){
+  if(!t || isLocked(t) || t.keep) return;
+  if(isTuned(t)) pushUndo('les harmonies');
+  t.at.harm = h; jr('a', 'harmonies ' + AT_HARM[h]);
+  if(isTuned(t) && !(S.recording && t.arm)) await applyAutotune(t);
+  scheduleSave(); renderMix();
 }
 async function atDose(t, d){
   if(!t || isLocked(t) || t.keep) return;
@@ -3697,6 +3705,7 @@ function renderMix(){
           <p class="mxnote atlab">Effet : le son auto-tune du rap d'aujourd'hui</p>
           <div class="ocgrid">${AT_CH.filter(c => c.st).map(c => `<button class="occ" data-atch="${c.k}" aria-pressed="${tuned && atChoice(cur) === c.k}"><b>${c.n}</b><span>${c.d}</span></button>`).join('')}</div>
           ${tuned && cur.at.style ? `<div class="fxrow"><span class="fxlab">Dose de l'effet</span><div class="notch" role="group" aria-label="Dose de l'effet">${AT_DOSE.map((n, i) => `<button data-atd="${i}" aria-pressed="${(cur.at.dose ?? 1) === i}">${n}</button>`).join('')}</div></div>` : ''}
+          ${tuned && atChoice(cur) !== 'vocodeur' ? `<div class="fxrow"><span class="fxlab">Harmonies</span><div class="notch" role="group" aria-label="Harmonies">${AT_HARM.map((n, i) => `<button data-ath="${i}" aria-pressed="${(cur.at.harm || 0) === i}">${n}</button>`).join('')}</div></div><p class="mxnote">Tierce : une 2e voix juste au-dessus de la tienne. Accord : deux voix en plus, une à gauche, une à droite.</p>` : ''}
           <p class="mxnote atlab">Correction : juste remettre la voix sur la note, sans que ça s'entende</p>
           <div class="notch" role="group" aria-label="Correction">${AT_CH.filter(c => !c.st).map(c => `<button data-atch="${c.k}" aria-pressed="${tuned && atChoice(cur) === c.k}">${c.n}</button>`).join('')}</div>
           ${tuned ? atKeyHTML(cur) : ''}
@@ -4371,7 +4380,7 @@ function updRowFx(t){
   if(z) z.innerHTML = fxZoneHTML(t);
 }
 function renderQuick(){ S.tracks.forEach(updRowFx); }
-$('#strip').addEventListener('click', e => { if(e.target.closest('[data-rfx],[data-mx],[data-mq],[data-cl],[data-clk],[data-clf],[data-deep],[data-atk],[data-atsrc],[data-atch],[data-atd]')) return;
+$('#strip').addEventListener('click', e => { if(e.target.closest('[data-rfx],[data-mx],[data-mq],[data-cl],[data-clk],[data-clf],[data-deep],[data-atk],[data-atsrc],[data-atch],[data-atd],[data-ath]')) return;
   const cb = e.target.closest('[data-comp]');
   if(cb){ const t = selTrack(); if(!t || isLocked(t)) return; pushUndo('la compression'); const i = +cb.dataset.comp; t.fx = { ...t.fx, ...(i ? COMP_PRE[i] : { ratio: 1 }) }; if(t.preset !== 'perso') t.preset = 'perso'; t.chain.set(t, audible(t), true); renderMix(); scheduleSave(); return; }
   const b = e.target.closest('[data-vsm]'); if(b){ applyVStyle(selTrack(), +b.dataset.vsm); return; } fxAction(e, selTrack()); });
@@ -4636,6 +4645,114 @@ async function ssTune(buf, an, shift){
 }
 
 /* couleur de la voix (Cristal / Grave) : on déplace seulement les formants, la note ne bouge pas */
+/* ---------- Harmonies : des copies de ta voix auto-tunées sur d'autres notes de la gamme (tierce, quinte), posées à gauche et à droite ---------- */
+const AT_HARM = ['Sans', 'Tierce', 'Accord'];
+/* note juste (MIDI) de chaque trame, après l'auto-tune */
+function atTunedMidi(an, sh){
+  const F = an.f0.length, m = new Float32Array(F); let last = NaN;
+  for(let i = 0; i < F; i++){ const f = an.f0[i]; if(f > 0){ last = 69 + 12 * Math.log2(f / 440) + (sh[i] || 0); } m[i] = last; }
+  /* les blancs au début prennent la première note chantée */
+  let first = NaN; for(let i = 0; i < F; i++) if(!isNaN(m[i])){ first = m[i]; break; }
+  for(let i = 0; i < F && isNaN(m[i]); i++) m[i] = first;
+  return m;
+}
+/* écart (en demi-tons) entre une note et la note située « deg » degrés plus haut dans la gamme */
+function atDegreeUp(midi, key, scale, deg){
+  const st = SCALES[scale].st, n = Math.round(midi), pc = ((n - key) % 12 + 12) % 12;
+  let i = 0, best = 99; st.forEach((s, k) => { const d = Math.abs(s - pc); if(d < best){ best = d; i = k; } });
+  const j = i + deg, oct = Math.floor(j / st.length), tgt = st[((j % st.length) + st.length) % st.length] + 12 * oct;
+  return tgt - st[i];
+}
+/* rend une copie de la prise avec un décalage de note qui suit le temps (Signalsmith, timbre gardé) */
+async function ssShiftBy(buf, semAt){
+  const Fac = await ssLoad(); if(!Fac) return null;
+  const M = await ssMod(Fac);
+  const sr = buf.sampleRate, n = buf.length, B = 128, ch = buf.getChannelData(0);
+  M._presetDefault(1, sr);
+  const inL = M._inputLatency(), outL = M._outputLatency(), lat = inL + outL, ptr = M._setBuffers(1, B);
+  const T = n + lat + B, out = new Float32Array(T), blk = new Float32Array(B);
+  for(let s = 0, k = 0; s < T; s += B, k++){
+    const ti = Math.max(0, Math.min(n - 1, s + B / 2 - outL));
+    M._setTransposeSemitones(semAt(ti / sr), 8000 / sr); M._setFormantSemitones(0, true); M._setFormantBase(0);
+    blk.fill(0); if(s < n) blk.set(ch.subarray(s, Math.min(n, s + B)));
+    new Float32Array(M.HEAP8.buffer).set(blk, ptr >> 2);
+    M._process(B, B);
+    out.set(new Float32Array(M.HEAP8.buffer).subarray((ptr >> 2) + B, (ptr >> 2) + 2 * B).subarray(0, Math.min(B, T - s)), s);
+    if(k % 2000 === 0) await tick();
+  }
+  return out.subarray(lat, lat + n);
+}
+async function atHarmonies(out, an, sh, at, kind){
+  const tm = atTunedMidi(an, sh), F = tm.length, hop = an.hopS / an.sr, off = an.offS / an.sr;
+  const curve = deg => { const c = new Float32Array(F); for(let i = 0; i < F; i++) c[i] = isNaN(tm[i]) ? 0 : atDegreeUp(tm[i], at.key, at.scale, deg); return c; };
+  const at2 = c => t => { const p = Math.min(F - 1.001, Math.max(0, (t - off) / hop)), k = Math.floor(p); return c[k]; };
+  const h1 = await ssShiftBy(out, at2(curve(2)));
+  if(!h1) return null;
+  const h2 = kind === 2 ? await ssShiftBy(out, at2(curve(4))) : h1;
+  const sr = out.sampleRate, n = out.length, lead = out.getChannelData(0);
+  const res = ctx.createBuffer(2, n, sr), L = res.getChannelData(0), R = res.getChannelData(1);
+  /* les harmonies 7 dB sous la voix, la tierce plutôt à gauche, la quinte plutôt à droite (la tierce seule : des deux côtés) */
+  const g = Math.pow(10, -7 / 20), wide = kind === 2 ? 0.8 : 0.5;
+  let pk = 0;
+  for(let i = 0; i < n; i++){
+    const a = h1[i] || 0, b = h2[i] || 0;
+    L[i] = lead[i] + g * (a * (0.5 + wide / 2) + b * (0.5 - wide / 2));
+    R[i] = lead[i] + g * (b * (0.5 + wide / 2) + a * (0.5 - wide / 2));
+    pk = Math.max(pk, Math.abs(L[i]), Math.abs(R[i]));
+  }
+  if(pk > 0.98){ const k = 0.98 / pk; for(let i = 0; i < n; i++){ L[i] *= k; R[i] *= k; } }
+  return res;
+}
+
+/* ---------- Vocodeur : un synthé qui « chante » tes mots, sur les notes justes de ta voix (façon Daft Punk) ----------
+   Le moteur reprend la conception du vocodeur Web Audio de Chris Wilson (licence MIT, github.com/cwilso/Vocoder) :
+   ta voix est découpée en 28 bandes de fréquences ; dans chaque bande on mesure son niveau (multiplication par une sinusoïde,
+   redressement, filtre lent) et ce niveau ouvre la même bande d'un synthé. Ici il est calculé hors temps réel, sur toute la prise. */
+async function atVocoder(src, an, sh, dose){
+  const sr = src.sampleRate, n = src.length, tm = atTunedMidi(an, sh), F = tm.length, hop = an.hopS / an.sr, off = an.offS / an.sr;
+  const ac = new OfflineAudioContext(2, n, sr);
+  const NB = 28, lo = 55, hi = Math.min(7040, sr * 0.42), Q = 6;
+  const bands = []; const sc = Math.pow(hi / lo, 1 / NB); for(let i = 0, f = lo; i < NB; i++, f *= sc) bands.push(f);
+  const mod = ac.createBufferSource(); mod.buffer = src;
+  const modIn = ac.createGain(); mod.connect(modIn);
+  /* la porteuse : deux dents de scie (note juste + octave dessous) et une quinte, qui suivent la mélodie de ta voix, plus un souffle pour les consonnes */
+  const carIn = ac.createGain();
+  const mk = (type, mult, g) => { const o = ac.createOscillator(); o.type = type; const gg = ac.createGain(); gg.gain.value = g; o.connect(gg); gg.connect(carIn); o.start(0); return { o, mult }; };
+  const oscs = [mk('sawtooth', 1, 0.35), mk('sawtooth', 0.5, 0.25), mk('square', Math.pow(2, 7 / 12), 0.12)];
+  let lastN = null;
+  for(let i = 0; i < F; i++){ const m = tm[i]; if(isNaN(m)) continue; const nn = Math.round(m); if(nn === lastN) continue; lastN = nn; const f0 = 440 * Math.pow(2, (nn - 69) / 12), t = i === 0 ? 0 : Math.max(0, off + i * hop); oscs.forEach(x => x.o.frequency.setValueAtTime(f0 * x.mult, t)); }
+  const nb = ac.createBuffer(1, Math.min(n, sr * 4), sr), nd = nb.getChannelData(0); for(let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
+  const ns = ac.createBufferSource(); ns.buffer = nb; ns.loop = true; const ng = ac.createGain(); ng.gain.value = 0.2; ns.connect(ng); ng.connect(carIn); ns.start(0);
+  const outG = ac.createGain(); outG.connect(ac.destination);
+  const rect = new Float32Array(4096); for(let i = 0; i < 4096; i++) rect[i] = Math.abs(i / 2047.5 - 1);
+  bands.forEach(f => {
+    const b1 = ac.createBiquadFilter(); b1.type = 'bandpass'; b1.frequency.value = f; b1.Q.value = Q;
+    const b2 = ac.createBiquadFilter(); b2.type = 'bandpass'; b2.frequency.value = f; b2.Q.value = Q;
+    const pg = ac.createGain(); pg.gain.value = 6; modIn.connect(b1); b1.connect(b2); b2.connect(pg);
+    const het = ac.createGain(); het.gain.value = 0; const so = ac.createOscillator(); so.frequency.value = f; so.connect(het.gain); so.start(0); pg.connect(het);
+    const hg = ac.createGain(); hg.gain.value = 2; het.connect(hg);
+    const r = ac.createWaveShaper(); r.curve = rect; hg.connect(r);
+    /* filtre de l'enveloppe : 12 Hz (le rap articule vite ; 5 Hz dans l'original) */
+    const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 12; lp.Q.value = 1; r.connect(lp);
+    const c1 = ac.createBiquadFilter(); c1.type = 'bandpass'; c1.frequency.value = f; c1.Q.value = Q;
+    const c2 = ac.createBiquadFilter(); c2.type = 'bandpass'; c2.frequency.value = f; c2.Q.value = Q;
+    const cg = ac.createGain(); cg.gain.value = 10; carIn.connect(c1); c1.connect(c2); c2.connect(cg);
+    const bg = ac.createGain(); bg.gain.value = 0; lp.connect(bg.gain); cg.connect(bg); bg.connect(outG);
+  });
+  /* les « s » et « ch » de ta voix, ajoutés tels quels au-dessus de 8 kHz : sans eux on ne comprend plus les mots */
+  const hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 7000; hp.Q.value = 0.7; const hpg = ac.createGain(); hpg.gain.value = 0.6; modIn.connect(hp); hp.connect(hpg); hpg.connect(ac.destination);
+  /* la dose : un peu de ta vraie voix reste dessous en Léger et Moyen */
+  const dry = ac.createGain(); dry.gain.value = [0.5, 0.22, 0][dose ?? 1]; modIn.connect(dry); dry.connect(ac.destination);
+  mod.start(0);
+  const r = await ac.startRendering();
+  /* même niveau que ta voix */
+  const x = src.getChannelData(0); let ex = 0, ey = 0; for(let i = 0; i < n; i += 4){ ex += x[i] * x[i]; const a = r.getChannelData(0)[i]; ey += a * a; }
+  const g = ey > 1e-9 ? Math.min(30, Math.sqrt(ex / ey)) : 1; let pk = 0;
+  const res = ctx.createBuffer(2, n, sr);
+  for(let c = 0; c < 2; c++){ const s = r.getChannelData(c), d = res.getChannelData(c); for(let i = 0; i < n; i++){ d[i] = s[i] * g; pk = Math.max(pk, Math.abs(d[i])); } }
+  if(pk > 0.98) for(let c = 0; c < 2; c++){ const d = res.getChannelData(c); for(let i = 0; i < n; i++) d[i] *= 0.98 / pk; }
+  return res;
+}
 async function ssFormant(buf, semis, base){
   const Fac = await ssLoad(); if(!Fac) return null;
   const M = await ssMod(Fac);
@@ -4740,10 +4857,11 @@ async function atRefresh(t){
   toast(now2 === prev ? '🎵 Ta voix est bien en ' + now2 + '. Rien à changer.' : '🎵 Ta voix est en ' + now2 + ' (avant : ' + prev + '). Auto-tune recalé, écoute.');
 }
 document.addEventListener('click', async e => {
-  const b = e.target.closest('[data-atk],[data-atsrc],[data-atch],[data-atd]'); if(!b || !b.closest('#vMix')) return;
+  const b = e.target.closest('[data-atk],[data-atsrc],[data-atch],[data-atd],[data-ath]'); if(!b || !b.closest('#vMix')) return;
   const t = selTrack(); if(!t) return;
   if(b.dataset.atch){ atSet(t, b.dataset.atch); return; }
   if(b.dataset.atd != null){ atDose(t, +b.dataset.atd); return; }
+  if(b.dataset.ath != null){ atHarm(t, +b.dataset.ath); return; }
   if(b.dataset.atk === 'refresh'){ atRefresh(t); return; }
   const src = b.dataset.atsrc; if(!src || isLocked(t)) return;
   pushUndo('la tonalité'); t.at.src = src; t.at.auto = false;
@@ -4798,25 +4916,29 @@ async function applyAutotune(t){
     /* l'auto-tune s'adapte : voix rappée (peu de notes tenues) = correction plus douce, voix chantée = plus franche */
     const mode = nearest(AT_SP, t.at.speed), rapLike = an.voicedRatio < 0.5;
     const A = t.fx.p && t.fx.p.at;
-    const st = !A && t.at.style, dose = t.at.dose ?? 1, pl = st === 'planant';
+    const st = !A && t.at.style, dose = t.at.dose ?? 1, pl = st === 'planant', voc = st === 'vocodeur', harm = voc ? 0 : (t.at.harm || 0);
     const eff = A ? { ...t.at, mode: A.retune < 3 ? 2 : 1, amount: A.amount ?? 100, speedS: (A.retune ?? 20) / 1000, keepVib: (A.human ?? 0) / 100 }
       /* effet de style : collé, plus ou moins sec selon la dose */
       : st ? { ...t.at, mode: pl ? 3 : 2, amount: [85, 100, 100][dose], speedS: (pl ? [0.015, 0.004, 0.0015] : [0.025, 0.006, 0])[dose], keepVib: [0.2, 0, 0][dose] }
       : { ...t.at, mode, amount: mode === 0 ? (rapLike ? 70 : 100) : 100 };
     const sh = shiftCurve(an.f0, eff, an.hopS / an.sr);
     /* Naturel et Marqué : Signalsmith (plus juste, timbre gardé). Robot et Planant : PSOLA, qui colle la note plus sec (c'est l'effet voulu). */
-    let out = (eff.mode <= 1 ? await ssTune(src.buffer, an, sh) : null) || await psola(src.buffer, an, sh);
+    let out = voc ? null : (eff.mode <= 1 ? await ssTune(src.buffer, an, sh) : null) || await psola(src.buffer, an, sh);
+    /* Vocodeur : un synthé joue les notes justes de ta voix, ta voix lui donne les mots */
+    if(voc){ toast('Vocodeur… (quelques secondes)'); await tick(); out = await atVocoder(src.buffer, an, sh, dose); }
     /* Cristal / Grave : la couleur de la voix change, la note reste */
     if(st === 'cristal' || st === 'grave'){
       const v = Array.from(an.f0).filter(f => f > 0).sort((a, b) => a - b);
       const f2 = await ssFormant(out, (st === 'cristal' ? 1 : -1) * [1.5, 2.5, 3.5][dose], v.length ? v[v.length >> 1] : 0);
       if(f2) out = f2; else toast('La couleur Cristal / Grave n\'a pas pu se charger : auto-tune Robot appliqué.');
     }
+    /* Harmonies : 2e (et 3e) voix sur la gamme, par-dessus la voix auto-tunée */
+    if(harm){ toast('Harmonies… (quelques secondes)'); await tick(); const h = await atHarmonies(out, an, sh, t.at, harm); if(h) out = h; else toast('Les harmonies n\'ont pas pu se charger : auto-tune seul appliqué.'); }
     const take = { buffer: out, offset: src.offset ?? t.offset, tuned: true, src: srcIdx };
     if(cur?.tuned) t.takes[t.take] = take; else { t.takes.push(take); t.take = t.takes.length - 1; }
     t.buffer = out; t.offset = take.offset;
     restart(); renderMix(); renderTracks();
-    toast('Auto-tune ' + atName(t) + (st ? ' ' + AT_DOSE[dose].toLowerCase() : '') + ' en ' + NOTES[t.at.key] + ' ' + SCALES[t.at.scale].name.toLowerCase() + '.');
+    toast('Auto-tune ' + atName(t) + (st ? ' ' + AT_DOSE[dose].toLowerCase() : '') + (harm ? ' + harmonies ' + AT_HARM[harm].toLowerCase() : '') + ' en ' + NOTES[t.at.key] + ' ' + SCALES[t.at.scale].name.toLowerCase() + '.');
   }catch(e){ toast('Auto-tune impossible : ' + e.message); }
   setBusy(false);
 }
@@ -8692,7 +8814,7 @@ const HELP = {
     { sel: ['#mxW'], t: '2 · Choisis un bout (si tu veux)', b: 'Touche ta partie enregistrée : elle est choisie en entier, du début à la fin, et tu l\'ajustes avec les poignées rondes ◀ ▶. Glisse sur l\'onde pour avancer ou reculer dans ta piste. Pour sélectionner un mot ou une phrase précise : appui long, puis glisse. Les bouts déjà réglés à part sont en violet : touche-les pour les reprendre. Zoome avec la réglette ou à deux doigts pour viser au poil. Sans sélection, tu règles toute la piste.' },
     { sel: ['#mxTarget'], t: 'À qui s\'appliquent tes réglages', b: 'Ici c\'est écrit : toute la piste, ou ta sélection. Le ✕ enlève la sélection.' },
     { sel: ['details[data-acc=clean]', '#strip'], t: '🧽 Nettoyage', b: 'En ouvrant Nettoyage, j\'écoute ta piste et je te dis ce que je trouve. Les bruits : souffle de fond, bourdonnement, « P » et « B » qui claquent, « S » qui sifflent, respirations. L\'atmosphère de la prise : pièce qui résonne, son de boîte, voix étouffée, trop fine, qualité téléphone ou manque d\'air (micro qui s\'arrête vers 10 kHz). Le souffle et le bruit de fond sont retirés par une IA (DeepFilterNet, logiciel libre) qui tourne sur ton téléphone : rien n\'est envoyé. La première fois, elle se télécharge (18 Mo, une seule fois). Coche ce que tu veux, choisis la force, touche « Nettoyer et comparer », puis bascule Avant / Après pendant la lecture. Tu gardes si ça te plaît, ↶ annule. « Nettoyer toutes les voix » fait tout d\'un coup.' },
-    { sel: ['#strip'], t: '3 · Règle', b: 'Ouvre un titre (Nettoyage, Volume, Effets, Auto-tune, Égaliseur), règle, referme. L\'essentiel est en façade ; le reste est derrière ⚙️ Réglages. Auto-tune : en haut, l\'effet de style du rap d\'aujourd\'hui (🤖 Robot, la note collée net ; 🛸 Planant, avec les petits sauts de note ; 💎 Cristal, voix plus claire ; 🌑 Grave, voix plus sombre), avec sa dose (Léger, Moyen, À fond) ; en dessous, la simple correction (Naturel, Marqué), qui garde le timbre de ta voix (moteur Signalsmith Stretch, logiciel libre). Avec 🎧 Retour, tu t\'entends auto-tuné pendant que tu kickes. Dans Auto-tune, « 🔄 Reprendre la note de ma voix » réécoute ta prise et recale la tonalité ; elle est reprise toute seule à chaque nouvelle prise. La reverb et l\'écho ont des réglages simples (Pièce, Studio, Salle…) ; Studio est une vraie plaque de studio (algorithme de Dattorro, logiciel libre) ; touche « ⚙️ Réglages » à côté (ou deux appuis sur l\'effet) pour tous ses réglages : durée et pré-délai de la reverb, rythme et répétitions de l\'écho, vitesse et tonalité de l\'auto-tune… L\'égaliseur a son bouton « ⚙️ Réglages poussés ». Sur une sélection : volume, reverb, écho et égaliseur, rien que pour ce bout. « ▶ Écouter le bout » pour entendre, « ↺ Remettre » pour annuler ce bout.' },
+    { sel: ['#strip'], t: '3 · Règle', b: 'Ouvre un titre (Nettoyage, Volume, Effets, Auto-tune, Égaliseur), règle, referme. L\'essentiel est en façade ; le reste est derrière ⚙️ Réglages. Auto-tune : en haut, l\'effet de style du rap d\'aujourd\'hui (🤖 Robot, la note collée net ; 🛸 Planant, avec les petits sauts de note ; 💎 Cristal, voix plus claire ; 🌑 Grave, voix plus sombre ; 🎹 Vocodeur, un synthé qui chante tes mots façon Daft Punk, d\'après le vocodeur libre de Chris Wilson), avec sa dose (Léger, Moyen, À fond) et les Harmonies (Sans, Tierce : une 2e voix juste au-dessus ; Accord : deux voix en plus, à gauche et à droite) ; en dessous, la simple correction (Naturel, Marqué), qui garde le timbre de ta voix (moteur Signalsmith Stretch, logiciel libre). Avec 🎧 Retour, tu t\'entends auto-tuné pendant que tu kickes (le Vocodeur et les Harmonies s\'ajoutent à la fin de la prise). Dans Auto-tune, « 🔄 Reprendre la note de ma voix » réécoute ta prise et recale la tonalité ; elle est reprise toute seule à chaque nouvelle prise. La reverb et l\'écho ont des réglages simples (Pièce, Studio, Salle…) ; Studio est une vraie plaque de studio (algorithme de Dattorro, logiciel libre) ; touche « ⚙️ Réglages » à côté (ou deux appuis sur l\'effet) pour tous ses réglages : durée et pré-délai de la reverb, rythme et répétitions de l\'écho, vitesse et tonalité de l\'auto-tune… L\'égaliseur a son bouton « ⚙️ Réglages poussés ». Sur une sélection : volume, reverb, écho et égaliseur, rien que pour ce bout. « ▶ Écouter le bout » pour entendre, « ↺ Remettre » pour annuler ce bout.' },
     { sel: ['#bLevel'], t: 'Rééquilibrer', b: 'Remet tous les niveaux d\'aplomb d\'un coup : l\'instru, le lead, les backs et l\'ambiance à leur juste place.' }
   ],
   vMaster: [
