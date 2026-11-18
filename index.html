@@ -142,6 +142,7 @@ body:not(.simple) .row .l1 .chip{flex:1 1 0}
 .pad{padding:12px;display:flex;flex-direction:column;gap:14px}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .mxtip{position:absolute;left:50%;top:8px;transform:translateX(-50%);background:rgba(0,0,0,.75);color:#fff;font:700 13px system-ui,-apple-system,sans-serif;padding:6px 12px;border-radius:14px;border:1px solid var(--accent);pointer-events:none;z-index:2}
+.mxw canvas,#edCv,#ruler{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .mxw{position:relative;margin-top:10px;border:1px solid var(--line);border-radius:10px;background:var(--raise);overflow:hidden;touch-action:none}.mxw canvas{display:block;width:100%;height:120px}
 .mxz,.mxp{display:flex;gap:6px;align-items:center;padding:6px 8px;border-top:1px solid var(--line);background:var(--panel)}.mxz button,.mxp button{flex:none;min-width:38px;height:36px;border-radius:8px;border:1px solid var(--line);background:var(--raise);color:inherit;font-weight:800;font-size:15px;padding:0 10px}
 .mxz input{flex:1;min-width:0;accent-color:var(--accent)}.mxzl{padding:0 8px 6px;background:var(--panel);font-size:11px;color:var(--muted);text-align:center}
@@ -729,7 +730,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.7.9 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.8.0 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookie, sans garder ton adresse IP) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze. Coupées, elles arrêtent aussi les rapports techniques (erreurs et mesures du son, jamais ta voix).</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false">📊 Statistiques anonymes : activées</button>
@@ -1187,8 +1188,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 200; // numéro interne (jamais affiché)
-const APP_PUB = '2.7.9';
+const APP_VER = 201; // numéro interne (jamais affiché)
+const APP_PUB = '2.8.0';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -1949,7 +1950,7 @@ function scrubber(o){
     down(e){ gl = null; d = { sx: e.clientX, lx: e.clientX, lt: performance.now(), vel: 0, moved: false, play: S.playing && !S.recording, p: 0 }; },
     move(e){
       if(!d) return false;
-      if(!d.moved){ if(Math.abs(e.clientX - d.sx) < 4) return false; d.moved = true; if(d.play) pause(); d.p = o.get(); d.lx = e.clientX; d.lt = performance.now(); return true; }
+      if(!d.moved){ if(Math.abs(e.clientX - d.sx) < (o.th || 4)) return false; d.moved = true; if(d.play) pause(); d.p = o.get(); d.lx = e.clientX; d.lt = performance.now(); return true; }
       const tn = performance.now(), ddx = e.clientX - d.lx, dtm = Math.max(1, tn - d.lt), sp = Math.abs(ddx) / dtm;
       const k = 2 + 3 * Math.min(1, sp / 1.2), dp = -ddx * o.spp() * k;
       d.vel = 0.6 * d.vel + 0.4 * (dp / dtm); d.lx = e.clientX; d.lt = tn; d.p = o.set(d.p + dp); return true;
@@ -3907,7 +3908,8 @@ function mxHint(txt){ const w = $('#mxW'); if(!w) return; let h = w.querySelecto
     if(!drag) return; const t = selTrack(), x = clamp(tAt(e), t.offset, t.offset + t.buffer.duration);
     if(drag.h === 'nav'){
       const r = cv.getBoundingClientRect(), dx = e.clientX - drag.sx;
-      if(!drag.moved && Math.abs(dx) < 4) return;
+      /* un doigt posé bouge toujours un peu : tant que l'appui long n'est pas décidé, il faut 12 px pour partir en navigation */
+      if(!drag.moved && Math.abs(dx) < 12) return;
       if(!drag.moved){ drag.moved = true; clearTimeout(drag.lp); if(drag.play) pause(); drag.p = S.pos; drag.lx = e.clientX; drag.lt = performance.now(); return; }
       /* vif : la piste file plus vite que le doigt, et d'autant plus vite que tu glisses vite (comme une molette) */
       const tn = performance.now(), ddx = e.clientX - drag.lx, dtm = Math.max(1, tn - drag.lt), sp = Math.abs(ddx) / dtm;
@@ -8300,6 +8302,7 @@ function edDown(e){
   ed.drag = { mode, x0: x, t0: edX2T(x), moved: false };
 }
 const edScrub = scrubber({
+  th: 12,
   spp: () => (ed.v1 - ed.v0) / Math.max(1, $('#edCv').clientWidth), get: () => ed.cur,
   set: p => { const t = edT(); if(!t) return p; const d = t.buffer.duration; p = clamp(p, 0, d); const span = ed.v1 - ed.v0;
     ed.v0 = clamp(ed.v0 + (p - ed.cur), 0, Math.max(0, d - span)); ed.v1 = ed.v0 + span; ed.cur = p; S.pos = t.offset + p; edDraw(); return p; },
