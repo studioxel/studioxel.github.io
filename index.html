@@ -730,7 +730,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.8.3 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.8.4 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookie, sans garder ton adresse IP) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze. Coupées, elles arrêtent aussi les rapports techniques (erreurs et mesures du son, jamais ta voix).</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false">📊 Statistiques anonymes : activées</button>
@@ -1188,8 +1188,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 204; // numéro interne (jamais affiché)
-const APP_PUB = '2.8.3';
+const APP_VER = 205; // numéro interne (jamais affiché)
+const APP_PUB = '2.8.4';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -6813,7 +6813,8 @@ async function removeBleed(buf, pos, tr){
     const sr = buf.sampleRate, len = buf.length, N = 1024, hop = 384, T = fftInit(N), K = N / 2 + 1;
     /* la référence : ce que tu entendais (instru et autres pistes), calé sur ta prise */
     const ref = new Float32Array(len);
-    srcs.forEach(t => { const d = t.buffer.getChannelData(0), o = Math.round((pos - t.offset) * sr), g = t.vol ?? 1; for(let i = 0; i < len; i++){ const j = o + i; if(j >= 0 && j < d.length) ref[i] += d[j] * g; } });
+    /* chaque piste lue à sa propre fréquence (une instru à 48 000 Hz et une prise à 24 000 Hz restent bien alignées) */
+    srcs.forEach(t => { const d = t.buffer.getChannelData(0), q = t.buffer.sampleRate / sr, o = (pos - t.offset) * t.buffer.sampleRate, g = t.vol ?? 1; for(let i = 0; i < len; i++){ const j = Math.round(o + i * q); if(j >= 0 && j < d.length) ref[i] += d[j] * g; } });
     let er = 0; for(let i = 0; i < len; i += 8) er += ref[i] * ref[i]; if(er < 1e-3) return null;
     const win = new Float32Array(N); for(let i = 0; i < N; i++) win[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / N);
     const nF = Math.max(1, Math.floor((len - N) / hop) + 1);
@@ -6853,6 +6854,7 @@ async function removeBleed(buf, pos, tr){
 }
 function punchMerge(tr, nb, pos, end){
   const base = tr.buffer, sr = base.sampleRate, bo = tr.offset;
+  nb = resampleTo(nb, sr); /* prise à une autre fréquence (AirPods) : convertie, sinon elle jouerait accélérée */
   const segLen = Math.max(1, Math.min(nb.length, Math.round((end - pos) * sr)));
   const s0 = Math.min(bo, pos), e0 = Math.max(bo + base.duration, pos + segLen / sr);
   const nch = Math.max(base.numberOfChannels, nb.numberOfChannels);
@@ -7794,12 +7796,23 @@ function bufSlice(buf, s0, s1){
   for(let c = 0; c < buf.numberOfChannels; c++) out.copyToChannel(buf.getChannelData(c).subarray(s0, s1), c);
   return out;
 }
+/* change la fréquence d'un son SANS changer sa vitesse (filtre de Lanczos, qualité studio).
+   Indispensable quand on assemble deux prises : l'iPhone peut enregistrer à 24 000 Hz avec des AirPods et à 48 000 Hz sans ;
+   coller l'une dans l'autre sans conversion la faisait jouer 2 fois trop vite. */
 function resampleTo(buf, sr){
-  if(buf.sampleRate === sr) return buf;
-  const r = buf.sampleRate / sr, n = Math.floor(buf.length / r), out = ctx.createBuffer(buf.numberOfChannels, n, sr);
+  if(!buf || buf.sampleRate === sr) return buf;
+  const r = buf.sampleRate / sr, n = Math.max(1, Math.floor(buf.length / r)), out = ctx.createBuffer(buf.numberOfChannels, n, sr);
+  const A = 6, fc = Math.min(1, 1 / r), half = Math.ceil(A / fc), sinc = x => x === 0 ? 1 : Math.sin(Math.PI * x) / (Math.PI * x);
   for(let c = 0; c < buf.numberOfChannels; c++){
-    const a = buf.getChannelData(c), d = out.getChannelData(c);
-    for(let i = 0; i < n; i++){ const x = i * r, j = Math.floor(x), f = x - j; d[i] = (a[j] || 0) * (1 - f) + (a[j + 1] || 0) * f; }
+    const a = buf.getChannelData(c), d = out.getChannelData(c), L = a.length;
+    for(let i = 0; i < n; i++){
+      const x = i * r, j0 = Math.floor(x); let s2 = 0, ws = 0;
+      for(let k = j0 - half + 1; k <= j0 + half; k++){
+        const u = (x - k) * fc; if(Math.abs(u) >= A) continue;
+        const w = sinc(u) * sinc(u / A); ws += w; if(k >= 0 && k < L) s2 += a[k] * w;
+      }
+      d[i] = ws ? s2 / ws : 0;
+    }
   }
   return out;
 }
