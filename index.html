@@ -730,7 +730,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.8.0 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.8.1 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookie, sans garder ton adresse IP) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze. Coupées, elles arrêtent aussi les rapports techniques (erreurs et mesures du son, jamais ta voix).</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false">📊 Statistiques anonymes : activées</button>
@@ -822,7 +822,7 @@ body.ed-open .wmark{z-index:41}
       <div class="mxz"><button data-mz="left" aria-label="Reculer">◀</button><button data-mz="out" aria-label="Dézoomer">−</button><input type="range" id="mxZoom" min="0" max="100" step="1" aria-label="Zoom"><button data-mz="in" aria-label="Zoomer">+</button><button data-mz="right" aria-label="Avancer">▶</button></div>
       <div class="mxzl" id="mxZl"></div></div>
     <div class="mxtarget" id="mxTarget"></div></div>
-    <p class="note mxhint">👆 Glisse sur l'onde pour avancer ou reculer (lance-la, elle file sur son élan). ✂️ Appui long, puis glisse, pour choisir un bout ; ses poignées rondes ◀ ▶ s'ajustent au doigt. La tête de lecture, c'est le trait blanc avec le petit triangle. Le violet = un bout déjà réglé à part : touche-le pour le reprendre.</p>
+    <p class="note mxhint">👆 Touche ta partie enregistrée : elle est choisie en entier, ajuste-la avec les poignées rondes ◀ ▶. Glisse sur l'onde pour avancer ou reculer (lance-la, elle file sur son élan). ✂️ Appui long, puis glisse, pour choisir un bout précis. La tête de lecture, c'est le trait blanc avec le petit triangle. Le violet = un bout déjà réglé à part : touche-le pour le reprendre.</p>
     <div id="strip" class="pad" style="padding:0"></div>
     <details class="mxacc" data-acc="zone"><summary><span class="tt">🔁 Zone à écouter en boucle</span></summary><div class="mxbody">
     <div class="zone" id="zone">
@@ -1188,8 +1188,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 201; // numéro interne (jamais affiché)
-const APP_PUB = '2.8.0';
+const APP_VER = 202; // numéro interne (jamais affiché)
+const APP_PUB = '2.8.1';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -3877,6 +3877,16 @@ function drawMxWave(){
   }
 }
 let mxNav = null, mxGlide = null;
+/* la partie enregistrée sous le doigt : la prise, sans les blancs du début et de la fin */
+function recZone(t, x){
+  if(!t?.buffer || x < t.offset || x > t.offset + t.buffer.duration) return null;
+  const env = envOf(t.buffer); let pk = 0; for(let i = 0; i < env.length; i++) if(env[i] > pk) pk = env[i];
+  if(!pk) return null;
+  const th = pk * 0.03; let f0 = 0, f1 = env.length - 1;
+  while(f0 < f1 && env[f0] < th) f0++; while(f1 > f0 && env[f1] < th) f1--;
+  const a = Math.max(t.offset, t.offset + f0 / 100 - 0.05), b = Math.min(t.offset + t.buffer.duration, t.offset + f1 / 100 + 0.2);
+  return b - a > 0.05 ? { a, b } : null;
+}
 /* déplace la tête de lecture : elle reste au même endroit à l'écran, c'est la piste qui défile */
 function mxNavTo(p){
   p = clamp(p, 0, Math.max(trackEnd(), 0.1));
@@ -3935,7 +3945,11 @@ function mxHint(txt){ const w = $('#mxW'); if(!w) return; let h = w.querySelecto
     if(d.h === 'n' && !d.moved && !d.lpOn){
       /* simple toucher : sur un bout violet = on le reprend ; ailleurs = on se place là */
       const ri = (t.regs || []).map((r, i) => [r, i]).reverse().find(([r]) => d.x0 >= r.a && d.x0 <= r.b);
-      if(ri){ mxSel = { tid: t.id, a: ri[0].a, b: ri[0].b, ri: ri[1] }; } else { mxSel = null; seek(d.x0); }
+      if(ri){ mxSel = { tid: t.id, a: ri[0].a, b: ri[0].b, ri: ri[1] }; }
+      /* toucher dans le bout déjà choisi : la lecture se place là, le bout reste choisi */
+      else if(mxSel && d.x0 >= mxSel.a && d.x0 <= mxSel.b) seek(d.x0);
+      /* toucher sur la partie enregistrée : elle est choisie en entier, du début à la fin, avec ses poignées ◀ ▶ */
+      else { const z = recZone(t, d.x0); if(z){ mxSel = { tid: t.id, a: z.a, b: z.b, ri: null }; } else { mxSel = null; seek(d.x0); } }
     }
     if(mxSel && mxSel.ri != null){ t.chain.set(t, audible(t), true); scheduleSave(); }
     if(S.rep && mxSel) S.rep = { a: mxSel.a, b: mxSel.b };
@@ -8643,7 +8657,7 @@ const HELP = {
   vMix: [
     { t: 'L\'onglet Mix', b: 'Ici tu règles chaque piste, ou juste un bout : un mot, une phrase, un couplet.' },
     { sel: ['#mixChips'], t: '1 · Choisis ta piste', b: 'Touche une piste : tout ce qui est en dessous la concerne.' },
-    { sel: ['#mxW'], t: '2 · Choisis un bout (si tu veux)', b: 'Glisse sur l\'onde pour avancer ou reculer dans ta piste (la lecture suit ton doigt). Pour sélectionner un mot ou une phrase : appui long, puis glisse. Les bouts déjà réglés à part sont en violet : touche-les pour les reprendre. Zoome avec la réglette ou à deux doigts pour viser au poil. Sans sélection, tu règles toute la piste.' },
+    { sel: ['#mxW'], t: '2 · Choisis un bout (si tu veux)', b: 'Touche ta partie enregistrée : elle est choisie en entier, du début à la fin, et tu l\'ajustes avec les poignées rondes ◀ ▶. Glisse sur l\'onde pour avancer ou reculer dans ta piste. Pour sélectionner un mot ou une phrase précise : appui long, puis glisse. Les bouts déjà réglés à part sont en violet : touche-les pour les reprendre. Zoome avec la réglette ou à deux doigts pour viser au poil. Sans sélection, tu règles toute la piste.' },
     { sel: ['#mxTarget'], t: 'À qui s\'appliquent tes réglages', b: 'Ici c\'est écrit : toute la piste, ou ta sélection. Le ✕ enlève la sélection.' },
     { sel: ['details[data-acc=clean]', '#strip'], t: '🧽 Nettoyage', b: 'En ouvrant Nettoyage, j\'écoute ta piste et je te dis ce que je trouve. Les bruits : souffle de fond, bourdonnement, « P » et « B » qui claquent, « S » qui sifflent, respirations. L\'atmosphère de la prise : pièce qui résonne, son de boîte, voix étouffée, trop fine, qualité téléphone ou manque d\'air (micro qui s\'arrête vers 10 kHz). Le souffle et le bruit de fond sont retirés par une IA (DeepFilterNet, logiciel libre) qui tourne sur ton téléphone : rien n\'est envoyé. La première fois, elle se télécharge (18 Mo, une seule fois). Coche ce que tu veux, choisis la force, touche « Nettoyer et comparer », puis bascule Avant / Après pendant la lecture. Tu gardes si ça te plaît, ↶ annule. « Nettoyer toutes les voix » fait tout d\'un coup.' },
     { sel: ['#strip'], t: '3 · Règle', b: 'Ouvre un titre (Nettoyage, Volume, Effets, Auto-tune, Égaliseur), règle, referme. L\'essentiel est en façade ; le reste est derrière ⚙️ Réglages. Auto-tune : en haut, l\'effet de style du rap d\'aujourd\'hui (🤖 Robot, la note collée net ; 🛸 Planant, avec les petits sauts de note ; 💎 Cristal, voix plus claire ; 🌑 Grave, voix plus sombre), avec sa dose (Léger, Moyen, À fond) ; en dessous, la simple correction (Naturel, Marqué), qui garde le timbre de ta voix (moteur Signalsmith Stretch, logiciel libre). Avec 🎧 Retour, tu t\'entends auto-tuné pendant que tu kickes. Dans Auto-tune, « 🔄 Reprendre la note de ma voix » réécoute ta prise et recale la tonalité ; elle est reprise toute seule à chaque nouvelle prise. La reverb et l\'écho ont des réglages simples (Pièce, Studio, Salle…) ; Studio est une vraie plaque de studio (algorithme de Dattorro, logiciel libre) ; touche « ⚙️ Réglages » à côté (ou deux appuis sur l\'effet) pour tous ses réglages : durée et pré-délai de la reverb, rythme et répétitions de l\'écho, vitesse et tonalité de l\'auto-tune… L\'égaliseur a son bouton « ⚙️ Réglages poussés ». Sur une sélection : volume, reverb, écho et égaliseur, rien que pour ce bout. « ▶ Écouter le bout » pour entendre, « ↺ Remettre » pour annuler ce bout.' },
