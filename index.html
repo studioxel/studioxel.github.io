@@ -385,9 +385,13 @@ body.has-selbar .toast{bottom:calc(250px + env(safe-area-inset-bottom,0px))}
 .atk{display:flex;align-items:center;gap:10px;background:var(--raise);border:1px solid var(--line);border-radius:12px;padding:10px;flex-wrap:wrap;width:100%}.atk b{font-size:16px;display:block}.atk small{display:block;color:var(--muted);font-size:12px}.atk .sbtn{margin-left:auto}
 .scrbox .ocgrid{margin:4px 0 8px}
 .scrdeck .deck{display:flex;align-items:center;justify-content:center;gap:16px;margin:4px 0}
-.vinyl{width:min(56vw,230px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,#2a2414 0 17%,#0d0d10 18% 19%,#18181c 20% 100%);box-shadow:0 0 0 3px var(--line),inset 0 0 0 1px #333;position:relative;touch-action:none;user-select:none;-webkit-user-select:none}
-.vinyl::before{content:"";position:absolute;inset:12px;border-radius:50%;background:repeating-radial-gradient(circle,#17171b 0 2px,#202027 2px 4px);-webkit-mask:radial-gradient(circle,transparent 21%,#000 22%);mask:radial-gradient(circle,transparent 21%,#000 22%)}
-.vinyl i{position:absolute;left:50%;top:8px;width:6px;height:28%;margin-left:-3px;background:var(--accent);border-radius:3px}
+.tt{position:relative;width:min(62vw,250px);aspect-ratio:1;border-radius:50%;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;background:#2b2b30;box-shadow:0 0 0 5px #3a3a40,0 0 0 6px #1c1c20,0 10px 26px rgba(0,0,0,.45)}
+.tt:active{cursor:grabbing}
+.tt .vinyl{position:absolute;inset:3%;border-radius:50%;background:radial-gradient(circle,transparent 0 31%,#0c0c0e 31.5% 33.5%,transparent 34% 95%,#0a0a0b 95.5% 100%),repeating-radial-gradient(circle,#101012 0 1px,#19191c 1px 2px,#0e0e10 2px 3px),#111;will-change:transform}
+.tt .vinyl::after{content:"";position:absolute;inset:0;border-radius:50%;background:repeating-radial-gradient(circle,transparent 0 23px,rgba(0,0,0,.55) 23px 24.5px);-webkit-mask:radial-gradient(circle,transparent 35%,#000 36% 94%,transparent 95%);mask:radial-gradient(circle,transparent 35%,#000 36% 94%,transparent 95%)}
+.tt .vlab{position:absolute;inset:34%;border-radius:50%;background:#e9e2d0 center/cover no-repeat;box-shadow:0 0 0 2px #0b0b0c,inset 0 0 0 1px rgba(255,255,255,.25)}
+.tt::after{content:"";position:absolute;inset:3%;border-radius:50%;pointer-events:none;background:conic-gradient(from 20deg,transparent 0 18deg,rgba(255,255,255,.13) 32deg,transparent 48deg 198deg,rgba(255,255,255,.1) 212deg,transparent 228deg)}
+.tt .spin{position:absolute;left:50%;top:50%;width:4.5%;aspect-ratio:1;margin:-2.25% 0 0 -2.25%;border-radius:50%;background:radial-gradient(circle at 35% 35%,#f4f4f6,#8d8d95 60%,#4a4a50);box-shadow:0 1px 2px rgba(0,0,0,.6);z-index:2;pointer-events:none}
 .cutb{width:96px;height:96px;border-radius:18px;border:0;background:var(--rec,#e5484d);color:#fff;font:900 15px system-ui,-apple-system,sans-serif;touch-action:none;user-select:none;-webkit-user-select:none}.cutb.on{filter:brightness(.55);transform:scale(.96)}
 .shfoot .sbtn.rec{background:#e5484d;border-color:#e5484d;color:#fff}
 .fxsh{position:fixed;inset:0;z-index:57;background:rgba(5,7,10,.55);display:flex;align-items:flex-end;justify-content:center}
@@ -734,7 +738,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.6.8 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.6.9 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookie, sans garder ton adresse IP) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze. Coupées, elles arrêtent aussi les rapports techniques (erreurs et mesures du son, jamais ta voix).</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false">📊 Statistiques anonymes : activées</button>
@@ -1192,8 +1196,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 189; // numéro interne (jamais affiché)
-const APP_PUB = '2.6.8';
+const APP_VER = 190; // numéro interne (jamais affiché)
+const APP_PUB = '2.6.9';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -1825,14 +1829,16 @@ function play(at){
     const rel = playStartPos - t.offset;
     if(rel >= t.buffer.duration) return;
     const s = ctx.createBufferSource(); s.buffer = t.buffer;
+    /* petit volume à part, juste pour la prise (le scratch au doigt la coupe quand tu tiens le disque) */
+    const sg = ctx.createGain(); sg.connect(t.chain.input); t.slipG = sg;
     /* Nettoyage en comparaison : les deux versions jouent ensemble, on bascule le volume de l'une à l'autre (sans coupure) */
     if(t.abAlt && t.abAlt.length === t.buffer.length && !S.recording){
       const gA = ctx.createGain(), gB = ctx.createGain(), s2 = ctx.createBufferSource(), aft = S.clPrev?.ab !== 'before';
       s2.buffer = t.abAlt; gA.gain.value = aft ? 1 : 0; gB.gain.value = aft ? 0 : 1;
-      s.connect(gA); s2.connect(gB); gA.connect(t.chain.input); gB.connect(t.chain.input); t.abG = [gA, gB];
+      s.connect(gA); s2.connect(gB); gA.connect(sg); gB.connect(sg); t.abG = [gA, gB];
       if(rel < 0) s2.start(playStartCtx - rel); else s2.start(playStartCtx, rel);
       sources.push(s2);
-    } else s.connect(t.chain.input);
+    } else s.connect(sg);
     if(rel < 0) s.start(playStartCtx - rel); else s.start(playStartCtx, rel);
     if(preOnly) s.stop(playStartCtx + recInfo.pre);
     sources.push(s);
@@ -5221,7 +5227,7 @@ document.addEventListener('click', e => {
   else if(k === 'cancel'){ jr('i', 'mix en un clic annulé : ' + ocPrev?.key); ocPrev = null; undo(); }
 });
 
-/* ---------- Scratchs tout faits : le bout choisi passe sous un « disque » qu'on pousse et tire en rythme, avec le crossfader ---------- */
+/* ---------- Scratch : c'est ta prise elle-même qui est scratchée, à l'endroit choisi (le reste ne bouge pas) ---------- */
 /* Modèle de platine : position du disque p(t) (mouvement de la main, adouci comme un vrai geste), lecture du son à cette position
    (en avant comme en arrière, la hauteur suit la vitesse), et crossfader qui ouvre / coupe le son avec des rampes très courtes. */
 const SCR = {
@@ -5232,84 +5238,100 @@ const SCR = {
 };
 const SCR_DIV = [[1, '1/4'], [0.5, '1/8'], [0.25, '1/16']];
 let scrPick = 'baby', scrDiv = 0.5;
-function scratchRender(src, sr, a, b, kind, div, bpm){
-  const beat = 60 / bpm, bar = beat * 4, n = Math.ceil(bar * sr), out = new Float32Array(n);
-  const s0 = Math.floor(a * sr), sLen = Math.max(1, Math.floor((b - a) * sr));
+/* les canaux d'une prise, et sa version mono (le « disque ») */
+function scrChans(buf){ const c = []; for(let i = 0; i < buf.numberOfChannels; i++) c.push(buf.getChannelData(i)); return c; }
+function scrMono(chs, s0, n){ const m = new Float32Array(n), k = chs.length; for(let i = 0; i < n; i++){ let v = 0; for(let c = 0; c < k; c++) v += chs[c][s0 + i] || 0; m[i] = v / k; } return m; }
+/* remplace [s0, s0 + n) de la prise par le son scratché (fondus de 8 ms aux deux bords) : nouvelle version de la prise, ↶ pour revenir */
+function scrReplace(t, base, s0, wet, mix, reuse){
+  const sr = base.sampleRate, nb = ctx.createBuffer(base.numberOfChannels, base.length, sr), n = wet.length, xf = Math.max(1, Math.round(sr * 0.008));
+  for(let c = 0; c < base.numberOfChannels; c++){
+    const d = base.getChannelData(c), o = nb.getChannelData(c); o.set(d);
+    for(let i = 0; i < n && s0 + i < o.length; i++){
+      const e = Math.min(1, i / xf, (n - 1 - i) / xf), m = (mix ? mix[i] : 1) * e;
+      o[s0 + i] = d[s0 + i] * (1 - m) + wet[i] * m;
+    }
+  }
+  const tk = { buffer: nb, offset: t.offset };
+  if(reuse != null && t.takes[reuse]) t.takes[reuse] = tk; else t.takes.push(tk);
+  t.take = reuse != null && t.takes[reuse] === tk ? reuse : t.takes.length - 1; t.buffer = nb; t.abAlt = null;
+  return t.take;
+}
+/* grain de platine : coupe le tout-grave et adoucit l'extrême aigu */
+function scrGrain(x, sr){ clBiquad(x, sr, 'hp', 140, 0.7); clBiquad(x, sr, 'lp', 9000, 0.7); }
+/* anti-crénelage : quand le disque va vite, les aigus montent au-delà de ce que le son numérique peut porter et reviennent en grésillement.
+   On prépare la prise en 4 versions de plus en plus douces (filtrées sans décalage) et on lit celle qui va avec la vitesse du disque. */
+function scrMip(src, sr){
+  const lv = [src];
+  [7500, 3750, 1900].forEach(fc => {
+    const y = Float32Array.from(src);
+    clBiquad(y, sr, 'lp', fc, 0.7071); y.reverse(); clBiquad(y, sr, 'lp', fc, 0.7071); y.reverse();
+    lv.push(y);
+  });
+  return lv;
+}
+function scrTap(lv, q, sp){
+  const j = Math.floor(q), fr = q - j, z = Math.max(0, Math.min(2.999, Math.log2(Math.max(1, sp / 0.94)))), k = Math.floor(z), u = z - k;
+  const r = a => { const x0 = a[j] || 0, x1 = a[j + 1] || 0; return x0 + (x1 - x0) * fr; };
+  return u < 0.01 ? r(lv[k]) : r(lv[k]) * (1 - u) + r(lv[k + 1]) * u;
+}
+/* scratch tout fait : le bout [a, b] (en secondes dans la prise) devient le même bout scratché, de la même longueur, en rythme */
+function scratchRender(src, sr, n, kind, div, bpm){
+  const beat = 60 / bpm, out = new Float32Array(n);
   /* longueur poussée sur le disque : l'attaque du mot (comme un DJ qui gratte le début du son) */
-  const L = Math.min(sLen / sr, kind === 'trans' ? 0.42 : 0.24);
-  const step = beat * div, strokes = Math.max(1, Math.round(bar / step));
-  /* position du disque (secondes dans le son) et crossfader, échantillon par échantillon */
+  const L = Math.min(n / sr, kind === 'trans' ? 0.42 : 0.24), step = beat * div;
   const pos = new Float32Array(n), fad = new Float32Array(n);
   for(let i = 0; i < n; i++){
-    const t = i / sr, k = Math.min(strokes - 1, Math.floor(t / step)), u = (t - k * step) / step;
+    const t = i / sr, k = Math.floor(t / step), u = (t - k * step) / step;
     /* un coup = aller (première moitié) puis retour (seconde moitié), vitesse en cloche comme une main */
     const half = u < 0.5, v = half ? u * 2 : (u - 0.5) * 2, e = (1 - Math.cos(Math.PI * v)) / 2;
-    const fw = half ? e : 1 - e, reach = kind === 'flare' ? 1 : kind === 'trans' ? 1 : (k % 2 ? 0.85 : 1);
+    const fw = half ? e : 1 - e, reach = kind === 'baby' && k % 2 ? 0.85 : 1;
     pos[i] = fw * L * reach;
     let f = 1;
     if(kind === 'chirp') f = half ? (v < 0.62 ? 1 : 0) : (v < 0.38 ? 0 : 1) * (v > 0.9 ? 0 : 1);
     else if(kind === 'trans'){ const ch = step / 4; f = Math.floor((t % step) / ch * 1.0001) % 2 === 0 ? 1 : 0; }
     else if(kind === 'flare') f = (v > 0.42 && v < 0.58) ? 0 : 1;
-    else if(kind === 'baby') f = 1;
     fad[i] = f;
   }
-  /* crossfader avec rampes de 1,5 ms (pas de clic) */
   const rp = 1 - Math.exp(-1 / (sr * 0.0015)); let g = 0;
   for(let i = 0; i < n; i++){ g += rp * (fad[i] - g); fad[i] = g; }
-  /* lecture à la position du disque (interpolation), le son ne joue que quand le disque bouge */
-  let prev = 0;
+  let prev = 0; const lv = scrMip(src, sr);
   for(let i = 0; i < n; i++){
-    const p = pos[i] * sr, j = Math.floor(p), fr = p - j, x0 = src[s0 + j] || 0, x1 = src[s0 + j + 1] || 0;
     const vel = Math.abs(pos[i] - prev) * sr; prev = pos[i];
-    const motion = Math.min(1, vel * 6);
-    out[i] = (x0 + (x1 - x0) * fr) * fad[i] * motion;
+    out[i] = scrTap(lv, pos[i] * sr, vel) * fad[i] * Math.min(1, vel * 6);
   }
-  /* grain de vinyle : coupe le tout-grave et adoucit l'extrême aigu, comme une platine */
-  clBiquad(out, sr, 'hp', 140, 0.7); clBiquad(out, sr, 'lp', 9000, 0.7);
-  /* même niveau que le son d'origine */
-  let es = 0, eo = 0; for(let i = 0; i < sLen; i++){ const v = src[s0 + i] || 0; es += v * v; } for(let i = 0; i < n; i++) eo += out[i] * out[i];
-  const gN = eo > 1e-9 ? Math.min(4, Math.sqrt((es / sLen) / (eo / n)) * 0.9) : 1;
+  scrGrain(out, sr);
+  /* même niveau que le bout d'origine */
+  let es = 0, eo = 0; for(let i = 0; i < n; i++){ es += src[i] * src[i]; eo += out[i] * out[i]; }
+  const gN = eo > 1e-9 ? Math.min(4, Math.sqrt(es / eo) * 0.9) : 1;
   let pk = 0; for(let i = 0; i < n; i++){ out[i] *= gN; pk = Math.max(pk, Math.abs(out[i])); }
   if(pk > 0.98) for(let i = 0; i < n; i++) out[i] *= 0.98 / pk;
-  /* fondu de 10 ms aux bords */
-  const fd = Math.round(sr * 0.01); for(let i = 0; i < fd; i++){ out[i] *= i / fd; out[n - 1 - i] *= i / fd; }
   return out;
 }
-/* ajoute un morceau sur la piste « Scratch » à la position voulue (sans effacer ce qui y est déjà) */
-function scrTrack(){
-  let t = S.tracks.find(x => x.scr || x.name === 'Scratch');
-  if(!t){ t = addTrack('Scratch', 'neutre'); t.scr = true; t.vol = 0.8; t.fx = { ...FX.neutre, hp: 120 }; t.chain.set(t, audible(t), true); }
-  return t;
-}
-function scrPlace(t, data, sr, at){
-  const old = t.buffer, o0 = old ? t.offset : at, e0 = old ? t.offset + old.duration : at;
-  const s = Math.min(o0, at), e = Math.max(e0, at + data.length / sr), n = Math.ceil((e - s) * sr) + 1;
-  const nb = ctx.createBuffer(2, n, sr), L = nb.getChannelData(0), R = nb.getChannelData(1);
-  if(old){ const off = Math.round((old ? t.offset : 0) * sr - s * sr); for(let c = 0; c < 2; c++){ const d = old.getChannelData(Math.min(c, old.numberOfChannels - 1)), o = c ? R : L; for(let i = 0; i < d.length; i++) o[off + i] += d[i]; } }
-  const p0 = Math.round((at - s) * sr); for(let i = 0; i < data.length; i++){ L[p0 + i] += data[i]; R[p0 + i] += data[i]; }
-  t.takes.push({ buffer: nb, offset: s }); t.take = t.takes.length - 1; t.buffer = nb; t.offset = s;
+/* le bout choisi, en échantillons dans la prise */
+function scrRange(t){
+  if(!t || !t.buffer || !mxSel) return null;
+  const sr = t.buffer.sampleRate, s0 = Math.max(0, Math.floor((mxSel.a - t.offset) * sr)), s1 = Math.min(t.buffer.length, Math.floor((mxSel.b - t.offset) * sr));
+  return s1 - s0 >= sr * 0.05 ? { s0, n: s1 - s0, sr } : null;
 }
 async function scrApply(){
   const t = selTrack(); if(!t || !mxSel || !t.buffer){ toast('Sélectionne un mot sur l\'onde d\'abord.'); return; }
   if(busy) return;
-  const sr = t.buffer.sampleRate, ch = t.buffer.getChannelData(0), a = Math.max(0, mxSel.a - t.offset), b = Math.min(t.buffer.duration, mxSel.b - t.offset);
-  if(b - a < 0.05){ toast('Choisis un bout un peu plus long (un mot).'); return; }
+  const r = scrRange(t); if(!r){ toast('Choisis un bout un peu plus long (un mot).'); return; }
   pushUndo('le scratch');
-  const data = scratchRender(ch, sr, a, b, scrPick, scrDiv, S.bpm || 90);
-  /* calé sur le temps le plus proche du début du bout */
-  const beat = 60 / (S.bpm || 90), at = Math.max(0, Math.round(mxSel.a / beat) * beat);
-  const st = scrTrack(); scrPlace(st, data, sr, at);
+  const base = t.buffer, src = scrMono(scrChans(base), r.s0, r.n);
+  const wet = scratchRender(src, r.sr, r.n, scrPick, scrDiv, S.bpm || 90);
+  scrReplace(t, base, r.s0, wet);
   if(!flowGet().mixed) flowSet('mixed', true);
-  jr('a', 'scratch ' + scrPick + ' ' + scrDiv);
+  jr('a', 'scratch ' + scrPick + ' ' + scrDiv + ' ' + (r.n / r.sr).toFixed(2) + ' s');
   track('scratch-' + scrPick);
   renderTracks(); renderMix(); scheduleSave();
-  toast('💿 ' + SCR[scrPick].n + ' posé sur la piste Scratch, à ' + fmt(at) + '. Écoute ▶, ↶ pour annuler.');
+  toast('💿 ' + SCR[scrPick].n + ' : ta prise est scratchée de ' + fmt(mxSel.a) + ' à ' + fmt(mxSel.b) + '. Écoute ▶, ↶ pour annuler.');
 }
 function scrHTML(){
-  return `<div class="scrbox"><p class="mxnote">💿 Scratche ce bout : il est posé en rythme sur une mesure, sur la piste « Scratch ».</p>
+  return `<div class="scrbox"><p class="mxnote">💿 Scratche ce bout de ta prise, sur place : le reste ne bouge pas.</p>
     <div class="ocgrid">${Object.keys(SCR).map(k => `<button class="occ" data-scr="${k}" aria-pressed="${k === scrPick}"><b>${SCR[k].n}</b><span>${SCR[k].d}</span></button>`).join('')}</div>
     <div class="fxrow"><span class="fxlab">Rythme</span><div class="notch" role="group" aria-label="Rythme du scratch">${SCR_DIV.map(([d, n]) => `<button data-scrd="${d}" aria-pressed="${d === scrDiv}">${n}</button>`).join('')}</div></div>
-    <div class="mxbtns"><button class="sbtn primary" data-scrgo="1">💿 Poser le scratch (1 mesure)</button><button class="sbtn" data-scrfinger="1">🖐️ Scratcher au doigt</button></div></div>`;
+    <div class="mxbtns"><button class="sbtn primary" data-scrgo="1">💿 Scratcher ce bout</button><button class="sbtn" data-scrfinger="1">🖐️ Scratcher au doigt</button></div></div>`;
 }
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-scr],[data-scrd],[data-scrgo],[data-scrfinger]'); if(!b || !b.closest('#vMix')) return;
@@ -5319,18 +5341,20 @@ document.addEventListener('click', e => {
   if(b.dataset.scrgo) scrApply();
 });
 
-/* ---------- Scratch au doigt : une platine à l'écran, le son suit ton doigt, ton geste est enregistré sur la piste Scratch ---------- */
+/* ---------- Scratch au doigt : ta prise est le disque. Elle tourne avec le beat ; pose le doigt, tu la tiens et tu la frottes,
+   lâche, elle repart pile où elle en serait (comme le mode « slip » des platines). Le REC grave ton geste dans la prise. ---------- */
 const SCR_WK = `class SxScr extends AudioWorkletProcessor {
-  constructor(){ super(); this.buf = null; this.pos = 0; this.tgt = 0; this.fad = 1; this.fadT = 1; this.vel = 0;
-    this.port.onmessage = e => { const d = e.data; if(d.buf){ this.buf = d.buf; this.pos = this.tgt = d.p || 0; } if(d.p != null && !d.buf) this.tgt = d.p; if(d.f != null) this.fadT = d.f; }; }
+  constructor(){ super(); this.buf = null; this.pos = 0; this.tgt = 0; this.fad = 0; this.fadT = 0; this.vel = 0;
+    this.port.onmessage = e => { const d = e.data; if(d.buf) this.buf = d.buf; if(d.s != null){ this.pos = this.tgt = d.s; this.vel = 0; } if(d.p != null) this.tgt = d.p; if(d.f != null) this.fadT = d.f; }; }
   process(i, outs){
     const o = outs[0], L = o[0], b = this.buf; if(!b){ for(const c of o) c.fill(0); return true; }
-    const n = b.length, a = 1 - Math.exp(-1 / (sampleRate * 0.006)), af = 1 - Math.exp(-1 / (sampleRate * 0.0015)), av = 1 - Math.exp(-1 / (sampleRate * 0.01));
+    const n = b[0].length, a = 1 - Math.exp(-1 / (sampleRate * 0.006)), af = 1 - Math.exp(-1 / (sampleRate * 0.0015)), av = 1 - Math.exp(-1 / (sampleRate * 0.01));
     for(let k = 0; k < L.length; k++){
       const p0 = this.pos; this.pos += (this.tgt - this.pos) * a; this.fad += (this.fadT - this.fad) * af;
-      const v = Math.abs(this.pos - p0) * sampleRate; this.vel += (v - this.vel) * av;
-      const j = Math.floor(this.pos), fr = this.pos - j, x0 = j >= 0 && j < n ? b[j] : 0, x1 = j + 1 >= 0 && j + 1 < n ? b[j + 1] : 0;
-      L[k] = (x0 + (x1 - x0) * fr) * this.fad * Math.min(1, this.vel * 6 / sampleRate * 1);
+      this.vel += (Math.abs(this.pos - p0) - this.vel) * av;
+      const j = Math.floor(this.pos), fr = this.pos - j, z = Math.max(0, Math.min(2.999, Math.log2(Math.max(1, this.vel / 0.94)))), q = Math.floor(z), u = z - q;
+      const r = a => { const x0 = j >= 0 && j < n ? a[j] : 0, x1 = j + 1 >= 0 && j + 1 < n ? a[j + 1] : 0; return x0 + (x1 - x0) * fr; };
+      L[k] = (r(b[q]) * (1 - u) + r(b[q + 1]) * u) * this.fad * Math.min(1, this.vel * 6);
     }
     for(let c = 1; c < o.length; c++) o[c].set(L);
     return true;
@@ -5343,126 +5367,114 @@ function scrWorklet(){
   if(!scrWkP) scrWkP = ctx.audioWorklet ? ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([SCR_WK], { type: 'application/javascript' }))).then(() => true, () => false) : Promise.resolve(false);
   return scrWkP;
 }
-/* le son à scratcher : le bout sélectionné, ou un son enregistré exprès */
-let scrSample = null; /* { data: Float32Array, sr, label } */
-async function scrRecordSample(){
-  try{
-    const m = await getMic(); const r = new MediaRecorder(m), ch = [];
-    r.ondataavailable = e => { if(e.data.size) ch.push(e.data); };
-    const done = new Promise(res => r.onstop = res);
-    toast('🎙️ Fais ton son maintenant… (2 secondes)'); r.start(); await new Promise(res => setTimeout(res, 2000)); r.stop(); await done;
-    releaseMic();
-    const b = await ctx.decodeAudioData(await new Blob(ch, { type: r.mimeType }).arrayBuffer());
-    const d = b.getChannelData(0);
-    /* on garde le son lui-même : on coupe le silence avant et après */
-    let pk = 0; for(let i = 0; i < d.length; i++) pk = Math.max(pk, Math.abs(d[i]));
-    const th = pk * 0.08; let a = 0, z = d.length - 1; while(a < z && Math.abs(d[a]) < th) a++; while(z > a && Math.abs(d[z]) < th) z--;
-    a = Math.max(0, a - Math.round(b.sampleRate * 0.01));
-    const data = d.slice(a, Math.min(d.length, z + Math.round(b.sampleRate * 0.15)));
-    if(data.length < b.sampleRate * 0.08){ toast('Je n\'ai rien entendu : refais ton son plus fort.'); return null; }
-    jr('i', 'scratch : son enregistré ' + (data.length / b.sampleRate).toFixed(2) + ' s');
-    return { data, sr: b.sampleRate, label: 'ton son enregistré' };
-  }catch(e){ releaseMic(); toast('Micro indisponible : ' + (e.message || e.name)); return null; }
-}
-function scrFromSel(){
-  const t = selTrack(); if(!t || !t.buffer || !mxSel) return null;
-  const sr = t.buffer.sampleRate, a = Math.max(0, Math.floor((mxSel.a - t.offset) * sr)), b = Math.min(t.buffer.length, Math.floor((mxSel.b - t.offset) * sr) + Math.round(sr * 0.25));
-  if(b - a < sr * 0.05) return null;
-  const c0 = t.buffer.getChannelData(0), c1 = t.buffer.numberOfChannels > 1 ? t.buffer.getChannelData(1) : c0, data = new Float32Array(b - a);
-  for(let i = 0; i < data.length; i++) data[i] = (c0[a + i] + c1[a + i]) / 2;
-  return { data, sr, label: '« ' + t.name + ' » ' + fmt(mxSel.a) };
-}
-/* rendu du geste enregistré (même modèle que le direct, mais calculé proprement hors temps réel) */
-function scrRenderGesture(ev, dur, sm){
-  const sr = sm.sr, n = Math.ceil(dur * sr), out = new Float32Array(n), src = sm.data;
-  const a = 1 - Math.exp(-1 / (sr * 0.006)), af = 1 - Math.exp(-1 / (sr * 0.0015)), av = 1 - Math.exp(-1 / (sr * 0.01));
-  let k = 0, tgt = ev.length ? ev[0].p : 0, fT = ev.length ? ev[0].f : 1, pos = tgt, fad = fT, vel = 0;
+/* rendu du geste : tenu → le son suit le doigt, lâché → la prise normale (à sa place), fondus de 10 ms entre les deux */
+function scrRenderSlip(ev, chs, sr, s0, n){
+  const lv = scrMip(scrMono(chs, 0, chs[0].length), sr), scr = new Float32Array(n), hm = new Float32Array(n), fd = new Float32Array(n);
+  const a = 1 - Math.exp(-1 / (sr * 0.006)), af = 1 - Math.exp(-1 / (sr * 0.0015)), am = 1 - Math.exp(-1 / (sr * 0.004)), av = 1 - Math.exp(-1 / (sr * 0.01));
+  let k = 0, h = false, tgt = 0, fT = 1, pos = 0, fad = 1, vel = 0, m = 0;
   for(let i = 0; i < n; i++){
-    const t = i / sr;
-    while(k < ev.length && ev[k].t <= t){ tgt = ev[k].p; fT = ev[k].f; k++; }
-    const p0 = pos; pos += (tgt - pos) * a; fad += (fT - fad) * af;
-    vel += (Math.abs(pos - p0) * sr - vel) * av;
-    const j = Math.floor(pos * sr), fr = pos * sr - j, x0 = src[j] || 0, x1 = src[j + 1] || 0;
-    out[i] = (x0 + (x1 - x0) * fr) * fad * Math.min(1, vel * 6);
+    const tt = i / sr;
+    while(k < ev.length && ev[k].t <= tt){ const e = ev[k++]; if(e.h && !h){ pos = e.p; vel = 0; } h = e.h; tgt = e.p; fT = e.f; }
+    m += ((h ? 1 : 0) - m) * am; fad += (fT - fad) * af;
+    const p0 = pos; pos += (tgt - pos) * a; vel += (Math.abs(pos - p0) * sr - vel) * av;
+    scr[i] = scrTap(lv, pos * sr, vel) * Math.min(1, vel * 6); hm[i] = m; fd[i] = fad;
   }
-  clBiquad(out, sr, 'hp', 140, 0.7); clBiquad(out, sr, 'lp', 9000, 0.7);
-  const fd = Math.round(sr * 0.01); for(let i = 0; i < fd && i < n; i++){ out[i] *= i / fd; out[n - 1 - i] *= i / fd; }
-  let pk = 0; for(let i = 0; i < n; i++) pk = Math.max(pk, Math.abs(out[i])); if(pk > 0.98) for(let i = 0; i < n; i++) out[i] *= 0.98 / pk;
-  return out;
+  scrGrain(scr, sr);
+  /* sortie = prise × (1 − tenu) × crossfader + scratch × tenu × crossfader, écrite comme un mélange avec la prise d'origine */
+  const wet = new Float32Array(n), mix = new Float32Array(n);
+  for(let i = 0; i < n; i++){
+    const M = 1 - (1 - hm[i]) * fd[i]; mix[i] = M;
+    wet[i] = M > 1e-4 ? scr[i] * hm[i] * fd[i] / M : 0;
+  }
+  return { wet, mix };
 }
 async function openScratchDeck(){
-  let sm = scrFromSel();
+  const t = selTrack();
+  if(!t || !t.buffer){ toast('Choisis d\'abord une piste où il y a une prise.'); return; }
   if(!(await scrWorklet())){ toast('Ce navigateur ne sait pas faire le scratch en direct. Les scratchs tout faits marchent, eux.'); return; }
-  const beat = 60 / (S.bpm || 90), bar = beat * 4;
-  let bars = 1;
-  const t0 = mxSel ? mxSel.a : S.pos, barStart = Math.max(0, Math.floor(t0 / bar + 0.25) * bar);
-  const w = document.createElement('div'); w.className = 'fxsh scrdeck'; w.setAttribute('role', 'dialog'); w.setAttribute('aria-label', 'Scratch au doigt');
-  const draw = () => {
-    w.innerHTML = `<div class="fxshp"><div class="shhead"><h3>💿 Scratch au doigt</h3><span>${sm ? esc(sm.label) : 'choisis un son'}</span><button class="shx" data-sd="close" aria-label="Fermer">✕</button></div>
-    <div class="shbody">
-      <div class="shchips"><button data-sd="sel" aria-pressed="${!!sm && sm.label[0] === '«'}">🎤 Le bout sélectionné</button><button data-sd="rec" aria-pressed="${!!sm && sm.label[0] === 't'}">🎙️ Enregistrer un son</button></div>
-      <div class="deck"><div class="vinyl" id="scrV"><i></i></div><button class="cutb" id="scrCut">✂️<br>COUPE</button></div>
-      <p class="mxnote">Frotte le disque en avant / en arrière. Garde le doigt sur ✂️ COUPE pour couper le son, lâche pour l'envoyer.</p>
-      <div class="fxrow"><span class="fxlab">Longueur</span><div class="notch">${[1, 2].map(n => `<button data-sdb="${n}" aria-pressed="${bars === n}">${n} mesure${n > 1 ? 's' : ''}</button>`).join('')}</div></div>
-    </div>
-    <div class="shfoot"><button class="sbtn" data-sd="loop">${S.rep ? '⏸ Stop' : '▶ Beat en boucle'}</button><button class="sbtn rec" data-sd="go">● REC du scratch</button></div></div>`;
-    hook();
+  const beat = 60 / (S.bpm || 90), bar = beat * 4, sr = t.buffer.sampleRate;
+  /* le bout à scratcher (timeline) : la sélection, sinon une mesure à partir d'ici */
+  let A = mxSel ? mxSel.a : Math.max(t.offset, S.pos), B = mxSel ? mxSel.b : A + bar;
+  A = Math.max(A, t.offset); B = Math.min(B, t.offset + t.buffer.duration);
+  if(B - A < 0.1){ toast('Sélectionne le bout à scratcher sur l\'onde.'); return; }
+  const base = t.buffer, chs = scrChans(base);
+  /* le disque : la prise autour du bout (2,5 s de marge), envoyée au moteur temps réel */
+  const w0 = Math.max(0, Math.floor((A - t.offset - 2.5) * sr)), w1 = Math.min(base.length, Math.ceil((B - t.offset + 2.5) * sr));
+  const node = new AudioWorkletNode(ctx, 'sx-scr', { numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2] });
+  const hp = biq(ctx, 'highpass', 140, 0.7), lp = biq(ctx, 'lowpass', 9000, 0.7);
+  node.connect(hp); hp.connect(lp); lp.connect(t.chain.input);
+  node.port.postMessage({ buf: scrMip(scrMono(chs, w0, w1 - w0), sr), s: 0 });
+  let held = false, cut = false, pos = 0, ang = null, rot = 0, deckTake = null, rec = null, raf = 0, lastT = performance.now();
+  /* pas de recalage du geste : le beat et ton scratch sortent du casque avec le même retard, donc on garde exactement ce que tu as entendu */
+  const tlNow = () => now() - t.offset; /* position de la prise (s) qui joue en ce moment */
+  const dry = v => { try{ if(t.slipG) t.slipG.gain.setTargetAtTime(v, ctx.currentTime, 0.003); }catch(e){} };
+  const post = snap => {
+    const p = Math.max(0, pos * sr - w0), f = cut ? 0 : held ? 1 : 0;
+    node.port.postMessage(snap ? { s: p, p, f } : { p, f });
+    dry(held || cut ? 0 : 1);
+    if(rec) rec.ev.push({ t: Math.max(0, ctx.currentTime - rec.c0), h: held, p: pos, f: cut ? 0 : 1 });
   };
-  /* le son en direct */
-  const node = new AudioWorkletNode(ctx, 'sx-scr', { numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2] }), g = ctx.createGain(); g.gain.value = 0.9;
-  node.connect(g); g.connect(bus.masterIn);
-  const send = () => { if(sm) node.port.postMessage({ buf: sm.data, p: 0 }); };
-  send();
-  let pos = 0, fad = 1, rec = null, ang = null;
-  /* tu réagis à ce que tu entends, qui arrive avec le retard du casque : on remet ton geste à l'heure */
-  let outLat = 0; try{ outLat = latFor(routeKey(), devKey()) / 1000; }catch(e){ outLat = (ctx.outputLatency || 0) + (ctx.baseLatency || 0); }
-  const post = () => { node.port.postMessage({ p: pos * (sm ? sm.sr : 48000), f: fad }); if(rec) rec.ev.push({ t: Math.max(0, ctx.currentTime - rec.c0 - outLat), p: pos, f: fad }); };
-  function hook(){
-    const v = w.querySelector('#scrV'), cut = w.querySelector('#scrCut');
-    const angOf = e => { const r = v.getBoundingClientRect(); return Math.atan2(e.clientY - (r.top + r.height / 2), e.clientX - (r.left + r.width / 2)); };
-    v.addEventListener('pointerdown', e => { e.preventDefault(); v.setPointerCapture(e.pointerId); ang = angOf(e); });
-    v.addEventListener('pointermove', e => {
-      if(ang == null || !sm) return;
-      const a = angOf(e); let d = a - ang; if(d > Math.PI) d -= 2 * Math.PI; if(d < -Math.PI) d += 2 * Math.PI; ang = a;
-      /* un tour de disque = 1,8 s de son (33 tours) */
-      pos = Math.max(0, Math.min(sm.data.length / sm.sr, pos + d / (2 * Math.PI) * 1.8));
-      v.style.transform = 'rotate(' + (pos / 1.8 * 360) + 'deg)'; post();
-    });
-    ['pointerup', 'pointercancel'].forEach(t => v.addEventListener(t, () => { ang = null; }));
-    cut.addEventListener('pointerdown', e => { e.preventDefault(); fad = 0; cut.classList.add('on'); post(); });
-    ['pointerup', 'pointercancel', 'pointerleave'].forEach(t => cut.addEventListener(t, () => { if(fad === 0){ fad = 1; cut.classList.remove('on'); post(); } }));
-  }
-  const close = () => { try{ node.disconnect(); g.disconnect(); }catch(e){} if(S.rep) setRep(null); if(S.playing) pause(); w.remove(); };
+  const w = document.createElement('div'); w.className = 'fxsh scrdeck'; w.setAttribute('role', 'dialog'); w.setAttribute('aria-label', 'Scratch au doigt');
+  const logo = document.querySelector('link[rel="apple-touch-icon"]')?.href || '';
+  w.innerHTML = `<div class="fxshp"><div class="shhead"><h3>💿 Scratch au doigt</h3><span>« ${esc(t.name)} » ${fmt(A)} → ${fmt(B)}</span><button class="shx" data-sd="close" aria-label="Fermer">✕</button></div>
+    <div class="shbody">
+      <div class="deck"><div class="tt" id="scrV"><div class="vinyl"><div class="vlab"${logo ? ` style="background-image:url('${logo}')"` : ''}></div></div><b class="spin" aria-hidden="true"></b></div><button class="cutb" id="scrCut">✂️<br>COUPE</button></div>
+      <p class="mxnote">Ta prise est le disque. Lance la lecture : pose le doigt dessus pour la tenir et la frotter, lâche, elle repart en rythme. Garde ✂️ COUPE pour couper le son.</p>
+    </div>
+    <div class="shfoot"><button class="sbtn" data-sd="loop">▶ Écouter en boucle</button><button class="sbtn rec" data-sd="go">● REC du scratch</button></div></div>`;
+  const v = w.querySelector('#scrV'), disc = v.querySelector('.vinyl'), cb = w.querySelector('#scrCut'), lb = w.querySelector('[data-sd="loop"]');
+  /* le disque tourne à 33 tours quand ça joue, suit ton doigt quand tu le tiens (1 tour = 1,8 s de son) */
+  const spin = () => {
+    const tn = performance.now(), dt = (tn - lastT) / 1000; lastT = tn;
+    if(!held && S.playing) rot += dt * 200;
+    disc.style.transform = 'rotate(' + (rot % 360) + 'deg)';
+    lb.textContent = S.rep ? '⏸ Stop' : '▶ Écouter en boucle';
+    raf = requestAnimationFrame(spin);
+  };
+  raf = requestAnimationFrame(spin);
+  const angOf = e => { const r = v.getBoundingClientRect(); return Math.atan2(e.clientY - (r.top + r.height / 2), e.clientX - (r.left + r.width / 2)); };
+  v.addEventListener('pointerdown', e => {
+    e.preventDefault(); v.setPointerCapture(e.pointerId); ang = angOf(e);
+    held = true; pos = Math.max(w0 / sr, Math.min(w1 / sr, S.playing ? tlNow() : (mxSel ? A - t.offset : tlNow()))); post(true);
+  });
+  v.addEventListener('pointermove', e => {
+    if(ang == null) return;
+    const a = angOf(e); let d = a - ang; if(d > Math.PI) d -= 2 * Math.PI; if(d < -Math.PI) d += 2 * Math.PI; ang = a;
+    pos = Math.max(w0 / sr, Math.min(w1 / sr, pos + d / (2 * Math.PI) * 1.8)); rot += d * 180 / Math.PI; post();
+  });
+  ['pointerup', 'pointercancel'].forEach(k => v.addEventListener(k, () => { if(ang == null) return; ang = null; held = false; post(); }));
+  cb.addEventListener('pointerdown', e => { e.preventDefault(); cut = true; cb.classList.add('on'); post(); });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(k => cb.addEventListener(k, () => { if(cut){ cut = false; cb.classList.remove('on'); post(); } }));
+  const close = () => { cancelAnimationFrame(raf); held = cut = false; dry(1); try{ node.disconnect(); hp.disconnect(); lp.disconnect(); }catch(e){} if(S.rep) setRep(null); if(S.playing) pause(); w.remove(); };
+  const start = async from => { S.pos = Math.max(0, from); if(!mic) audioSessionPlay(); unlockSpeaker(); await wake(); play(); };
   w.addEventListener('click', async e => {
     const b = e.target.closest('button'); if(!b) return;
     if(b.dataset.sd === 'close'){ close(); return; }
-    if(b.dataset.sdb){ bars = +b.dataset.sdb; draw(); return; }
-    if(b.dataset.sd === 'sel'){ const s2 = scrFromSel(); if(!s2){ toast('Ferme, sélectionne un mot sur l\'onde dans Mix, puis rouvre le scratch.'); return; } sm = s2; pos = 0; send(); draw(); return; }
-    if(b.dataset.sd === 'rec'){ const s2 = await scrRecordSample(); if(s2){ sm = s2; pos = 0; send(); draw(); } return; }
-    if(b.dataset.sd === 'loop'){ if(S.rep){ setRep(null); pause(); } else { setRep({ a: barStart, b: barStart + bars * bar }); S.pos = barStart; if(!mic) audioSessionPlay(); unlockSpeaker(); await wake(); play(); } draw(); return; }
+    if(b.dataset.sd === 'loop'){ if(S.rep){ setRep(null); if(S.playing) pause(); } else setRep({ a: Math.max(0, A - bar), b: B + 0.4 }); return; }
     if(b.dataset.sd === 'go'){
-      if(!sm){ toast('Choisis d\'abord un son à scratcher.'); return; }
+      if(rec) return;
       if(S.rep) setRep(null); if(S.playing) pause();
-      /* une mesure d'élan, puis on enregistre ton geste sur la longueur choisie */
-      S.pos = Math.max(0, barStart - bar); if(!mic) audioSessionPlay(); unlockSpeaker(); await wake(); play();
-      const startAt = playStartCtx + (barStart - playStartPos);
+      /* une mesure d'élan, puis ton geste est enregistré sur le bout choisi */
+      await start(A - bar);
+      const c0 = playStartCtx + (A - playStartPos);
       b.disabled = true; b.textContent = '● 1, 2, 3, 4…';
-      setTimeout(() => { rec = { c0: startAt, ev: [{ t: 0, p: pos, f: fad }] }; b.textContent = '● Scratche !'; }, Math.max(0, (startAt - ctx.currentTime) * 1000));
+      setTimeout(() => { rec = { c0, ev: [{ t: 0, h: held, p: pos, f: cut ? 0 : 1 }] }; b.textContent = '● Scratche !'; }, Math.max(0, (c0 - ctx.currentTime) * 1000));
       setTimeout(() => {
-        const r = rec; rec = null; pause(); b.disabled = false; b.textContent = '● REC du scratch';
-        if(!r || r.ev.length < 3){ toast('Je n\'ai pas vu de geste : frotte le disque pendant que ça enregistre.'); return; }
+        const r = rec; rec = null; pause(); held = false; dry(1); b.disabled = false; b.textContent = '● REC du scratch';
+        if(!r || !r.ev.some(x => x.h || !x.f)){ toast('Je n\'ai pas vu de geste : pose le doigt sur le disque pendant que ça enregistre.'); return; }
         pushUndo('le scratch');
-        const data = scrRenderGesture(r.ev, bars * bar, sm);
-        scrPlace(scrTrack(), data, sm.sr, barStart);
+        const s0 = Math.max(0, Math.floor((A - t.offset) * sr)), n = Math.min(base.length - s0, Math.ceil((B - A) * sr));
+        const { wet, mix } = scrRenderSlip(r.ev, chs, sr, s0, n);
+        /* refaire le scratch remplace le précédent (on repart toujours de ta prise d'avant) */
+        deckTake = scrReplace(t, base, s0, wet, mix, deckTake);
         if(!flowGet().mixed) flowSet('mixed', true);
-        track('scratch-doigt'); jr('a', 'scratch au doigt ' + bars + ' mesure(s), ' + r.ev.length + ' mouvements');
+        track('scratch-doigt'); jr('a', 'scratch au doigt ' + (n / sr).toFixed(2) + ' s, ' + r.ev.length + ' mouvements');
         renderTracks(); renderMix(); scheduleSave();
-        toast('💿 Ton scratch est posé sur la piste Scratch, à ' + fmt(barStart) + '. Refais-le autant que tu veux, ↶ pour annuler.');
-      }, Math.max(0, (startAt - ctx.currentTime + bars * bar) * 1000) + 80);
-      return;
+        toast('💿 Ton scratch est gravé dans ta prise, de ' + fmt(A) + ' à ' + fmt(B) + '. « ▶ Écouter en boucle » pour l\'entendre, refais-le autant que tu veux, ↶ pour annuler.');
+      }, Math.max(0, (c0 - ctx.currentTime + (B - A)) * 1000) + 120);
     }
   });
-  document.body.appendChild(w); draw();
+  document.body.appendChild(w);
 }
 
 /* ---------- Master ---------- */
@@ -8436,7 +8448,7 @@ const HELP = {
     { sel: ['#mxW'], t: '2 · Choisis un bout (si tu veux)', b: 'Glisse le doigt sur l\'onde pour sélectionner un mot ou une phrase. Les bouts déjà réglés à part sont en violet : touche-les pour les reprendre. Zoome avec la réglette ou à deux doigts pour viser au poil. Sans sélection, tu règles toute la piste.' },
     { sel: ['#mxTarget'], t: 'À qui s\'appliquent tes réglages', b: 'Ici c\'est écrit : toute la piste, ou ta sélection. Le ✕ enlève la sélection.' },
     { sel: ['details[data-acc=clean]', '#strip'], t: '🧽 Nettoyage', b: 'En ouvrant Nettoyage, j\'écoute ta piste et je te dis ce que je trouve. Les bruits : souffle de fond, bourdonnement, « P » et « B » qui claquent, « S » qui sifflent, respirations. L\'atmosphère de la prise : pièce qui résonne, son de boîte, voix étouffée, trop fine, qualité téléphone ou manque d\'air (micro qui s\'arrête vers 10 kHz). Coche ce que tu veux, choisis la force, touche « Nettoyer et comparer », puis bascule Avant / Après pendant la lecture. Tu gardes si ça te plaît, ↶ annule. « Nettoyer toutes les voix » fait tout d\'un coup.' },
-    { sel: ['#strip'], t: '3 · Règle', b: 'Sur un bout, « ⚡ Effets express » pose un effet tout prêt en un appui : écho throw, grosse reverb, voix lointaine, coupure… et sur l\'instru, couper le beat sous ta punchline. Sur un bout, « 💿 Scratch » le scratche en rythme sur une mesure (Baby, Chirp, Transformer, Flare, en 1/4, 1/8 ou 1/16) : il est posé sur la piste « Scratch ». « 🖐️ Scratcher au doigt » ouvre une platine : frotte le disque, garde ✂️ COUPE pour couper, et « ● REC du scratch » enregistre ton geste sur 1 ou 2 mesures (après une mesure d\'élan). Sinon ouvre un titre (Volume, Effets, Auto-tune, Égaliseur…), règle, referme. Dans Auto-tune, « 🔄 Reprendre la note de ma voix » réécoute ta prise et recale la tonalité ; elle est reprise toute seule à chaque nouvelle prise. Chaque effet a des réglages simples (Pièce, Studio, Salle…) ; touche « ⚙️ Réglages » à côté (ou deux appuis sur l\'effet) pour tous ses réglages : durée et pré-délai de la reverb, rythme et répétitions de l\'écho, voix et désaccord du doubler, type et mélange de la chaleur, vitesse de l\'auto-tune… L\'égaliseur a son bouton « ⚙️ Réglages poussés ». Sur une sélection : volume, reverb, écho, doubler et égaliseur, rien que pour ce bout. « ▶ Écouter le bout » pour entendre, « ↺ Remettre » pour annuler ce bout.' },
+    { sel: ['#strip'], t: '3 · Règle', b: 'Sur un bout, « ⚡ Effets express » pose un effet tout prêt en un appui : écho throw, grosse reverb, voix lointaine, coupure… et sur l\'instru, couper le beat sous ta punchline. Sur un bout, « 💿 Scratch » scratche ta prise elle-même, sur place (Baby, Chirp, Transformer, Flare, en 1/4, 1/8 ou 1/16) : le reste ne bouge pas. « 🖐️ Scratcher au doigt » ouvre une platine où ta prise est le disque : elle tourne avec le beat, pose le doigt pour la tenir et la frotter, lâche, elle repart en rythme ; garde ✂️ COUPE pour couper, et « ● REC du scratch » grave ton geste dans la prise sur le bout choisi (après une mesure d\'élan). Sinon ouvre un titre (Volume, Effets, Auto-tune, Égaliseur…), règle, referme. Dans Auto-tune, « 🔄 Reprendre la note de ma voix » réécoute ta prise et recale la tonalité ; elle est reprise toute seule à chaque nouvelle prise. Chaque effet a des réglages simples (Pièce, Studio, Salle…) ; touche « ⚙️ Réglages » à côté (ou deux appuis sur l\'effet) pour tous ses réglages : durée et pré-délai de la reverb, rythme et répétitions de l\'écho, voix et désaccord du doubler, type et mélange de la chaleur, vitesse de l\'auto-tune… L\'égaliseur a son bouton « ⚙️ Réglages poussés ». Sur une sélection : volume, reverb, écho, doubler et égaliseur, rien que pour ce bout. « ▶ Écouter le bout » pour entendre, « ↺ Remettre » pour annuler ce bout.' },
     { sel: ['#bLevel'], t: 'Rééquilibrer', b: 'Remet tous les niveaux d\'aplomb d\'un coup : l\'instru, le lead, les backs et l\'ambiance à leur juste place.' }
   ],
   vMaster: [
