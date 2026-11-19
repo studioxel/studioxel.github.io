@@ -750,7 +750,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.9.11 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.9.13 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookie, sans garder ton adresse IP) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze. Coupées, elles arrêtent aussi les rapports techniques (erreurs et mesures du son, jamais ta voix).</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false">📊 Statistiques anonymes : activées</button>
@@ -1209,8 +1209,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 220; // numéro interne (jamais affiché)
-const APP_PUB = '2.9.11';
+const APP_VER = 222; // numéro interne (jamais affiché)
+const APP_PUB = '2.9.13';
 /* le numéro affiché dans Réglages vient toujours d'ici (il était resté écrit en dur sur 2.8.4) */
 try{ document.addEventListener('DOMContentLoaded', () => { const v = document.getElementById('ver'); if(v) v.textContent = 'Version ' + APP_PUB + ' · Bêta'; }); const v0 = document.getElementById('ver'); if(v0) v0.textContent = 'Version ' + APP_PUB + ' · Bêta'; }catch(e){}
 /* Statistiques anonymes (GoatCounter, sans cookies) */
@@ -3876,7 +3876,9 @@ function renderMix(){
   try{ mxZoomUI(); mxPlayerUI(); }catch(e){}
   if(mxSheet === 'eq') setTimeout(drawEQ, 0);
   /* le Nettoyage écoute la piste tout seul (ouvert, ou en silence quand rien ne joue) : le titre dit tout de suite s'il y a des soucis */
-  if(!mxSel && clVocal(cur) && (mxSheet === 'clean' || (!S.playing && !S.recording))) setTimeout(() => { if(mxSheet === 'clean' || (!S.playing && !S.recording)) clEnsure(cur); }, mxSheet === 'clean' ? 30 : 600);
+  /* l'écoute automatique (en fond) seulement sur les prises courtes : une longue piste s'écoute quand tu ouvres Nettoyage, sinon elle ralentissait tout le téléphone */
+  const clShort = () => (clRawTake(cur)?.buffer?.duration || 0) <= 90;
+  if(!mxSel && clVocal(cur) && (mxSheet === 'clean' || (!S.playing && !S.recording && clShort()))) setTimeout(() => { if(mxSheet === 'clean' || (!S.playing && !S.recording && clShort())) clEnsure(cur); }, mxSheet === 'clean' ? 30 : 1500);
 }
 /* les titres ouverts restent ouverts */
 document.addEventListener('toggle', e => { const d = e.target; if(!d.classList || !d.classList.contains('mxacc')) return; const k = d.dataset.acc; if(d.open) mxOpen.add(k); else mxOpen.delete(k); store.set('mxOpen', [...mxOpen]); if(k === 'clean' && d.open){ const t = selTrack(); if(t) clEnsure(t); } if(k === 'eq' && d.open) setTimeout(drawEQ, 0); }, true);
@@ -5137,7 +5139,9 @@ async function applyAutotune(t){
 
 /* ---------- Nettoyage de prise : analyse + traitement (souffle, bourdonnement, P/B, S, respirations, pièce, boîte, étouffé, fin, téléphone) ---------- */
 /* Tout tourne sur le téléphone, en JS pur : une passe d'analyse (STFT) puis une passe de traitement. */
-const CL_TICK = () => new Promise(r => setTimeout(r, 0));
+/* l'écoute automatique d'une piste (en fond) se met en pause pendant la lecture : sur une longue piste, elle retardait le départ du son */
+let clBg = false;
+const CL_TICK = () => new Promise(r => { const go = () => (clBg && (S.playing || S.recording)) ? setTimeout(go, 250) : setTimeout(r, 0); go(); });
 function clFFT(N){
   const lev = Math.log2(N) | 0, rev = new Uint32Array(N), cos = new Float64Array(N / 2), sin = new Float64Array(N / 2);
   for(let i = 0; i < N; i++){ let r = 0; for(let b = 0; b < lev; b++) r |= ((i >> b) & 1) << (lev - 1 - b); rev[i] = r; }
@@ -5223,7 +5227,7 @@ async function clAnalyse(chs, sr, onProg){
     }
     const cnt = b1 - b0 + 1; flat[f] = Math.exp(lg / cnt) / (ar / cnt + 1e-20);
     if(isN) nN++; if(isV) nV++;
-    if(f % 400 === 0){ onProg && onProg(f / nF * 0.9); await CL_TICK(); }
+    if(f % 100 === 0){ onProg && onProg(f / nF * 0.9); await CL_TICK(); }
   }
   for(let b = 0; b < K; b++){ noiseSum[b] /= Math.max(1, nN); ltas[b] /= Math.max(1, nV); }
   const R = { sr, n, nF, hop, N, noise: noiseSum, eDb, found: {}, fb, flat, vc };
@@ -5708,10 +5712,11 @@ async function clEnsure(t){
   const raw = clRawTake(t); if(!raw?.buffer || clCache.has(raw.buffer)) return;
   clBusy = true;
   try{
+    clBg = mxSheet !== 'clean';
     const Rm = await clAnalyseTrack(t, p => { const el = $('#clProg'); if(el) el.textContent = '🔍 J\'écoute ta piste… ' + Math.round(p * 100) + ' %'; });
     jrMeasure(t, Rm);
   }catch(e){ clCache.set(raw.buffer, { found: {}, empty: true }); }
-  clBusy = false;
+  clBusy = false; clBg = false;
   if(selTrack() === t && !$('#vMix').hidden) renderMix();
 }
 async function clBuild(t, on, force, onProg){
@@ -6717,7 +6722,7 @@ function packBuf(b){
 }
 function unpackBuf(o){
   const b = ctx.createBuffer(o.ch.length, o.ch[0].length, o.sr);
-  for(let c = 0; c < o.ch.length; c++){ const d = b.getChannelData(c), s2 = o.ch[c]; for(let i = 0; i < d.length; i++) d[i] = s2[i] / 32767; }
+  const k = 1 / 32767; for(let c = 0; c < o.ch.length; c++){ const d = b.getChannelData(c), s2 = o.ch[c]; for(let i = 0, n = d.length; i < n; i++) d[i] = s2[i] * k; }
   return b;
 }
 function setSessState(t){ const el = $('#sessState'); if(el) el.textContent = t; }
@@ -6745,6 +6750,8 @@ async function saveSession(){
   if(!sessReady) return;
   if(saving){ saveAgain = true; return; }
   if(S.recording || busy){ scheduleSave(); return; }
+  /* pendant la lecture, la sauvegarde attend la pause (elle convertit tout le son : sur de longues pistes, ça faisait hoqueter le départ) */
+  if(S.playing && !document.hidden){ clearTimeout(saveTimer); saveTimer = setTimeout(saveSession, 3000); return; }
   const hasAudio = S.tracks.some(t => t.takes.length);
   if(!hasAudio && !sess.id) return;
   saving = true; setSessState('Sauvegarde…');
@@ -6759,7 +6766,7 @@ async function saveSession(){
     }));
     for(const t of S.tracks) for(const k of [...t.takes, ...(t.stuts || []).filter(r => r.orig).map(r => ({ buffer: r.orig.buf }))]){
       const a = bufAid(k.buffer);
-      if(!savedAids.has(a)){ await dbDo('audio', 'readwrite', st => st.put(packBuf(k.buffer), a)); savedAids.add(a); }
+      if(!savedAids.has(a)){ await dbDo('audio', 'readwrite', st => st.put(packBuf(k.buffer), a)); savedAids.add(a); rsDurSet(a, k.buffer.duration, k.buffer.numberOfChannels); }
     }
     const rec = { id: sess.id, name: sess.name, link: sess.link || '', created: sess.created || Date.now(), updated: Date.now(),
       bpm: S.bpm, instruKey: S.instruKey || null, markers: S.markers, loopBars: S.loop.bars, dur: trackEnd(),
@@ -8241,6 +8248,9 @@ async function stutterSel(t, N){
 /* ---------- 🛟 Retrouver une ancienne prise ----------
    Quand une prise est modifiée (bégaiement, nettoyage, auto-tune…), son ancien son reste rangé dans le téléphone.
    Ici on liste ces sons qui ne sont plus reliés à aucune séance, du plus récent au plus ancien, pour les réécouter et les remettre. */
+const RS_DUR = 'sx.rsDur';
+function rsDurGet(){ try{ return JSON.parse(localStorage.getItem(RS_DUR) || '{}') || {}; }catch(e){ return {}; } }
+function rsDurSet(aid, dur, nc){ try{ const m = rsDurGet(); m[aid] = [Math.round(dur * 100) / 100, nc]; const ks = Object.keys(m); if(ks.length > 400) ks.slice(0, ks.length - 400).forEach(k => delete m[k]); localStorage.setItem(RS_DUR, JSON.stringify(m)); }catch(e){} }
 const aidTime = a => { const v = parseInt(String(a).slice(1, -5), 36); return isFinite(v) && v > 1.5e12 && v < 4e12 ? v : 0; };
 async function rescueList(){
   const all = await dbDo('sessions', 'readonly', st => st.getAll());
@@ -8249,12 +8259,32 @@ async function rescueList(){
   S.tracks.forEach(t => { t.takes.forEach(k => { const a = aidOf.get(k.buffer); if(a) used.add(a); }); });
   const keys = await dbDo('audio', 'readonly', st => st.getAllKeys());
   const orph = keys.filter(k => !used.has(k)).map(k => ({ aid: k, at: aidTime(k) })).sort((x, y) => y.at - x.at).slice(0, 40);
-  /* durée de chacun (lu un par un, pour ne pas charger toute la mémoire d'un coup) */
-  for(const o of orph){ try{ const v = await dbDo('audio', 'readonly', st => st.get(o.aid)); o.dur = v && v.ch && v.ch[0] ? v.ch[0].length / v.sr : 0; o.nc = v?.ch?.length || 0; }catch(e){ o.dur = 0; } }
-  return orph.filter(o => o.dur >= 0.5);
+  /* durée de chacun : notée à part quand le son est rangé ; sinon elle est lue après coup, la liste s'ouvre tout de suite */
+  const D = rsDurGet(); orph.forEach(o => { const d = D[o.aid]; if(d){ o.dur = d[0]; o.nc = d[1]; } else o.dur = null; });
+  return orph.filter(o => o.dur === null || o.dur >= 0.5);
 }
+let rsLoading = 0;
+const rsDurTxt = d => (Math.round(d * 10) / 10).toString().replace('.', ',') + ' s';
+async function rsFillDur(L, w){
+  for(let i = 0; i < L.length; i++){
+    const o = L[i]; if(o.dur !== null) continue;
+    while(rsLoading) await new Promise(r => setTimeout(r, 150));
+    if(!w.isConnected) return;
+    if(o.dur === null){ try{ const v = await dbDo('audio', 'readonly', st => st.get(o.aid)); o.dur = v && v.ch && v.ch[0] ? v.ch[0].length / v.sr : 0; o.nc = v?.ch?.length || 0; if(o.dur) rsDurSet(o.aid, o.dur, o.nc); }catch(e){ o.dur = 0; } }
+    const row = w.querySelector(`[data-ri="${i}"]`); if(!row) continue;
+    if(o.dur < 0.5){ row.remove(); continue; }
+    row.querySelector('b').textContent = rsDurTxt(o.dur); if(o.nc > 1) row.querySelector('small').textContent += ' · stéréo';
+    await new Promise(r => setTimeout(r, 0));
+  }
+}
+/* l'écoute part sur les premières secondes du son ; la suite est préparée pendant qu'il joue et s'enchaîne sans coupure */
+const RS_HEAD = 6, rsBufs = new Map();
+function rsHeadBuf(v){ const n = Math.min(v.ch[0].length, Math.round(RS_HEAD * v.sr)), b = ctx.createBuffer(v.ch.length, n, v.sr), k = 1 / 32767; for(let c = 0; c < v.ch.length; c++){ const d = b.getChannelData(c), s2 = v.ch[c]; for(let i = 0; i < n; i++) d[i] = s2[i] * k; } return b; }
+async function rsFullBuf(v){ const n = v.ch[0].length, b = ctx.createBuffer(v.ch.length, n, v.sr), k = 1 / 32767, step = v.sr * 8;
+  for(let c = 0; c < v.ch.length; c++){ const d = b.getChannelData(c), s2 = v.ch[c]; for(let i0 = 0; i0 < n; i0 += step){ const e = Math.min(n, i0 + step); for(let i = i0; i < e; i++) d[i] = s2[i] * k; await new Promise(r => setTimeout(r, 0)); } }
+  return b; }
 let rescueSrc = null;
-function rescueStop(){ try{ rescueSrc && rescueSrc.stop(); }catch(e){} rescueSrc = null; document.querySelectorAll('.rescue [data-rp]').forEach(b => b.textContent = '▶'); }
+function rescueStop(){ try{ rescueSrc && rescueSrc._head && rescueSrc._head.stop(); }catch(e){} try{ rescueSrc && rescueSrc.stop && rescueSrc.stop(); }catch(e){} rescueSrc = null; document.querySelectorAll('.rescue [data-rp]').forEach(b => b.textContent = '▶'); }
 async function openRescue(){
   if(busy) return;
   setBusy(true, 'Je cherche tes anciennes prises…');
@@ -8268,20 +8298,35 @@ async function openRescue(){
   w.innerHTML = `<div class="wpanel">
     <h2>🛟 Retrouver une ancienne prise</h2>
     <p class="note">${L.length ? 'Les sons gardés dans ton téléphone qui ne sont plus dans une séance, du plus récent au plus ancien. Écoute, et remets celui qui est ta prise.' : 'Aucun ancien son trouvé dans ce téléphone : ils ont été effacés (une séance supprimée efface les sons qui ne servent plus).'}</p>
-    <div class="rslist">${L.map((o, i) => `<div class="rsit"><button class="sbtn" data-rp="${i}" aria-label="Écouter">▶</button><span><b>${(Math.round(o.dur * 10) / 10).toString().replace('.', ',')} s</b><small>${when(o.at)}${o.nc > 1 ? ' · stéréo' : ''}</small></span>${tgt ? `<button class="sbtn primary" data-rr="${i}">Remettre sur « ${esc(tgt.name)} »</button>` : ''}</div>`).join('')}</div>
+    <div class="rslist">${L.map((o, i) => `<div class="rsit" data-ri="${i}"><button class="sbtn" data-rp="${i}" aria-label="Écouter">▶</button><span><b>${o.dur === null ? '…' : rsDurTxt(o.dur)}</b><small>${when(o.at)}${o.nc > 1 ? ' · stéréo' : ''}</small></span>${tgt ? `<button class="sbtn primary" data-rr="${i}">Remettre sur « ${esc(tgt.name)} »</button>` : ''}</div>`).join('')}</div>
     <button class="wlink" data-rc>Fermer</button>
   </div>`;
   document.body.appendChild(w);
-  const load = async o => { const v = await dbDo('audio', 'readonly', st => st.get(o.aid)); if(!v) throw new Error('son introuvable'); const b = unpackBuf(v); aidOf.set(b, o.aid); savedAids.add(o.aid); return b; };
+  rsFillDur(L, w);
+  const raw = async o => { rsLoading++; try{ const v = await dbDo('audio', 'readonly', st => st.get(o.aid)); if(!v) throw new Error('son introuvable'); if(o.dur === null && v.ch?.[0]){ o.dur = v.ch[0].length / v.sr; o.nc = v.ch.length; rsDurSet(o.aid, o.dur, o.nc); } return v; } finally{ rsLoading--; } };
+  const keep = (o, b) => { rsBufs.clear(); rsBufs.set(o.aid, b); aidOf.set(b, o.aid); savedAids.add(o.aid); return b; };
+  const load = async o => rsBufs.get(o.aid) || keep(o, await rsFullBuf(await raw(o)));
   w.addEventListener('click', async e => {
     if(e.target === w || e.target.closest('[data-rc]')){ rescueStop(); w.remove(); return; }
     const p = e.target.closest('[data-rp]'), r = e.target.closest('[data-rr]');
     if(p){ const on = p.textContent === '■'; rescueStop(); if(on) return;
       /* iPhone : le son doit être réveillé dans le geste même, avant d'aller chercher la prise en mémoire */
-      try{ if(S.playing) pause(); if(!mic) audioSessionPlay(); unlockSpeaker(); const wk = wake(); p.textContent = '…'; const b = await load(L[+p.dataset.rp]); await wk; if(ctx.state !== 'running') await ctx.resume();
-        const s = ctx.createBufferSource(), g = ctx.createGain(); g.gain.value = 0.9; s.buffer = b; s.connect(g); g.connect(ctx.destination); s.start(ctx.currentTime + 0.05); rescueSrc = s; p.textContent = '■'; s.onended = () => { if(rescueSrc === s) rescueStop(); };
-        jr('i', 'retrouver : écoute ' + Math.round(b.duration) + ' s, son ' + ctx.state); }
-      catch(err){ toast('Lecture impossible : ' + err.message); } return; }
+      try{ if(S.playing) pause(); if(!mic) audioSessionPlay(); unlockSpeaker(); const wk = wake(); p.textContent = '…';
+        const o = L[+p.dataset.rp], tag = {}; rescueSrc = tag;
+        const g = ctx.createGain(); g.gain.value = 0.9; g.connect(ctx.destination);
+        const play = (b, at, off) => { const s = ctx.createBufferSource(); s.buffer = b; s.connect(g); s.start(at, off); return s; };
+        const done = rsBufs.get(o.aid), v = done ? null : await raw(o); await wk; if(ctx.state !== 'running') await ctx.resume();
+        if(rescueSrc !== tag) return;
+        const first = done || rsHeadBuf(v), t0 = ctx.currentTime + 0.05, s1 = play(first, t0, 0);
+        rescueSrc = s1; p.textContent = '■'; s1.onended = () => { if(rescueSrc === s1) rescueStop(); };
+        jr('i', 'retrouver : écoute ' + Math.round(o.dur || 0) + ' s, son ' + ctx.state);
+        if(done || v.ch[0].length <= first.length) return;
+        const full = keep(o, await rsFullBuf(v)); if(rescueSrc !== s1) return;
+        const at = t0 + RS_HEAD, late = ctx.currentTime > at - 0.02;
+        const s2 = late ? play(full, 0, ctx.currentTime - t0) : play(full, at, RS_HEAD);
+        if(late) try{ s1.stop(); }catch(e){}
+        s1.onended = null; s2._head = s1; rescueSrc = s2; s2.onended = () => { if(rescueSrc === s2) rescueStop(); }; }
+      catch(err){ rescueStop(); toast('Lecture impossible : ' + err.message); } return; }
     if(r && tgt){
       rescueStop();
       if(isLocked(tgt)){ lockToast(tgt); return; }
@@ -9140,8 +9185,8 @@ const HELP = {
     { sel: ['#mixChips'], t: '1 · Choisis ta piste', b: 'Touche une piste : tout ce qui est en dessous la concerne.' },
     { sel: ['#mxW'], t: '2 · Choisis un bout (si tu veux)', b: 'Touche ta partie enregistrée : elle est choisie en entier, d\'un coup, et tu l\'ajustes comme tu veux avec les poignées rondes ◀ ▶ (pour ne garder qu\'un mot ou une phrase). Glisse sur l\'onde pour avancer ou reculer ; deux doigts pour zoomer ou dézoomer, en douceur. Appui long puis glisse : un bout au doigt. Les bouts déjà réglés à part sont en violet : touche-les pour les reprendre. Sans sélection, tu règles toute la piste. Sur l\'instru, tu as aussi Sans voix (enlever la voix d\'un son du commerce), Reverb, Écho, et sur un bout Étouffé ou Coupure.' },
     { sel: ['#mxTarget'], t: 'À qui s\'appliquent tes réglages', b: 'Ici c\'est écrit : toute la piste, ou ta sélection. Le ✕ enlève la sélection.' },
-    { sel: ['[data-mt=clean]', '#strip'], t: '🧽 Nettoyage', b: 'En touchant la tuile Nettoyage, j\'écoute ta piste et je te dis ce que je trouve. Les bruits : souffle de fond, bourdonnement, « P » et « B » qui claquent, « S » qui sifflent, respirations. L\'atmosphère de la prise : pièce qui résonne, son de boîte, voix étouffée, trop fine, qualité téléphone ou manque d\'air (micro qui s\'arrête vers 10 kHz). Le souffle et le bruit de fond sont retirés par une IA (DeepFilterNet, logiciel libre) qui tourne sur ton téléphone : rien n\'est envoyé. La première fois, elle se télécharge (18 Mo, une seule fois). Coche ce que tu veux, choisis la force, touche « Nettoyer et comparer », puis bascule Avant / Après pendant la lecture. Tu gardes si ça te plaît, ↶ annule. « Nettoyer toutes les voix » fait tout d\'un coup.' },
-    { sel: ['#strip'], t: '3 · Règle', b: 'Tous les effets sont ici, chacun dans sa tuile qui montre son état d\'un coup d\'œil : Nettoyage, Volume, Égaliseur, Compression, Reverb, Écho, Doublage, Auto-tune, Harmonies, Saturation, Radio. Un appui sur la tuile l\'allume ou l\'éteint ; ⚙️ ouvre tous ses réglages dans un panneau qui monte d\'en bas (l\'onde reste visible, la musique continue) ; « ✓ OK » le referme. L\'onglet Pistes, lui, sert juste à enregistrer. Auto-tune : en haut, l\'effet de style du rap d\'aujourd\'hui (🤖 Robot, la note collée net ; 🛸 Planant, avec les petits sauts de note ; 💎 Cristal, voix plus claire ; 🌑 Grave, voix plus sombre ; 🎹 Vocodeur, un synthé qui chante tes mots façon Daft Punk, avec ta voix auto-tunée Robot dessous en Léger et Moyen (synthé seul en À fond), d\'après le vocodeur libre de Chris Wilson), avec sa dose (Léger, Moyen, À fond) et les Harmonies, qui marchent aussi sans auto-tune (ta voix reste alors naturelle, seules les voix ajoutées sont calées sur la gamme) : Sans, Tierce : une 2e voix juste au-dessus ; Accord : deux voix en plus, à gauche et à droite ; Octave grave : ta voix doublée une octave plus bas) ; en dessous, la simple correction (Naturel, Marqué), qui garde le timbre de ta voix (moteur Signalsmith Stretch, logiciel libre). Avec 🎧 Retour, tu t\'entends auto-tuné pendant que tu kickes (le Vocodeur et les Harmonies s\'ajoutent à la fin de la prise). Dans Auto-tune, « 🔄 Reprendre la note de ma voix » réécoute ta prise et recale la tonalité ; elle est reprise toute seule à chaque nouvelle prise. La reverb et l\'écho ont des réglages simples (Pièce, Studio, Salle…) ; Studio est une vraie plaque de studio (algorithme de Dattorro, logiciel libre) ; dans son panneau, « ⚙️ Réglages » (ou deux appuis sur l\'effet) donne tous ses réglages : durée et pré-délai de la reverb, rythme et répétitions de l\'écho, vitesse et tonalité de l\'auto-tune… L\'égaliseur a son bouton « ⚙️ Réglages poussés ». La tuile 🔁 Bégaiement est toujours là : touchée sans sélection, elle choisit ta partie enregistrée et tu cales les poignées sur le mot. Sur une sélection, les tuiles passent en couleur « sélection » : volume, reverb, écho et égaliseur, rien que pour ce bout ; et 🔁 Bégaiement (2, 4 ou 8 fois) : le début du mot se répète en rythme, « ma-ma-ma-mais ». « ▶ Écouter le bout » pour entendre, « ↺ Remettre » pour annuler ce bout. Une prise abîmée ? « 🛟 Retrouver une ancienne prise » (sous les tuiles, ou dans Partager) liste les anciens sons gardés dans ton téléphone : écoute, et remets le bon.' },
+    { sel: ['[data-mt=clean]', '#strip'], t: '🧽 Nettoyage', b: 'En touchant la tuile Nettoyage, j\'écoute ta piste et je te dis ce que je trouve. Les bruits : souffle de fond, bourdonnement, « P » et « B » qui claquent, « S » qui sifflent, respirations. L\'atmosphère de la prise : pièce qui résonne, son de boîte, voix étouffée, trop fine, qualité téléphone ou manque d\'air (micro qui s\'arrête vers 10 kHz). Le souffle et le bruit de fond sont retirés par une IA (DeepFilterNet, logiciel libre) qui tourne sur ton téléphone : rien n\'est envoyé. La première fois, elle se télécharge (18 Mo, une seule fois). Coche ce que tu veux, choisis la force, touche « Nettoyer et comparer », puis bascule Avant / Après pendant la lecture. Tu gardes si ça te plaît, ↶ annule. « Nettoyer toutes les voix » fait tout d\'un coup. Sur une prise longue (plus d\'une minute et demie), j\'écoute seulement quand tu ouvres Nettoyage, et jamais pendant la lecture : ta musique part tout de suite.' },
+    { sel: ['#strip'], t: '3 · Règle', b: 'Tous les effets sont ici, chacun dans sa tuile qui montre son état d\'un coup d\'œil : Nettoyage, Volume, Égaliseur, Compression, Reverb, Écho, Doublage, Auto-tune, Harmonies, Saturation, Radio. Un appui sur la tuile l\'allume ou l\'éteint ; ⚙️ ouvre tous ses réglages dans un panneau qui monte d\'en bas (l\'onde reste visible, la musique continue) ; « ✓ OK » le referme. L\'onglet Pistes, lui, sert juste à enregistrer. Auto-tune : en haut, l\'effet de style du rap d\'aujourd\'hui (🤖 Robot, la note collée net ; 🛸 Planant, avec les petits sauts de note ; 💎 Cristal, voix plus claire ; 🌑 Grave, voix plus sombre ; 🎹 Vocodeur, un synthé qui chante tes mots façon Daft Punk, avec ta voix auto-tunée Robot dessous en Léger et Moyen (synthé seul en À fond), d\'après le vocodeur libre de Chris Wilson), avec sa dose (Léger, Moyen, À fond) et les Harmonies, qui marchent aussi sans auto-tune (ta voix reste alors naturelle, seules les voix ajoutées sont calées sur la gamme) : Sans, Tierce : une 2e voix juste au-dessus ; Accord : deux voix en plus, à gauche et à droite ; Octave grave : ta voix doublée une octave plus bas) ; en dessous, la simple correction (Naturel, Marqué), qui garde le timbre de ta voix (moteur Signalsmith Stretch, logiciel libre). Avec 🎧 Retour, tu t\'entends auto-tuné pendant que tu kickes (le Vocodeur et les Harmonies s\'ajoutent à la fin de la prise). Dans Auto-tune, « 🔄 Reprendre la note de ma voix » réécoute ta prise et recale la tonalité ; elle est reprise toute seule à chaque nouvelle prise. La reverb et l\'écho ont des réglages simples (Pièce, Studio, Salle…) ; Studio est une vraie plaque de studio (algorithme de Dattorro, logiciel libre) ; dans son panneau, « ⚙️ Réglages » (ou deux appuis sur l\'effet) donne tous ses réglages : durée et pré-délai de la reverb, rythme et répétitions de l\'écho, vitesse et tonalité de l\'auto-tune… L\'égaliseur a son bouton « ⚙️ Réglages poussés ». La tuile 🔁 Bégaiement est toujours là : touchée sans sélection, elle choisit ta partie enregistrée et tu cales les poignées sur le mot. Sur une sélection, les tuiles passent en couleur « sélection » : volume, reverb, écho et égaliseur, rien que pour ce bout ; et 🔁 Bégaiement (2, 4 ou 8 fois) : le début du mot se répète en rythme, « ma-ma-ma-mais ». « ▶ Écouter le bout » pour entendre, « ↺ Remettre » pour annuler ce bout. Une prise abîmée ? « 🛟 Retrouver une ancienne prise » (sous les tuiles, ou dans Partager) liste les anciens sons gardés dans ton téléphone : écoute (même une longue prise part tout de suite), et remets le bon.' },
     { sel: ['#bLevel'], t: 'Rééquilibrer', b: 'Remet tous les niveaux d\'aplomb d\'un coup : l\'instru, le lead, les backs et l\'ambiance à leur juste place.' }
   ],
   vMaster: [
