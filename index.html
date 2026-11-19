@@ -148,9 +148,6 @@ body:not(.simple) .row .l1 .chip{flex:1 1 0}
 .mxz input{flex:1;min-width:0;accent-color:var(--accent)}.mxzl{padding:0 8px 6px;background:var(--panel);font-size:11px;color:var(--muted);text-align:center}
 .mxp .mxplay{min-width:54px;background:var(--accent);color:#1a1405;border-color:var(--accent)}.mxp [data-mp=loop][aria-pressed=true]{border-color:var(--accent);color:var(--accent)}.mxp output{margin-left:auto;font:600 15px ui-monospace,monospace}
 .mxhint{margin:6px 0 0;font-size:12px}
-.mxtools{display:flex;flex-direction:column;gap:6px;margin-top:8px}.mxtrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.mxtrow>span{font-size:15px}
-.mxtrow button{flex:1 1 0;min-width:0;min-height:38px;padding:0 4px;white-space:nowrap;border-radius:19px;border:1px solid var(--line);background:var(--raise);color:inherit;font:700 13px system-ui,-apple-system,sans-serif;touch-action:manipulation}
-.mxtrow button[aria-pressed=true]{background:var(--accent);color:#1a1405;border-color:var(--accent)}
 .mtsec{font:800 11px system-ui,-apple-system,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:14px 2px 8px}
 .mtgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .mt{position:relative;border:1px solid var(--line);border-radius:14px;background:var(--panel);min-height:92px}
@@ -159,7 +156,10 @@ body:not(.simple) .row .l1 .chip{flex:1 1 0}
 .mtb{all:unset;box-sizing:border-box;display:flex;flex-direction:column;gap:3px;width:100%;height:100%;min-height:92px;padding:10px 10px 9px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .mtb .mti{font-size:20px;line-height:1;min-height:30px}.mtb b{font-size:13px;line-height:1.15;letter-spacing:-.01em;overflow-wrap:normal;hyphens:none}.mtb .mtv{font-size:12px;color:var(--muted);line-height:1.2;overflow:hidden;text-overflow:ellipsis}.mt.on .mtv{color:var(--accent)}
 .mtl{display:flex;gap:3px;margin-top:auto;padding-top:4px}.mtl i{flex:1;height:4px;border-radius:2px;background:var(--line)}.mtl i.f{background:var(--accent)}
-.mtg{position:absolute;top:5px;right:5px;width:30px;height:30px;border-radius:9px;border:1px solid var(--line);background:var(--raise);color:inherit;font-size:15px;padding:0;touch-action:manipulation}
+.mtsw{position:absolute;top:8px;right:8px;width:44px;height:26px;border-radius:13px;border:1px solid var(--line);background:var(--raise);padding:0;touch-action:manipulation;cursor:pointer}
+.mtsw i{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:var(--muted);transition:left .15s,background .15s}
+.mtsw[aria-checked=true]{background:var(--accent);border-color:var(--accent)}.mtsw[aria-checked=true] i{left:21px;background:#1a1405}
+.mtsw::after{content:'';position:absolute;inset:-9px}.mtsw.big{position:relative;top:0;right:0;flex:none;width:52px;height:30px;border-radius:15px}.mtsw.big i{width:22px;height:22px}.mtsw.big[aria-checked=true] i{left:25px}
 .mthint{text-align:center;margin-top:10px}
 .mxsheet{position:fixed;left:0;right:0;bottom:0;z-index:56;max-height:62vh;overflow:auto;-webkit-overflow-scrolling:touch;background:var(--raise);border-top:1px solid var(--line);border-radius:20px 20px 0 0;box-shadow:0 -14px 40px rgba(0,0,0,.55);padding:8px max(14px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(14px,env(safe-area-inset-left,0px))}
 .mxgrab{width:42px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 8px}
@@ -840,8 +840,7 @@ body.ed-open .wmark{z-index:41}
       <div class="mxz"><button data-mz="left" aria-label="Reculer">◀</button><button data-mz="out" aria-label="Dézoomer">−</button><input type="range" id="mxZoom" min="0" max="100" step="1" aria-label="Zoom"><button data-mz="in" aria-label="Zoomer">+</button><button data-mz="right" aria-label="Avancer">▶</button></div>
       <div class="mxzl" id="mxZl"></div></div>
     <div class="mxtarget" id="mxTarget"></div></div>
-    <div class="mxtools" id="mxTools"></div>
-    <p class="note mxhint">👆 un mot · 👆 un 2e mot = tout entre les deux · 👆👆 la phrase · ✋ appui long + glisse = au doigt · 🤏 deux doigts = zoom</p>
+    <p class="note mxhint">👆 Touche l'onde : ta partie enregistrée est choisie d'un coup, ajuste-la avec les poignées rondes ◀ ▶ · glisse = avancer / reculer · 🤏 deux doigts = zoom · violet = un bout déjà réglé à part</p>
     <div id="strip" class="pad" style="padding:0"></div>
     <details class="mxacc" data-acc="zone"><summary><span class="tt">🔁 Zone à écouter en boucle</span></summary><div class="mxbody">
     <div class="zone" id="zone">
@@ -1207,8 +1206,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 209; // numéro interne (jamais affiché)
-const APP_PUB = '2.9.0';
+const APP_VER = 211; // numéro interne (jamais affiché)
+const APP_PUB = '2.9.2';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -1779,11 +1778,11 @@ function makeChain(ac, b){
     if(dblN) dblN.g0.gain.value = amt * dblN.mul;
   };
   c.set = (t, on, live) => {
-    /* l'essentiel seulement : doubler, chaleur, radio et retrait de voix ne jouent plus (même sur les anciennes séances) */
-    const dry = fxOff(t), f0 = { ...(dry ? FX.neutre : t.fx), dbl: 0, sat: 0, rad: 0 };
+    /* tous les effets de Mix jouent : doublage, saturation, radio et « sans voix » compris */
+    const dry = fxOff(t), f0 = { ...(dry ? FX.neutre : t.fx) };
     /* bouts réglés à part : on branche réverbe / écho / doubler au niveau le plus fort demandé, les dosages suivent ensuite le temps */
     const rg = dry ? [] : (t.regs || []), mx = k => rg.reduce((m, r) => Math.max(m, r.fx[k] ?? 0), f0[k] || 0);
-    const f = rg.length ? { ...f0, rev: mx('rev'), dly: mx('dly'), dbl: 0 } : f0;
+    const f = rg.length ? { ...f0, rev: mx('rev'), dly: mx('dly') } : f0;
     c.hp.frequency.value = f.hp; c.low.gain.value = f.low; c.mid.gain.value = f.mid; c.mid.frequency.value = f.midF; c.high.gain.value = f.high;
     c.mud.gain.value = f.mud || 0; c.mud.frequency.value = f.mudF || 300; c.air.gain.value = f.air || 0;
     if(f.ratio > 1){ c.comp.threshold.value = f.thr; c.comp.ratio.value = f.ratio; c.comp.attack.value = (f.att ?? 5) / 1000; c.comp.release.value = (f.rel ?? 120) / 1000; }
@@ -1797,7 +1796,7 @@ function makeChain(ac, b){
     c.rev.gain.value = (f0.rev || 0) / 100; c.dly.gain.value = (f0.dly || 0) / 100;
     const rP = f.rev > 0 ? fxP(tp, 'rev', f0.rev > 0 ? f0.rev : f.rev) : null, dP = f.dly > 0 ? fxP(tp, 'dly', f0.dly > 0 ? f0.dly : f.dly) : null;
     setRev(rP); setDly(dP); setDuck(rP ? rP.duck : 0, dP ? dP.duck : 0);
-    const v = 0;
+    const v = dry ? 0 : clamp((t.vr || 0) / 100, 0, 1);
     setVr(v > 0); if(vr){ vr.dry.gain.value = 1 - v; vr.wet.gain.value = v; }
     c.input.gain.value = t.trim ?? 1;
     setDbl((f.dbl || 0) / 100, (f.dbl || 0) > 0 ? fxP(tp, 'dbl', f0.dbl > 0 ? f0.dbl : f.dbl) : null);
@@ -3696,6 +3695,9 @@ function mxTiles(cur){
     [['rev', '🌊', 'Reverb'], ['dly', '📣', 'Écho']].forEach(([k, ic, n]) => { const v = val(k), li = v > 0 ? nearest(LV[k], v) : -1;
       L.push({ k: 's' + k, ic, n, v: own(k) ? (li < 0 ? 'sans' : LVN[k][li]) : 'comme la piste', on: own(k) && v > 0, lv: [li + 1, LV[k].length] }); });
     if(!ins) L.push({ k: 'stut', ic: '🔁', n: 'Bégaiement', v: '2, 4 ou 8 fois', on: false, lv: [0, 3] });
+    if(ins){ const q = k => { const Q = MX_QUICK_INS.find(z => z.k === k); return !!(r && Object.keys(Q.fx).every(z => r.fx[z] === Q.fx[z])); };
+      L.push({ k: 'smuf', ic: '🚪', n: 'Étouffé', v: q('muf') ? 'allumé' : 'derrière une porte', on: q('muf'), lv: [q('muf') ? 3 : 0, 3] });
+      L.push({ k: 'scut', ic: '🔇', n: 'Coupure', v: q('drop') ? 'coupée' : 'le beat s\'arrête', on: q('drop'), lv: [q('drop') ? 3 : 0, 3] }); }
     const eqOwn = ['low', 'mid', 'high'].some(own);
     L.push({ k: 'seq', ic: '🎛️', n: 'Égaliseur', v: eqOwn ? 'retouché' : 'comme la piste', on: eqOwn, lv: [eqOwn ? 2 : 0, 3] });
     if(!ins) L.push({ k: 'sat0', ic: '🤖', n: 'Auto-tune', v: 'toute la piste', on: false, dim: true, lv: [0, 3] });
@@ -3707,6 +3709,10 @@ function mxTiles(cur){
   L.push({ k: 'eq', g: 'voix', ic: '🎛️', n: 'Égaliseur', v: cur.adapted ? 'réglé sur ta voix' : eqd ? 'retouché' : 'à plat', on: !!(cur.adapted || eqd), lv: [cur.adapted || eqd ? 2 : 0, 3] });
   const cl = compLv(cur.fx); L.push({ k: 'comp', g: 'voix', ic: '🎤', n: 'Compression', v: COMP_N[cl], on: cl > 0, lv: [cl, 3], tog: true });
   if(cur.buffer && (ins || cur.bpmOrig)) L.push({ k: 'ins', g: 'voix', ic: '🎵', n: 'Tonalité, vitesse', v: ((cur.semi || 0) ? (cur.semi > 0 ? '+' : '') + cur.semi + ' ½ ton' : 'd\'origine') + ' · ' + S.bpm + ' BPM', on: !!cur.semi, lv: [0, 0] });
+  if(ins){
+    const fi = (k, ic, n) => { const v = fxGet(cur, k), f = v > 0 ? nearest(LV[k], v) + 1 : 0; L.push({ k, g: 'fx', ic, n, v: f ? LVN[k][f - 1] : 'éteint', on: f > 0, lv: [f, LV[k].length], tog: true }); };
+    fi('vr', '🙊', 'Sans voix'); fi('rev', '🌊', 'Reverb'); fi('dly', '📣', 'Écho');
+  }
   if(!ins){
     const fx = (k, ic, n) => { const v = fxGet(cur, k), f = v > 0 ? nearest(LV[k], v) + 1 : 0; L.push({ k, g: 'fx', ic, n, v: f ? LVN[k][f - 1] : 'éteint', on: f > 0, lv: [f, LV[k].length], tog: true }); };
     fx('rev', '🌊', 'Reverb'); fx('dly', '📣', 'Écho'); fx('dbl', '👥', 'Doublage');
@@ -3717,9 +3723,13 @@ function mxTiles(cur){
   }
   return L;
 }
+/* l'interrupteur de chaque effet (le volume, la tonalité et le bégaiement n'en ont pas : ce ne sont pas des effets qu'on allume) */
+const MX_NOSW = new Set(['vol', 'ins', 'svol', 'stut', 'sat0']);
+const mxHasSw = (x, t) => !MX_NOSW.has(x.k) && !(x.k === 'clean' && !x.on) && !(x.k === 'harm' && x.dim);
 function mxTileHTML(x){
   const bars = x.lv[1] ? `<span class="mtl">${Array.from({ length: x.lv[1] }, (_, i) => `<i${i < x.lv[0] ? ' class="f"' : ''}></i>`).join('')}</span>` : '';
-  return `<div class="mt${x.on ? ' on' : ''}${x.dim ? ' dim' : ''}${mxSheet === x.k ? ' act' : ''}" data-mt="${x.k}"><button class="mtb" data-mtt="${x.k}" aria-pressed="${x.on}"><span class="mti">${x.ic}</span><b>${x.n}</b><span class="mtv">${esc(x.v)}</span>${bars}</button><button class="mtg" data-mtg="${x.k}" aria-label="Tous les réglages : ${esc(x.n)}">⚙️</button></div>`;
+  const sw = mxHasSw(x) ? `<button class="mtsw" data-mts="${x.k}" role="switch" aria-checked="${x.on}" aria-label="${x.on ? 'Éteindre' : 'Allumer'} : ${esc(x.n)}"><i></i></button>` : '';
+  return `<div class="mt${x.on ? ' on' : ''}${x.dim ? ' dim' : ''}${mxSheet === x.k ? ' act' : ''}" data-mt="${x.k}"><button class="mtb" data-mtg="${x.k}" aria-label="Réglages : ${esc(x.n)}"><span class="mti">${x.ic}</span><b>${x.n}</b><span class="mtv">${esc(x.v)}</span>${bars}</button>${sw}</div>`;
 }
 /* ce que montre le panneau du bas pour chaque tuile */
 function mxBody(k, cur){
@@ -3733,6 +3743,8 @@ function mxBody(k, cur){
     if(k === 'sdly') return notch('dly', 'Écho') + '<p class="mxnote">L\'écho continue de traîner juste après le bout : parfait sur le dernier mot d\'une phrase.</p>';
     if(k === 'stut') return '<div class="fxrow"><span class="fxlab">🔁 Bégaiement</span><div class="notch" role="group" aria-label="Bégaiement">' + [2, 4, 8].map(n => `<button data-stut="${n}">${n} fois</button>`).join('') + '</div></div><p class="mxnote">Le début du bout se répète en rythme, calé sur le tempo : « ma-ma-ma-mais ». Choisis juste le mot à faire bégayer. ↶ pour annuler.</p>';
     if(k === 'seq') return mxSlider('low', 'Graves', -12, 12, 0.5, val('low'), fmtDb) + mxSlider('mid', 'Médiums', -12, 12, 0.5, val('mid'), fmtDb) + mxSlider('high', 'Aigus', -12, 12, 0.5, val('high'), fmtDb);
+    if(k === 'smuf') return '<p class="mxnote">Le beat passe derrière une porte sur ce bout, puis revient : parfait sous un passage parlé.</p><div class="mxbtns"><button class="sbtn primary" data-mq="muf">🚪 Étouffer / remettre ce bout</button></div>';
+    if(k === 'scut') return '<p class="mxnote">Le beat s\'arrête sur ce bout et repart après : ta punchline tombe dans le silence.</p><div class="mxbtns"><button class="sbtn primary" data-mq="drop">🔇 Couper / remettre ce bout</button></div>';
     if(k === 'sat0') return `<p class="mxnote">L'auto-tune est ${tuned ? 'allumé' : 'éteint'} et se règle sur toute la piste.</p><div class="mxbtns"><button class="sbtn" data-mx="clear" data-goat="1">🤖 Régler l'auto-tune ›</button></div>`;
     return '';
   }
@@ -3750,8 +3762,8 @@ function mxBody(k, cur){
             <div class="stepper" data-xf="semi"><button data-d="-1" aria-label="Un demi-ton plus bas">−</button><output>${(cur.semi || 0) > 0 ? '+' : ''}${cur.semi || 0} demi-ton${Math.abs(cur.semi || 0) > 1 ? 's' : ''}</output><button data-d="1" aria-label="Un demi-ton plus haut">+</button></div></div>
           <div class="fxrow"><span class="fxlab">Vitesse de l'instru</span>
             <div class="stepper" data-xf="bpm"><button data-d="-2" aria-label="Plus lent">−</button><output>${S.bpm} BPM</output><button data-d="2" aria-label="Plus rapide">+</button></div></div></div>`;
-  const NM = { rev: 'Reverb', dly: 'Écho', dbl: 'Doublage', sat: 'Saturation', rad: 'Radio' };
-  if(NM[k]) return `<div class="fxlist">${fxRowHTML(cur, k, NM[k])}</div>${FX_SHEET[k]?.help ? `<p class="mxnote">${FX_SHEET[k].help}</p>` : ''}`;
+  const NM = { rev: 'Reverb', dly: 'Écho', dbl: 'Doublage', sat: 'Saturation', rad: 'Radio', vr: 'Sans voix' };
+  if(NM[k]) return `<div class="fxlist">${fxRowHTML(cur, k, NM[k])}</div>${FX_SHEET[k]?.help ? `<p class="mxnote">${FX_SHEET[k].help}</p>` : ''}${k === 'vr' ? '<p class="mxnote">Enlève la voix d\'un son du commerce : ce qui est au centre (la voix) disparaît, les côtés et les basses restent. Ça marche sur les sons en stéréo où la voix est au milieu ; un peu de voix peut rester dans la reverb.</p>' : ''}${cur.preset === 'instru' && (k === 'rev' || k === 'dly') ? '<p class="mxnote">Pour une transition, mets-le plutôt sur un bout : choisis 1 mesure ou 4 mesures sur l\'onde.</p>' : ''}`;
   const harmRow = () => `<div class="fxrow"><span class="fxlab">Harmonies</span><div class="notch" role="group" aria-label="Harmonies">${AT_HARM.map((n, i) => `<button data-ath="${i}" aria-pressed="${(cur.at.harm || 0) === i}">${n}</button>`).join('')}</div></div><p class="mxnote">Tierce : une 2e voix juste au-dessus de la tienne. Accord : deux voix en plus, une à gauche, une à droite. Octave grave : ta voix doublée une octave plus bas, le son sombre de la trap.</p>`;
   if(k === 'harm') return tuned && atChoice(cur) !== 'vocodeur' ? harmRow()
     : `<p class="mxnote">${tuned ? 'Le vocodeur a déjà son synthé : les harmonies vont avec les autres effets d\'auto-tune.' : 'Les harmonies se posent sur ta voix auto-tunée : allume d\'abord l\'auto-tune.'}</p><div class="mxbtns"><button class="sbtn primary" data-mtg="at">🤖 Ouvrir l'auto-tune</button></div>`;
@@ -3773,17 +3785,33 @@ let mxSheetH = 0, mxSheetK = null;
 function mxSheetFix(){ const s = $('#mxSheet'); if(!s){ mxSheetH = 0; mxSheetK = null; return; } if(mxSheetK !== mxSheet){ mxSheetK = mxSheet; mxSheetH = 0; } if(mxSheetH) s.style.minHeight = mxSheetH + 'px'; mxSheetH = Math.max(mxSheetH, s.offsetHeight); }
 function mxOpenSheet(k){ mxSheet = k; renderMix(); requestAnimationFrame(() => { const s = $('#mxSheet'); if(s) s.scrollTop = 0; }); }
 document.addEventListener('click', async e => {
-  const b = e.target.closest('[data-mtt],[data-mtg],[data-mtx]'); if(!b || !b.closest('#vMix')) return;
+  const b = e.target.closest('[data-mts],[data-mtg],[data-mtx]'); if(!b || !b.closest('#vMix')) return;
   const t = selTrack(); if(!t) return;
   if(b.dataset.mtx != null){ mxSheet = null; renderMix(); return; }
   if(b.dataset.mtg){ mxOpenSheet(b.dataset.mtg); return; }
-  const k = b.dataset.mtt, x = mxTiles(t).find(y => y.k === k); if(!x) return;
-  if(!x.tog || mxSel){ mxOpenSheet(k); return; }
+  const k = b.dataset.mts, x = mxTiles(t).find(y => y.k === k); if(!x) return;
   if(isLocked(t)){ lockToast(t); return; }
-  if(k === 'harm'){ if(x.dim){ mxOpenSheet(k); return; } t.at.lastHarm = t.at.harm || t.at.lastHarm; await atHarm(t, t.at.harm ? 0 : (t.at.lastHarm || 1)); return; }
-  if(k === 'comp'){ pushUndo('la compression'); const i = compLv(t.fx) ? 0 : (t.lvComp || 2); if(compLv(t.fx)) t.lvComp = compLv(t.fx); t.fx = { ...t.fx, ...(i ? COMP_PRE[i] : { ratio: 1 }) }; if(t.preset !== 'perso' && t.preset !== 'instru') t.preset = 'perso'; t.chain.set(t, audible(t), true); renderMix(); scheduleSave(); return; }
-  await fxDo(t, k);
+  await mxSwitch(t, k, x.on);
 });
+/* allumer / éteindre un effet d'un appui */
+async function mxSwitch(t, k, on){
+  if(mxSel){
+    const r = mxRegOf(t);
+    if(k === 'srev' || k === 'sdly'){ const q = k.slice(1); mxSetReg(t, q, on ? 0 : (r && r.fx[q] > 0 ? r.fx[q] : LV[q][1])); renderMix(); return; }
+    if(k === 'seq'){ if(on && r){ pushUndo('le réglage du bout'); ['low', 'mid', 'high'].forEach(q => delete r.fx[q]); t.chain.set(t, audible(t), true); scheduleSave(); } else if(!on) mxSetReg(t, 'high', 3); renderMix(); return; }
+    if(k === 'smuf' || k === 'scut'){ const bq = document.createElement('button'); bq.dataset.mq = k === 'smuf' ? 'muf' : 'drop'; $('#strip').appendChild(bq); bq.click(); bq.remove(); return; }
+    return;
+  }
+  if(k === 'clean'){ if(on) clOrig(t); return; }
+  if(k === 'harm'){ if(t.at.harm) t.at.lastHarm = t.at.harm; await atHarm(t, on ? 0 : (t.at.lastHarm || 1)); return; }
+  if(k === 'comp'){ pushUndo('la compression'); if(on) t.lvComp = compLv(t.fx); const i = on ? 0 : (t.lvComp || 2); t.fx = { ...t.fx, ...(i ? COMP_PRE[i] : { ratio: 1 }) }; if(t.preset !== 'perso' && t.preset !== 'instru') t.preset = 'perso'; t.chain.set(t, audible(t), true); renderMix(); scheduleSave(); return; }
+  if(k === 'eq'){ pushUndo('l\'égaliseur'); const E = ['low', 'mid', 'high', 'mud', 'air'];
+    if(on){ t.eqSave = {}; E.forEach(q => { t.eqSave[q] = t.fx[q] || 0; t.fx[q] = 0; }); t.adaptedSave = t.adapted; t.adapted = false; }
+    else if(t.eqSave){ E.forEach(q => { t.fx[q] = t.eqSave[q]; }); t.adapted = !!t.adaptedSave; t.eqSave = null; }
+    else { t.fx.mid = 2; t.fx.high = 2; }
+    t.chain.set(t, audible(t), true); renderMix(); scheduleSave(); return; }
+  await fxDo(t, k);
+}
 
 function mxRegOf(t){ return mxSel && mxSel.tid === t.id && mxSel.ri != null ? (t.regs || [])[mxSel.ri] : null; }
 function renderMix(){
@@ -3800,9 +3828,7 @@ function renderMix(){
   if(!cur){ st.innerHTML = '<p class="note">Ajoute une piste dans l\'onglet Pistes.</p>'; tg.hidden = true; return; }
   tg.hidden = false;
   tg.className = 'mxtarget' + (mxSel ? ' sel' : '');
-  const tl = $('#mxTools'); if(tl) tl.innerHTML = cur.buffer ? (mxSel && mxSel.kind !== 'prise' ? `<div class="mxtrow"><button data-mw="prev">◀ mot</button><button data-mw="addprev">＋ avant</button><button data-mw="addnext">＋ après</button><button data-mw="next">mot ▶</button></div>` : '')
-    + `<div class="mxtrow">${[['mot', '1 mot'], ['phrase', 'Phrase'], ['prise', 'La prise'], ['libre', '✋ Libre']].map(([k, n]) => `<button data-msel="${k}" aria-pressed="${!!mxSel && (mxSel.kind || 'libre') === k || (k === 'mot' && mxSel?.kind === 'mots')}">${n}</button>`).join('')}</div>` : '';
-  tg.innerHTML = mxSel ? `<span>🎯 Réglages appliqués à <b>${mxSelLabel(cur)}</b><small>${fmt(mxSel.a)} → ${fmt(mxSel.b)}</small></span><button class="x" data-mx="clear" aria-label="Enlever la sélection">✕</button>`
+  tg.innerHTML = mxSel ? `<span>🎯 Réglages appliqués à <b>ta sélection</b><small>${fmt(mxSel.a)} → ${fmt(mxSel.b)}</small></span><button class="x" data-mx="clear" aria-label="Enlever la sélection">✕</button>`
     : `<span>🎯 Réglages appliqués à <b style="color:inherit">toute la piste</b><small>${esc(cur.name)}${cur.regs?.length ? ' · ' + cur.regs.length + ' bout' + (cur.regs.length > 1 ? 's' : '') + ' réglé' + (cur.regs.length > 1 ? 's' : '') + ' à part' : ''}</small></span>`;
   let html;
   /* Mix en tuiles : chaque effet est une tuile qui montre son état ; un appui l'allume ou l'éteint, ⚙️ ouvre tous ses réglages dans un panneau en bas */
@@ -3812,15 +3838,15 @@ function renderMix(){
   if(mxSel){
     html = `<div class="mtsec">Rien que pour ce bout</div>` + tiles(T)
       + `<div class="mxbtns"><button class="sbtn primary" data-mx="hear">▶ Écouter le bout</button>${mxRegOf(cur) ? '<button class="sbtn" data-mx="reset">↺ Remettre</button>' : ''}</div>`
-      + `<p class="mxnote mthint">Touche une tuile pour la régler, rien que pour ce bout. L'auto-tune et la compression se règlent sur toute la piste : ✕ en haut pour revenir à toute la piste.</p>`;
+      + `<p class="mxnote mthint">Touche une tuile pour la régler, rien que pour ce bout ; l'interrupteur l'allume ou l'éteint sur ce bout. L'auto-tune et la compression se règlent sur toute la piste : ✕ en haut pour revenir à toute la piste.</p>`;
   } else {
     html = (grp('voix').length ? `<div class="mtsec">${cur.preset === 'instru' ? 'Instru' : 'Voix'}</div>` + tiles(grp('voix')) : '')
       + (grp('fx').length ? `<div class="mtsec">Effets</div>` + tiles(grp('fx')) : '')
-      + `<p class="mxnote mthint">Un appui sur une tuile = allumer / éteindre · ⚙️ = tous ses réglages</p>`;
+      + `<p class="mxnote mthint">Touche une tuile pour ses réglages · l'interrupteur l'allume ou l'éteint</p>`;
   }
   if(mxSheet){
     const x = T.find(y => y.k === mxSheet);
-    html += `<div class="mxsheet" id="mxSheet" role="dialog" aria-label="${esc(x.n)}"><div class="mxgrab"></div><div class="mxsh"><span class="mti">${x.ic}</span><h3>${x.n}</h3><button class="sbtn primary" data-mtx>✓ OK</button></div><div class="mxsb">${mxBody(x.k, cur)}</div></div>`;
+    html += `<div class="mxsheet" id="mxSheet" role="dialog" aria-label="${esc(x.n)}"><div class="mxgrab"></div><div class="mxsh"><span class="mti">${x.ic}</span><h3>${x.n}</h3>${mxHasSw(x) ? `<button class="mtsw big" data-mts="${x.k}" role="switch" aria-checked="${x.on}" aria-label="${x.on ? 'Éteindre' : 'Allumer'}"><i></i></button>` : ''}<button class="sbtn primary" data-mtx>✓ OK</button></div><div class="mxsb">${mxBody(x.k, cur)}</div></div>`;
   }
   document.body.classList.toggle('mx-sheet', !!mxSheet);
   st.innerHTML = isLocked(cur) ? `<p class="note lknote">🔒 Piste de ${esc(cur.ownerName)} : verrouillée. Tu peux l'écouter, la couper (M) ou l'isoler (S), mais seul ${esc(cur.ownerName)} peut la modifier.</p><fieldset class="lk" disabled>${html}</fieldset>` : html;
@@ -3995,8 +4021,6 @@ function drawMxWave(){
     for(let x = 0; x < W; x++){ const i0 = Math.floor((v0 + x / W * (v1 - v0) - t.offset) * sr), i1 = Math.floor((v0 + (x + 1) / W * (v1 - v0) - t.offset) * sr); if(i0 < 0 || i0 >= d.length) continue;
       let lo = 1, hi = -1; for(let i = i0; i <= Math.min(i1, d.length - 1); i++){ if(d[i] < lo) lo = d[i]; if(d[i] > hi) hi = d[i]; } g.fillRect(x, mid - hi * amp, 1, Math.max(1, (hi - lo) * amp)); }
   } else for(let x = 0; x < W; x += 2){ const tt = v0 + x / W * (v1 - v0) - t.offset, f = Math.floor(tt * 100); if(f < 0 || f >= env.length) continue; const h = Math.max(1, env[f] / pk * (H - 18) * 0.95); g.fillRect(x, (H + 10) / 2 - h / 2, 1.5, h); }
-  /* les mots repérés : un petit trait au début de chacun (quand on est assez zoomé pour les voir) */
-  if(v1 - v0 <= 20){ g.fillStyle = 'rgba(231,234,240,.22)'; for(const w of wordsOf(t)){ if(w.b < v0 || w.a > v1) continue; g.fillRect(X(w.a), 16, 1, H - 30); } }
   if(mxSel){ const a = X(mxSel.a), b = X(mxSel.b); g.fillStyle = 'rgba(242,181,68,.28)'; g.fillRect(a, 0, b - a, H); g.fillStyle = '#f2b544'; g.fillRect(a - 1.5, 0, 3, H); g.fillRect(b - 1.5, 0, 3, H);
     /* poignées du bout : à tirer pour ajuster le début et la fin */
     [[a, '◀'], [b, '▶']].forEach(([x, ar]) => { g.fillStyle = '#f2b544'; g.beginPath(); g.arc(x, H - 14, 11, 0, Math.PI * 2); g.fill(); g.fillStyle = '#1a1407'; g.font = '700 10px system-ui'; g.textAlign = 'center'; g.fillText(ar, x, H - 10.5); g.textAlign = 'start'; }); }
@@ -4009,7 +4033,7 @@ function drawMxWave(){
     g.strokeStyle = '#f2b544'; g.lineWidth = 1; g.stroke(); g.fillStyle = '#fff'; g.fillText(lbl, bx + 10, by + 18);
   }
 }
-let mxNav = null, mxGlide = null, mxLastTap = null;
+let mxNav = null, mxGlide = null;
 /* la partie enregistrée sous le doigt : la prise, sans les blancs du début et de la fin */
 function recZone(t, x){
   if(!t?.buffer || x < t.offset || x > t.offset + t.buffer.duration) return null;
@@ -4020,102 +4044,8 @@ function recZone(t, x){
   const a = Math.max(t.offset, t.offset + f0 / 100 - 0.05), b = Math.min(t.offset + t.buffer.duration, t.offset + f1 / 100 + 0.2);
   return b - a > 0.05 ? { a, b } : null;
 }
-/* ---------- Les mots de la prise : où chaque mot commence et finit ----------
-   Les creux de la voix séparent les mots, les blancs séparent les phrases. Les coupures sont calées sur les attaques mesurées par
-   audiojs (bibliothèque libre, licence MIT : sa mesure « hits » donne chaque attaque et chaque arrêt de la voix) quand elle est chargée.
-   Sur du rap très enchaîné, deux mots collés sans le moindre creux peuvent sortir ensemble : les poignées rattrapent. */
-const wordsCache = new WeakMap(), hitsCache = new WeakMap(), hitsBusy = new WeakSet();
-function hitsEnsure(buf){
-  if(!buf || hitsCache.has(buf) || hitsBusy.has(buf)) return;
-  hitsBusy.add(buf);
-  ajaLoad().then(async A => {
-    if(!A) return;
-    try{ const h = await A.from(buf).stat('hits'); hitsCache.set(buf, Float64Array.from(h)); wordsCache.delete(buf); if(!$('#vMix').hidden) drawMxWave(); }
-    catch(e){ jr('w', 'mots : audiojs ' + e.message); }
-  }).finally(() => hitsBusy.delete(buf));
-}
-function wordsOf(t){
-  const buf = t?.buffer; if(!buf) return [];
-  let W = wordsCache.get(buf); if(W) return W.map(w => ({ a: w.a + t.offset, b: w.b + t.offset, ph: w.ph }));
-  const env = envOf(buf), n = env.length; if(!n) return [];
-  /* niveau de la voix et du fond, sur la prise elle-même */
-  const srt = Array.from(env).sort((x, y) => x - y), floor = srt[Math.floor(n * 0.1)] || 0, loud = srt[Math.floor(n * 0.95)] || 0;
-  if(loud <= 0) return [];
-  const th = Math.max(loud * 0.1, floor * 3);
-  const sm = new Float32Array(n); for(let i = 0; i < n; i++){ let s = 0, c = 0; for(let j = Math.max(0, i - 2); j <= Math.min(n - 1, i + 2); j++){ s += env[j]; c++; } sm[i] = s / c; }
-  /* morceaux de voix : au-dessus du seuil, les trous de moins de 50 ms bouchés */
-  const segs = []; let i = 0;
-  while(i < n){ while(i < n && sm[i] < th) i++; if(i >= n) break; let j = i, gap = 0, end = i;
-    while(j < n){ if(sm[j] >= th){ end = j; gap = 0; } else if(++gap > 5) break; j++; }
-    if(end - i >= 5) segs.push([i, end + 1]); i = end + 1 + gap; }
-  /* un long morceau est coupé dans ses creux (l'endroit où la voix retombe entre deux mots) */
-  const hits = hitsCache.get(buf), words = [];
-  const snap = f => { if(!hits) return f; let best = f, bd = 5; for(const h of hits){ const d = Math.abs(h * 100 - f); if(d < bd){ bd = d; best = h * 100; } } return best; };
-  segs.forEach(([a, b]) => {
-    const cuts = [a];
-    for(let f = a + 12; f < b - 12; f++){
-      if(!(sm[f] <= sm[f - 1] && sm[f] <= sm[f + 1])) continue;
-      let lm = 0, rm = 0; for(let q = Math.max(a, f - 25); q < f; q++) lm = Math.max(lm, sm[q]); for(let q = f + 1; q <= Math.min(b - 1, f + 25); q++) rm = Math.max(rm, sm[q]);
-      if(sm[f] < 0.45 * Math.min(lm, rm) && f - cuts[cuts.length - 1] >= 12){ cuts.push(f); f += 8; }
-    }
-    cuts.push(b);
-    for(let q = 0; q < cuts.length - 1; q++) words.push({ a: snap(cuts[q]) / 100, b: snap(cuts[q + 1]) / 100 });
-  });
-  /* les phrases : les mots séparés par moins d'un quart de seconde vont ensemble */
-  let ph = 0; words.forEach((w, q) => { if(q && w.a - words[q - 1].b > 0.25) ph++; w.ph = ph; w.a = Math.max(0, w.a - 0.02); w.b = Math.min(buf.duration, w.b + 0.04); });
-  wordsCache.set(buf, words); hitsEnsure(buf);
-  return wordsOf(t);
-}
-function wordAt(t, x){
-  const W = wordsOf(t); let best = null, bd = 0.15;
-  for(const w of W){ if(x >= w.a && x <= w.b) return w; const d = Math.min(Math.abs(x - w.a), Math.abs(x - w.b)); if(d < bd){ bd = d; best = w; } }
-  return best;
-}
-function phraseOf(t, w){ const W = wordsOf(t).filter(v => v.ph === w.ph); return W.length ? { a: W[0].a, b: W[W.length - 1].b } : null; }
-const wordsIn = (t, a, b) => wordsOf(t).filter(w => (w.a + w.b) / 2 > a && (w.a + w.b) / 2 < b).length;
-function mxSelLabel(t){
-  if(!mxSel) return '';
-  if(mxSel.kind === 'prise') return 'toute la prise';
-  if(mxSel.kind === 'phrase') return 'la phrase';
-  if(mxSel.kind === 'mot' || mxSel.kind === 'mots'){ const n = wordsIn(t, mxSel.a, mxSel.b); return n > 1 ? n + ' mots' : '1 mot'; }
-  return 'ta sélection';
-}
-/* choisir par bouton : à partir de la tête de lecture (ou du bout déjà choisi) */
-function mxPick(kind){
-  const t = selTrack(); if(!t?.buffer) return;
-  const p = mxSel ? (mxSel.a + mxSel.b) / 2 : clamp(S.playing ? now() : S.pos, t.offset, t.offset + t.buffer.duration);
-  if(kind === 'libre'){ mxHint('✋ Appui long sur l\'onde, puis glisse'); toast('✋ Au doigt : appui long sur l\'onde, puis glisse jusqu\'où tu veux.'); return; }
-  if(kind === 'prise'){ const z = recZone(t, clamp(p, t.offset + 0.01, t.offset + t.buffer.duration - 0.01)); if(z) mxSel = { tid: t.id, a: z.a, b: z.b, ri: null, kind: 'prise' }; }
-  else { const W = wordsOf(t); if(!W.length){ toast('Pas de voix repérée sur cette piste.'); return; }
-    let w = wordAt(t, p) || W.find(v => v.a >= p) || W[W.length - 1];
-    if(kind === 'phrase'){ const ph = phraseOf(t, w); if(ph) mxSel = { tid: t.id, a: ph.a, b: ph.b, ri: null, kind: 'phrase' }; }
-    else mxSel = { tid: t.id, a: w.a, b: w.b, ri: null, kind: 'mot' }; }
-  mxFocusSel(); renderMix();
-}
-/* mot voisin, ou un mot de plus de chaque côté */
-function mxWordStep(how){
-  const t = selTrack(); if(!t?.buffer || !mxSel) return;
-  const W = wordsOf(t); if(!W.length) return;
-  const mid = w => (w.a + w.b) / 2, inS = W.map((w, i) => mid(w) > mxSel.a && mid(w) < mxSel.b ? i : -1).filter(i => i >= 0);
-  const i0 = inS.length ? inS[0] : W.findIndex(w => mid(w) >= mxSel.b) , i1 = inS.length ? inS[inS.length - 1] : i0 - 1;
-  const prev = W[(i0 < 0 ? W.length : i0) - 1], next = W[i1 + 1];
-  if(how === 'prev' && prev) mxSel = { tid: t.id, a: prev.a, b: prev.b, ri: null, kind: 'mot' };
-  else if(how === 'next' && next) mxSel = { tid: t.id, a: next.a, b: next.b, ri: null, kind: 'mot' };
-  else if(how === 'addprev' && prev) mxSel = { ...mxSel, a: prev.a, ri: null, kind: 'mots' };
-  else if(how === 'addnext' && next) mxSel = { ...mxSel, b: next.b, ri: null, kind: 'mots' };
-  else { toast(how.includes('prev') ? 'Pas de mot avant.' : 'Pas de mot après.'); return; }
-  mxFocusSel(); renderMix();
-}
-/* l'onde se recentre (et zoome si le bout est minuscule) sur ce qui est choisi */
-function mxFocusSel(){
-  if(!mxSel) return; const L = mxSel.b - mxSel.a;
-  if(L < mxW * 0.06 || L > mxW * 0.9) mxW = clamp(Math.max(1.2, L * 3), MXZ_MIN, MXZ_MAX);
-  mxV0 = Math.max(0, (mxSel.a + mxSel.b) / 2 - mxW / 2); mxZoomUI();
-}
-document.addEventListener('click', e => {
-  const b = e.target.closest('[data-msel],[data-mw]'); if(!b || !b.closest('#vMix')) return;
-  if(b.dataset.msel) mxPick(b.dataset.msel); else mxWordStep(b.dataset.mw);
-});
+/* séances d'avant la 2.9.1 : doublage, saturation, radio et « sans voix » y étaient muets ; on les remet à zéro pour qu'aucune vieille séance ne change de son toute seule */
+function fxV29(t, tr){ if(tr && tr.fx29) return; t.fx = { ...t.fx, dbl: 0, sat: 0, rad: 0 }; t.vr = 0; }
 
 /* déplace la tête de lecture : elle reste au même endroit à l'écran, c'est la piste qui défile */
 function mxNavTo(p){
@@ -4163,8 +4093,8 @@ function mxHint(txt){ const w = $('#mxW'); if(!w) return; let h = w.querySelecto
       drag.vel = 0.6 * drag.vel + 0.4 * (dp / dtm); drag.lx = e.clientX; drag.lt = tn;
       mxNavTo(drag.p + dp); drag.p = S.pos; return;
     }
-    if(drag.h === 'n'){ if(Math.abs(x - drag.x0) > 0.04){ drag.moved = true; mxSel = { tid: t.id, a: Math.min(drag.x0, x), b: Math.max(drag.x0, x), ri: null, kind: 'libre' }; } }
-    else if(mxSel){ if(!drag.moved){ if(Math.abs(e.clientX - drag.sx) < 4) return; drag.moved = true; } mxSel[drag.h] = x; if(mxSel.kind !== 'mots' && mxSel.kind !== 'mot') mxSel.kind = 'libre'; if(mxSel.a > mxSel.b) [mxSel.a, mxSel.b] = [mxSel.b, mxSel.a], drag.h = drag.h === 'a' ? 'b' : 'a'; if(mxSel.ri != null){ const r = selTrack().regs[mxSel.ri]; r.a = mxSel.a; r.b = mxSel.b; } }
+    if(drag.h === 'n'){ if(Math.abs(x - drag.x0) > 0.04){ drag.moved = true; mxSel = { tid: t.id, a: Math.min(drag.x0, x), b: Math.max(drag.x0, x), ri: null }; } }
+    else if(mxSel){ if(!drag.moved){ if(Math.abs(e.clientX - drag.sx) < 4) return; drag.moved = true; } mxSel[drag.h] = x; if(mxSel.a > mxSel.b) [mxSel.a, mxSel.b] = [mxSel.b, mxSel.a], drag.h = drag.h === 'a' ? 'b' : 'a'; if(mxSel.ri != null){ const r = selTrack().regs[mxSel.ri]; r.a = mxSel.a; r.b = mxSel.b; } }
     drawMxWave();
   });
   const up = e => {
@@ -4181,17 +4111,13 @@ function mxHint(txt){ const w = $('#mxW'); if(!w) return; let h = w.querySelecto
     /* une poignée touchée sans glisser = un simple toucher (sur un mot court, les poignées sont tout près) */
     if((d.h === 'a' || d.h === 'b') && !d.moved) d.h = 'n';
     if(d.h === 'n' && !d.moved && !d.lpOn){
-      /* simple toucher : sur un bout violet = on le reprend ; sur un mot = ce mot ; un 2e mot = tout ce qu'il y a entre ; deux appuis rapides = la phrase */
-      const tn = performance.now(), lt = mxLastTap, dbl = lt && tn - lt.t < 380 && Math.abs(d.x0 - lt.x) < mxW * 0.06; mxLastTap = { t: tn, x: d.x0 };
+      /* simple toucher : sur un bout violet = on le reprend ; ailleurs = on se place là */
       const ri = (t.regs || []).map((r, i) => [r, i]).reverse().find(([r]) => d.x0 >= r.a && d.x0 <= r.b);
-      const w = wordAt(t, d.x0);
-      if(dbl && w){ const ph = phraseOf(t, w); if(ph) mxSel = { tid: t.id, a: ph.a, b: ph.b, ri: null, kind: 'phrase' }; mxLastTap = null; }
-      else if(ri){ mxSel = { tid: t.id, a: ri[0].a, b: ri[0].b, ri: ri[1] }; }
+      if(ri){ mxSel = { tid: t.id, a: ri[0].a, b: ri[0].b, ri: ri[1] }; }
       /* toucher dans le bout déjà choisi : la lecture se place là, le bout reste choisi */
       else if(mxSel && d.x0 >= mxSel.a && d.x0 <= mxSel.b) seek(d.x0);
-      else if(w){ if(mxSel && mxSel.ri == null && (mxSel.kind === 'mot' || mxSel.kind === 'mots')) mxSel = { tid: t.id, a: Math.min(mxSel.a, w.a), b: Math.max(mxSel.b, w.b), ri: null, kind: 'mots' };
-        else mxSel = { tid: t.id, a: w.a, b: w.b, ri: null, kind: 'mot' }; }
-      else { mxSel = null; seek(d.x0); }
+      /* toucher sur la partie enregistrée : elle est choisie en entier, du début à la fin, et tu l'ajustes avec ses poignées ◀ ▶ */
+      else { const z = recZone(t, d.x0); if(z){ mxSel = { tid: t.id, a: z.a, b: z.b, ri: null }; } else { mxSel = null; seek(d.x0); } }
     }
     if(mxSel && mxSel.ri != null){ t.chain.set(t, audible(t), true); scheduleSave(); }
     if(S.rep && mxSel) S.rep = { a: mxSel.a, b: mxSel.b };
@@ -4594,7 +4520,7 @@ function updRowFx(t){
   if(z) z.innerHTML = fxZoneHTML(t);
 }
 function renderQuick(){ S.tracks.forEach(updRowFx); }
-$('#strip').addEventListener('click', e => { if(e.target.closest('[data-mtt],[data-mtg],[data-mtx],[data-stut],[data-rfx],[data-mx],[data-mq],[data-cl],[data-clk],[data-clf],[data-deep],[data-atk],[data-atsrc],[data-atch],[data-atd],[data-ath]')) return;
+$('#strip').addEventListener('click', e => { if(e.target.closest('[data-mts],[data-mtg],[data-mtx],[data-stut],[data-rfx],[data-mx],[data-mq],[data-cl],[data-clk],[data-clf],[data-deep],[data-atk],[data-atsrc],[data-atch],[data-atd],[data-ath]')) return;
   const cb = e.target.closest('[data-comp]');
   if(cb){ const t = selTrack(); if(!t || isLocked(t)) return; pushUndo('la compression'); const i = +cb.dataset.comp; t.fx = { ...t.fx, ...(i ? COMP_PRE[i] : { ratio: 1 }) }; if(t.preset !== 'perso' && t.preset !== 'instru') t.preset = 'perso'; t.chain.set(t, audible(t), true); renderMix(); scheduleSave(); return; }
   const b = e.target.closest('[data-vsm]'); if(b){ applyVStyle(selTrack(), +b.dataset.vsm); return; } fxAction(e, selTrack()); });
@@ -6785,7 +6711,7 @@ async function saveSession(){
     if(!sess.name) sess.name = defaultSessName();
     showSessTitle();
     const tracks = S.tracks.map(t => ({
-      name: t.name, color: t.color, preset: t.preset, fx: t.fx, vr: t.vr, vol: t.vol, pan: t.pan, mute: t.mute, solo: t.solo,
+      name: t.name, color: t.color, preset: t.preset, fx: t.fx, fx29: true, vr: t.vr, vol: t.vol, pan: t.pan, mute: t.mute, solo: t.solo,
       uid: t.uid, owner: t.owner, ownerName: t.ownerName, label: t.label ?? null, lbl2: true, srcName: t.srcName || '', regs: t.regs?.length ? t.regs : undefined, keep: !!t.keep, take: t.take, trim: t.trim, atOn: t.atOn, at: t.at, lv: t.lv, vp: t.vp, adapted: t.adapted, semi: t.semi, bpmOrig: t.bpmOrig, origTake: t.origTake,
       takes: t.takes.map(k => ({ aid: bufAid(k.buffer), offset: k.offset, tuned: k.tuned, cl: k.cl, src: k.src, xf: k.xf, punch: k.punch }))
     }));
@@ -6818,6 +6744,7 @@ async function loadSession(id){
     const t = addTrack(tr.name, FX[tr.preset] ? tr.preset : 'neutre'); t.preset = tr.preset;
     Object.assign(t, { keep: !!tr.keep, srcName: tr.srcName || '', regs: tr.regs ? JSON.parse(JSON.stringify(tr.regs)) : undefined, label: tr.lbl2 ? (tr.label ?? null) : (tr.label || null), uid: tr.uid || t.uid, owner: tr.owner || null, ownerName: tr.ownerName || '', color: tr.color, fx: { ...FX.neutre, ...tr.fx }, vr: tr.vr || 0, vol: tr.vol, pan: tr.pan, mute: tr.mute, solo: tr.solo,
       trim: tr.trim, atOn: tr.atOn, at: { ...t.at, ...tr.at }, lv: tr.lv, vp: tr.vp, adapted: tr.adapted, semi: tr.semi, bpmOrig: tr.bpmOrig, origTake: tr.origTake });
+    fxV29(t, tr);
     t.takes = [];
     /* on ne recharge que les prises utiles (la prise en cours, sa version d'origine, et les dernières prises) : tout l'historique d'une longue séance
        pouvait dépasser la mémoire de Safari sur iPhone et faire planter l'ouverture */
@@ -8021,7 +7948,7 @@ function buildSessionFile(){
     const k = t.takes[t.take];
     let ai = -1;
     if(k){ ai = bufs.length; bufs.push(k.buffer); }
-    return { uid: t.uid, owner: t.owner, ownerName: t.ownerName, name: t.name, color: t.color, preset: t.preset, fx: t.fx, vr: t.vr,
+    return { fx29: true, uid: t.uid, owner: t.owner, ownerName: t.ownerName, name: t.name, color: t.color, preset: t.preset, fx: t.fx, vr: t.vr,
       vol: t.vol, pan: t.pan, mute: t.mute, solo: t.solo, trim: t.trim, at: t.at, vp: t.vp, adapted: t.adapted, offset: t.offset,
       tuned: !!k?.tuned, ai };
   });
@@ -8106,6 +8033,7 @@ $('#sessFile').addEventListener('change', async e => {
       else upd++;
       Object.assign(t, { uid: it.uid, owner: it.owner, ownerName: it.ownerName, name: it.name, preset: it.preset, fx: { ...FX.neutre, ...it.fx }, vr: it.vr || 0,
         vol: it.vol, pan: it.pan, trim: it.trim, at: { ...t.at, ...it.at }, vp: it.vp, adapted: it.adapted, arm: false });
+      fxV29(t, it);
       if(b){ t.takes = [{ buffer: b, offset: it.offset, tuned: it.tuned }]; t.take = 0; t.buffer = b; t.offset = it.offset; }
       else { t.takes = []; t.take = -1; t.buffer = null; }
     }
@@ -9081,8 +9009,7 @@ const HELP = {
   vMix: [
     { t: 'L\'onglet Mix', b: 'Ici tu règles chaque piste, ou juste un bout : un mot, une phrase, un couplet.' },
     { sel: ['#mixChips'], t: '1 · Choisis ta piste', b: 'Touche une piste : tout ce qui est en dessous la concerne.' },
-    { sel: ['#mxW'], t: '2 · Choisis un bout (si tu veux)', b: 'Un appui sur un mot : ce mot est choisi pile (début et fin trouvés tout seuls ; les petits traits sur l\'onde montrent les mots repérés). Puis un appui sur un autre mot : tout ce qu\'il y a entre les deux. Deux appuis rapides : toute la phrase, jusqu\'au prochain blanc. Appui long puis glisse : au doigt, ce que tu veux. Glisse sur l\'onde pour avancer ou reculer ; deux doigts pour zoomer ou dézoomer, en douceur. Les bouts déjà réglés à part sont en violet : touche-les pour les reprendre. Sans sélection, tu règles toute la piste.' },
-    { sel: ['#mxTools'], t: '✂️ Choisir sans viser', b: '« 1 mot », « Phrase », « La prise » choisissent à partir de la tête de lecture ; « ✋ Libre » rappelle le geste au doigt. Avec un bout choisi : « ◀ mot » et « mot ▶ » passent au mot d\'à côté, « ＋ avant » et « ＋ après » ajoutent un mot. Les poignées rondes ◀ ▶ sur l\'onde ajustent au poil.' },
+    { sel: ['#mxW'], t: '2 · Choisis un bout (si tu veux)', b: 'Touche ta partie enregistrée : elle est choisie en entier, d\'un coup, et tu l\'ajustes comme tu veux avec les poignées rondes ◀ ▶ (pour ne garder qu\'un mot ou une phrase). Glisse sur l\'onde pour avancer ou reculer ; deux doigts pour zoomer ou dézoomer, en douceur. Appui long puis glisse : un bout au doigt. Les bouts déjà réglés à part sont en violet : touche-les pour les reprendre. Sans sélection, tu règles toute la piste. Sur l\'instru, tu as aussi Sans voix (enlever la voix d\'un son du commerce), Reverb, Écho, et sur un bout Étouffé ou Coupure.' },
     { sel: ['#mxTarget'], t: 'À qui s\'appliquent tes réglages', b: 'Ici c\'est écrit : toute la piste, ou ta sélection. Le ✕ enlève la sélection.' },
     { sel: ['[data-mt=clean]', '#strip'], t: '🧽 Nettoyage', b: 'En touchant la tuile Nettoyage, j\'écoute ta piste et je te dis ce que je trouve. Les bruits : souffle de fond, bourdonnement, « P » et « B » qui claquent, « S » qui sifflent, respirations. L\'atmosphère de la prise : pièce qui résonne, son de boîte, voix étouffée, trop fine, qualité téléphone ou manque d\'air (micro qui s\'arrête vers 10 kHz). Le souffle et le bruit de fond sont retirés par une IA (DeepFilterNet, logiciel libre) qui tourne sur ton téléphone : rien n\'est envoyé. La première fois, elle se télécharge (18 Mo, une seule fois). Coche ce que tu veux, choisis la force, touche « Nettoyer et comparer », puis bascule Avant / Après pendant la lecture. Tu gardes si ça te plaît, ↶ annule. « Nettoyer toutes les voix » fait tout d\'un coup.' },
     { sel: ['#strip'], t: '3 · Règle', b: 'Tous les effets sont ici, chacun dans sa tuile qui montre son état d\'un coup d\'œil : Nettoyage, Volume, Égaliseur, Compression, Reverb, Écho, Doublage, Auto-tune, Harmonies, Saturation, Radio. Un appui sur la tuile l\'allume ou l\'éteint ; ⚙️ ouvre tous ses réglages dans un panneau qui monte d\'en bas (l\'onde reste visible, la musique continue) ; « ✓ OK » le referme. L\'onglet Pistes, lui, sert juste à enregistrer. Auto-tune : en haut, l\'effet de style du rap d\'aujourd\'hui (🤖 Robot, la note collée net ; 🛸 Planant, avec les petits sauts de note ; 💎 Cristal, voix plus claire ; 🌑 Grave, voix plus sombre ; 🎹 Vocodeur, un synthé qui chante tes mots façon Daft Punk, avec ta voix auto-tunée Robot dessous en Léger et Moyen (synthé seul en À fond), d\'après le vocodeur libre de Chris Wilson), avec sa dose (Léger, Moyen, À fond) et les Harmonies (Sans, Tierce : une 2e voix juste au-dessus ; Accord : deux voix en plus, à gauche et à droite ; Octave grave : ta voix doublée une octave plus bas) ; en dessous, la simple correction (Naturel, Marqué), qui garde le timbre de ta voix (moteur Signalsmith Stretch, logiciel libre). Avec 🎧 Retour, tu t\'entends auto-tuné pendant que tu kickes (le Vocodeur et les Harmonies s\'ajoutent à la fin de la prise). Dans Auto-tune, « 🔄 Reprendre la note de ma voix » réécoute ta prise et recale la tonalité ; elle est reprise toute seule à chaque nouvelle prise. La reverb et l\'écho ont des réglages simples (Pièce, Studio, Salle…) ; Studio est une vraie plaque de studio (algorithme de Dattorro, logiciel libre) ; dans son panneau, « ⚙️ Réglages » (ou deux appuis sur l\'effet) donne tous ses réglages : durée et pré-délai de la reverb, rythme et répétitions de l\'écho, vitesse et tonalité de l\'auto-tune… L\'égaliseur a son bouton « ⚙️ Réglages poussés ». Sur une sélection, les tuiles passent en couleur « sélection » : volume, reverb, écho et égaliseur, rien que pour ce bout ; et 🔁 Bégaiement (2, 4 ou 8 fois) : le début du mot se répète en rythme, « ma-ma-ma-mais ». « ▶ Écouter le bout » pour entendre, « ↺ Remettre » pour annuler ce bout.' },
