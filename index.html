@@ -1206,8 +1206,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 211; // numéro interne (jamais affiché)
-const APP_PUB = '2.9.2';
+const APP_VER = 212; // numéro interne (jamais affiché)
+const APP_PUB = '2.9.3';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -3791,7 +3791,8 @@ document.addEventListener('click', async e => {
   if(b.dataset.mtg){ mxOpenSheet(b.dataset.mtg); return; }
   const k = b.dataset.mts, x = mxTiles(t).find(y => y.k === k); if(!x) return;
   if(isLocked(t)){ lockToast(t); return; }
-  await mxSwitch(t, k, x.on);
+  if(busy){ toast('Patiente une seconde : je termine le calcul en cours.'); return; }
+  try{ await mxSwitch(t, k, x.on); }catch(err){ jr('e', 'interrupteur ' + k + ' : ' + err.message); toast('Impossible de changer ' + x.n + ' : ' + err.message); renderMix(); }
 });
 /* allumer / éteindre un effet d'un appui */
 async function mxSwitch(t, k, on){
@@ -5033,12 +5034,22 @@ async function detectKeyUI(){
   }catch(e){ toast('Analyse impossible : ' + e.message); }
   setBusy(false);
 }
+/* la voix d'origine d'une prise auto-tunée : sa source, sinon la prise d'origine, sinon la dernière prise non auto-tunée (séances anciennes où le lien s'est perdu) */
+function atBase(t){
+  const ok = i => i != null && i >= 0 && t.takes[i] && !t.takes[i].tuned;
+  const cur = t.takes[t.take]; if(cur && !cur.tuned) return t.take;
+  if(ok(cur?.src)) return cur.src;
+  if(ok(t.origTake)) return t.origTake;
+  for(let i = t.takes.length - 1; i >= 0; i--) if(ok(i)) return i;
+  return -1;
+}
 async function toggleAT(t){
   pushUndo('l\'auto-tune');
   if(isTuned(t) || t.atOn){
     t.atOn = false;
     if(isTuned(t) && !(S.recording && t.arm)){
-      const src = t.takes[t.take].src;
+      const src = atBase(t);
+      if(src < 0){ t.takes[t.take] = { ...t.takes[t.take], tuned: false }; jr('w', 'auto-tune : voix d\'origine introuvable'); toast('La voix d\'origine n\'est plus dans cette séance : l\'auto-tune ne peut pas être enlevé. ↶ Annuler ou refais la prise.'); refreshFx(); return; }
       t.take = src; t.buffer = t.takes[src].buffer; t.offset = t.takes[src].offset;
       restart(); renderTracks(); toast('Auto-tune coupé : retour à ta voix d\'origine.');
     }
@@ -5054,7 +5065,8 @@ async function applyAutotune(t){
   if(busy) return; setBusy(true);
   try{
     const cur = t.takes[t.take];
-    const srcIdx = cur?.tuned ? cur.src : t.take;
+    const srcIdx = cur?.tuned ? atBase(t) : t.take;
+    if(srcIdx < 0){ toast('La voix d\'origine n\'est plus dans cette séance : impossible de refaire l\'auto-tune dessus.'); setBusy(false); return; }
     const src = t.takes[srcIdx] || { buffer: t.buffer, offset: t.offset };
     const an = await analysePitch(src.buffer);
     if(!an.f0.some(f => f > 0)){ toast('Aucune voix chantée détectée sur cette prise.'); setBusy(false); return; }
