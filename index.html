@@ -162,7 +162,7 @@ body:not(.simple) .row .l1 .chip{flex:1 1 0}
 .mtsw::after{content:'';position:absolute;inset:-9px}.mtsw.big{position:relative;top:0;right:0;flex:none;width:52px;height:30px;border-radius:15px}.mtsw.big i{width:22px;height:22px}.mtsw.big[aria-checked=true] i{left:25px}
 .mthint{text-align:center;margin-top:10px}
 .welcome.rescue{z-index:70}.rescue .wpanel{max-height:86vh;overflow:auto}.rslist{display:flex;flex-direction:column;gap:8px;margin:12px 0}
-.rsit{display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--line);border-radius:12px;background:var(--raise)}.rsit span{flex:1;min-width:0;display:flex;flex-direction:column}.rsit small{color:var(--muted);font-size:12px}.rsit .sbtn{height:40px}.vxgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:4px 0 8px}.vxgrid button{height:44px;border-radius:10px;border:1px solid var(--line);background:var(--raise);color:var(--fg);font:600 13px system-ui,-apple-system,sans-serif}.vxgrid button[aria-pressed=true]{background:var(--accent);color:#1a1406;border-color:var(--accent)}.vxadv{border-top:1px solid var(--line);margin-top:6px;padding-top:6px}.blwave{display:block;width:100%;height:90px;border-radius:8px;background:var(--bg);touch-action:none;margin:4px 0 8px}.rsit [data-rt]{flex:none;min-width:110px}.rsit.on{border-color:var(--accent)}.rsbar{display:flex;gap:8px;margin:10px 0 0;position:sticky;top:0;z-index:2;background:var(--panel,var(--raise));padding:6px 0}.rsbar .sbtn{flex:1;height:44px}
+.rsit{display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--line);border-radius:12px;background:var(--raise)}.rsit span{flex:1;min-width:0;display:flex;flex-direction:column}.rsit small{color:var(--muted);font-size:12px}.rsit .sbtn{height:40px}.vxgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:4px 0 8px}.vxgrid button{height:44px;border-radius:10px;border:1px solid var(--line);background:var(--raise);color:var(--fg);font:600 13px system-ui,-apple-system,sans-serif}.vxgrid button[aria-pressed=true]{background:var(--accent);color:#1a1406;border-color:var(--accent)}.vxadv{border-top:1px solid var(--line);margin-top:6px;padding-top:6px}.twhod{font-size:12px;color:var(--ok);min-height:16px;margin:-4px 0 4px}.blwave{display:block;width:100%;height:90px;border-radius:8px;background:var(--bg);touch-action:none;margin:4px 0 8px}.rsit [data-rt]{flex:none;min-width:110px}.rsit.on{border-color:var(--accent)}.rsbar{display:flex;gap:8px;margin:10px 0 0;position:sticky;top:0;z-index:2;background:var(--panel,var(--raise));padding:6px 0}.rsbar .sbtn{flex:1;height:44px}
 .mxsheet{position:fixed;left:0;right:0;bottom:0;z-index:56;max-height:62vh;overflow:auto;-webkit-overflow-scrolling:touch;background:var(--raise);border-top:1px solid var(--line);border-radius:20px 20px 0 0;box-shadow:0 -14px 40px rgba(0,0,0,.55);padding:8px max(14px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(14px,env(safe-area-inset-left,0px))}
 .mxgrab{width:42px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 8px}
 .mxsh{display:flex;align-items:center;gap:10px;position:sticky;top:-8px;background:var(--raise);padding:4px 0 8px;z-index:1}.mxsh h3{margin:0;font-size:18px;flex:1}.mxsh .mti{font-size:22px}.mxsh .sbtn{height:38px}
@@ -733,7 +733,8 @@ body.ed-open .wmark{z-index:41}
       <label class="grp">Ton blaze <input id="meName" style="width:120px;height:34px;background:var(--raise);border:1px solid var(--line);border-radius:6px;padding:0 8px;text-transform:none;letter-spacing:0" placeholder="ex. Xela"></label>
       <label class="grp">Ton Insta / TikTok <input id="meSoc" maxlength="40" autocapitalize="off" autocomplete="off" spellcheck="false" style="width:140px;height:34px;background:var(--raise);border:1px solid var(--line);border-radius:6px;padding:0 8px;text-transform:none;letter-spacing:0" placeholder="@tonpseudo"></label>
       <p class="note" style="flex-basis:100%;margin:0">Facultatif : ton @ apparaît sur tes Reels, pour que ceux qui les voient te retrouvent.</p>
-      <label class="grp">D'où tu viens <input id="meFrom" maxlength="40" style="width:140px;height:34px;background:var(--raise);border:1px solid var(--line);border-radius:6px;padding:0 8px;text-transform:none;letter-spacing:0" placeholder="Ville ou département"></label>
+      <label class="grp">Ton département <input id="meDep" maxlength="30" list="depList2" style="width:90px;height:34px;background:var(--raise);border:1px solid var(--line);border-radius:6px;padding:0 8px;text-transform:none;letter-spacing:0" placeholder="Ex : 86"></label>
+      <label class="grp">Ta ville <input id="meFrom" maxlength="40" style="width:140px;height:34px;background:var(--raise);border:1px solid var(--line);border-radius:6px;padding:0 8px;text-transform:none;letter-spacing:0" placeholder="Ville ou département"></label>
     </div>
     <div class="autobox" hidden><div class="autot">Écoute</div>
       <div class="seg" id="outSeg" role="group" aria-label="Écoute"><button data-o="auto" aria-pressed="false">Auto</button><button data-o="casque" aria-pressed="false">Casque</button><button data-o="hp" aria-pressed="false">Haut-parleur</button></div>
@@ -756,7 +757,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.9.22 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.9.23 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookie, sans garder ton adresse IP) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze. Coupées, elles arrêtent aussi les rapports techniques (erreurs et mesures du son, jamais ta voix).</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false">📊 Statistiques anonymes : activées</button>
@@ -1216,8 +1217,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 231; // numéro interne (jamais affiché)
-const APP_PUB = '2.9.22';
+const APP_VER = 232; // numéro interne (jamais affiché)
+const APP_PUB = '2.9.23';
 /* le numéro affiché dans Réglages vient toujours d'ici (il était resté écrit en dur sur 2.8.4) */
 try{ document.addEventListener('DOMContentLoaded', () => { const v = document.getElementById('ver'); if(v) v.textContent = 'Version ' + APP_PUB + ' · Bêta'; }); const v0 = document.getElementById('ver'); if(v0) v0.textContent = 'Version ' + APP_PUB + ' · Bêta'; }catch(e){}
 /* Statistiques anonymes (GoatCounter, sans cookies) */
@@ -2464,6 +2465,7 @@ async function record0(){
       else if(cleaned || meas != null) toast('Prise gardée sur « ' + tr.name + ' »' + (meas != null ? ' · calage mesuré : ' + meas + ' ms' : '') + (cleaned ? ' · instru captée par le micro retirée' : '') + '. Pour le meilleur son : des écouteurs.');
       else toast(recInfo.punch ? 'Phrase remplacée dans la boucle.' : punched ? 'Prise posée sur « ' + tr.name + ' », à la place de ce qui était dessous. Annuler pour revenir.' : 'Prise gardée sur « ' + tr.name + ' » · niveau calé sur l\'instru.');
       if(blMsg) setTimeout(() => toast(blMsg), 2600);
+      if(ME.name && Math.random() < 0.34) setTimeout(() => { if(!S.recording) toast(hyLine('take')); }, blMsg ? 6200 : 3600);
       saveNow();
     }catch(e){ toast('Impossible de lire la prise : ' + e.message); }
   };
@@ -3708,7 +3710,7 @@ let mxSheet = null;
 const panTxt = v => v == 0 ? 'centre' : (v < 0 ? 'G ' : 'D ') + Math.round(Math.abs(v) * 100);
 /* la liste des tuiles de la piste (ou du bout choisi), avec ce que chacune affiche */
 /* tout reste visible : avec un bout choisi, ses tuiles « rien que pour ce bout » viennent en haut, puis toutes celles de la piste */
-const MX_SELK = new Set(['svol', 'srev', 'sdly', 'stut', 'seq', 'smuf', 'scut', 'sat0']);
+const MX_SELK = new Set(['svol', 'srev', 'sdly', 'stut', 'seq', 'smuf', 'scut', 'sat0', 'sbat', 'svx', 'sdbl', 'ssat', 'srad']);
 function mxTiles(cur){
   if(!mxSel) return mxTiles0(cur, false);
   return mxTiles0(cur, true).filter(x => x.k !== 'sat0').map(x => ({ ...x, g: 'sel' })).concat(mxTiles0(cur, false).filter(x => x.k !== 'stut0'));
@@ -3727,7 +3729,8 @@ function mxTiles0(cur, sel){
       L.push({ k: 'scut', ic: '🔇', n: 'Coupure', v: q('drop') ? 'coupée' : 'le beat s\'arrête', on: q('drop'), lv: [q('drop') ? 3 : 0, 3] }); }
     const eqOwn = ['low', 'mid', 'high'].some(own);
     L.push({ k: 'seq', ic: '🎛️', n: 'Égaliseur', v: eqOwn ? 'retouché' : 'comme la piste', on: eqOwn, lv: [eqOwn ? 2 : 0, 3] });
-    if(!ins) L.push({ k: 'sat0', ic: '🤖', n: 'Auto-tune', v: 'toute la piste', on: false, dim: true, lv: [0, 3] });
+    if(!ins){ const pf = fx => patchOf(cur, mxSel.a, mxSel.b, fx), tl = (k, fx, ic, n) => { const r = pf(fx); L.push({ k, ic, n, v: r ? (fx === 'vx' ? (VX[r.p?.k]?.n || 'sur mesure') : 'sur ce bout') : 'éteint', on: !!r, lv: [r ? 3 : 0, 3] }); };
+      tl('sbat', 'at', '🤖', 'Auto-tune'); tl('svx', 'vx', '🎭', 'Transformation'); tl('sdbl', 'dbl', '👥', 'Doublage'); tl('ssat', 'sat', '🔥', 'Saturation'); tl('srad', 'rad', '📻', 'Radio'); }
     return L;
   }
   if(clVocal(cur)){ const ok = !!clCleanedTake(cur), s = clStatusHTML(cur).replace(/<[^>]+>/g, '').replace(/ trouvés?$/, ''); L.push({ k: 'clean', g: 'voix', ic: '🧽', n: 'Nettoyage', v: s || 'touche pour écouter', on: ok, lv: [ok ? 2 : 0, 3] }); }
@@ -3764,9 +3767,9 @@ function mxTileHTML(x){
 }
 /* ce que montre le panneau du bas pour chaque tuile */
 /* ⚙️ Réglages avancés : le même bouton, au même endroit (en bas du panneau), pour chaque effet. Verrouillé par le test « deepbtn ». */
-const MX_DEEP = { rev: 'rev', dly: 'dly', dbl: 'dbl', sat: 'sat', rad: 'rad', at: 'at', harm: 'at', eq: 'eq', comp: 'eq', srev: 'rev', sdly: 'dly', seq: 'eq' };
+const MX_DEEP = { rev: 'rev', dly: 'dly', dbl: 'dbl', sat: 'sat', rad: 'rad', at: 'at', harm: 'at', eq: 'eq', comp: 'eq', srev: 'rev', sdly: 'dly', seq: 'eq', sbat: 'at', sdbl: 'dbl', ssat: 'sat', srad: 'rad' };
 const MX_DEEP_N = { rev: 'de la reverb', dly: 'de l\'écho', dbl: 'du doublage', sat: 'de la saturation', rad: 'de la radio', at: 'de l\'auto-tune', eq: 'de l\'égaliseur et de la compression' };
-function mxDeepBtn(k){ const d = MX_DEEP[k]; return d ? `<div class="mxbtns mxdeep"><button class="sbtn" data-deep="${d}">⚙️ Réglages avancés ${MX_DEEP_N[d]}${k[0] === 's' && k !== 'sat' ? ' (toute la piste)' : ''}</button></div>` : ''; }
+function mxDeepBtn(k){ if(k === 'svx') return `<div class="mxbtns mxdeep"><button class="sbtn" data-vxadv aria-expanded="${mxVxAdv}">⚙️ Réglages avancés de la transformation</button></div>`; const d = MX_DEEP[k]; return d ? `<div class="mxbtns mxdeep"><button class="sbtn" data-deep="${d}">⚙️ Réglages avancés ${MX_DEEP_N[d]}${k[0] === 's' && k !== 'sat' ? ' (toute la piste)' : ''}</button></div>` : ''; }
 function mxBody(k, cur){
   const tuned = isTuned(cur) || !!cur.atOn;
   if(mxSel && MX_SELK.has(k)){
@@ -3780,6 +3783,10 @@ function mxBody(k, cur){
     if(k === 'seq') return mxSlider('low', 'Graves', -12, 12, 0.5, val('low'), fmtDb) + mxSlider('mid', 'Médiums', -12, 12, 0.5, val('mid'), fmtDb) + mxSlider('high', 'Aigus', -12, 12, 0.5, val('high'), fmtDb);
     if(k === 'smuf') return '<p class="mxnote">Le beat passe derrière une porte sur ce bout, puis revient : parfait sous un passage parlé.</p><div class="mxbtns"><button class="sbtn primary" data-mq="muf">🚪 Étouffer / remettre ce bout</button></div>';
     if(k === 'scut') return '<p class="mxnote">Le beat s\'arrête sur ce bout et repart après : ta punchline tombe dans le silence.</p><div class="mxbtns"><button class="sbtn primary" data-mq="drop">🔇 Couper / remettre ce bout</button></div>';
+    if(BP_FX[k]){ const fx = BP_FX[k], r = patchOf(cur, mxSel.a, mxSel.b, fx);
+      const note = { at: 'L\'auto-tune Robot, rien que sur ce bout (sur la note de la piste). Parfait pour un mot ou une fin de phrase.', vx: 'Ta voix transformée rien que sur ce bout : une voix de diable sur une phrase, par exemple.', dbl: 'Ta voix doublée sur ce bout : plus épaisse, pour appuyer un mot ou une punchline.', sat: 'De la saturation sur ce bout : la voix grésille et arrache.', rad: 'Ce bout comme à la radio ou au téléphone : voix fine et grésillante.' }[fx];
+      if(fx === 'vx'){ const pk = r?.p?.k; return `<div class="vxgrid" role="group" aria-label="Transformation du bout"><button data-bvx="" aria-pressed="${!r}">Sans</button>${VX_K.map(k2 => `<button data-bvx="${k2}" aria-pressed="${pk === k2}">${VX[k2].n}</button>`).join('')}</div><p class="mxnote">${note}</p>${mxVxAdv ? `<div class="vxadv">${mxSlider('vxtr', 'Hauteur de la voix', -12, 12, 1, r?.p?.tr ?? -6, x => (x > 0 ? '+' : '') + x + ' ½ tons')}${mxSlider('vxfm', 'Timbre (taille de la gorge)', -12, 12, 1, r?.p?.fm ?? -4, x => x == 0 ? 'naturel' : (x < 0 ? 'plus grave ' : 'plus clair ') + Math.abs(x))}<div class="mxbtns"><button class="sbtn primary" data-bvxgo>✓ Appliquer sur le bout</button></div></div>` : ''}`; }
+      return `<p class="mxnote">${note}</p><div class="mxbtns"><button class="sbtn ${r ? '' : 'primary'}" data-bpon="${k}">${r ? '↺ Enlever du bout' : '✓ Mettre sur ce bout'}</button></div>`; }
     if(k === 'sat0') return `<p class="mxnote">L'auto-tune est ${tuned ? 'allumé' : 'éteint'} et se règle sur toute la piste.</p><div class="mxbtns"><button class="sbtn" data-mx="clear" data-goat="1">🤖 Régler l'auto-tune ›</button></div>`;
     return '';
   }
@@ -3850,6 +3857,7 @@ async function mxSwitch(t, k, on){
     if(k === 'srev' || k === 'sdly'){ const q = k.slice(1); mxSetReg(t, q, on ? 0 : (r && r.fx[q] > 0 ? r.fx[q] : LV[q][1])); renderMix(); return; }
     if(k === 'seq'){ if(on && r){ pushUndo('le réglage du bout'); ['low', 'mid', 'high'].forEach(q => delete r.fx[q]); t.chain.set(t, audible(t), true); scheduleSave(); } else if(!on) mxSetReg(t, 'high', 3); renderMix(); return; }
     if(k === 'stut'){ const sr = stutOf(t, mxSel.a, mxSel.b); if(on && sr){ setBusy(true, 'Bégaiement…'); try{ pushUndo('le bégaiement'); await stutterOff(t, sr); }catch(e){ toast('Bégaiement : ' + e.message); }finally{ setBusy(false); } } else if(!on) await stutterSel(t, t.lastStut || 4); return; }
+    if(BP_FX[k]){ const fx = BP_FX[k]; if(on) await bpOff(t, fx); else await bpApply(t, fx, bpDefault(t, fx)); return; }
     if(k === 'smuf' || k === 'scut'){ const bq = document.createElement('button'); bq.dataset.mq = k === 'smuf' ? 'muf' : 'drop'; $('#strip').appendChild(bq); bq.click(); bq.remove(); return; }
     return;
   }
@@ -4217,6 +4225,14 @@ document.addEventListener('pointerdown', e => {
     if(S.playing) pause(); pushUndo('les blancs'); await blApply(t, o.off + d.a, o.off + d.b); jr('a', 'blancs à la main'); scheduleSave(); renderMix(); };
   window.addEventListener('pointermove', mv); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
 }, true);
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-bvx],[data-bvxgo],[data-bpon]'); if(!b || !b.closest('#vMix')) return;
+  const t = selTrack(); if(!t?.buffer || !mxSel) return;
+  if(b.dataset.bpon){ const fx = BP_FX[b.dataset.bpon]; if(patchOf(t, mxSel.a, mxSel.b, fx)) await bpOff(t, fx); else await bpApply(t, fx, bpDefault(t, fx)); return; }
+  if(b.dataset.bvxgo != null){ const g = id => +(document.querySelector('#mxSheet [data-rk="' + id + '"]')?.value ?? 0); await bpApply(t, 'vx', { k: 'perso', tr: g('vxtr'), fm: g('vxfm'), comp: true }); return; }
+  const k2 = b.dataset.bvx; if(!k2){ await bpOff(t, 'vx'); return; }
+  t.bvxLast = k2; await bpApply(t, 'vx', { k: k2, ...VX[k2] });
+});
 document.addEventListener('click', async e => {
   const b = e.target.closest('[data-vx],[data-vxadv],[data-vxgo]'); if(!b || !b.closest('#vMix')) return;
   const t = selTrack(); if(!t?.buffer) return;
@@ -4708,7 +4724,7 @@ function updRowFx(t){
   if(z) z.innerHTML = fxZoneHTML(t);
 }
 function renderQuick(){ S.tracks.forEach(updRowFx); }
-$('#strip').addEventListener('click', e => { if(e.target.closest('[data-vx],[data-vxadv],[data-vxgo],[data-bl],[data-mts],[data-mtg],[data-mtx],[data-stut],[data-rfx],[data-mx],[data-mq],[data-cl],[data-clk],[data-clf],[data-deep],[data-atk],[data-atsrc],[data-atch],[data-atd],[data-ath]')) return;
+$('#strip').addEventListener('click', e => { if(e.target.closest('[data-bvx],[data-bvxgo],[data-bpon],[data-vx],[data-vxadv],[data-vxgo],[data-bl],[data-mts],[data-mtg],[data-mtx],[data-stut],[data-rfx],[data-mx],[data-mq],[data-cl],[data-clk],[data-clf],[data-deep],[data-atk],[data-atsrc],[data-atch],[data-atd],[data-ath]')) return;
   const cb = e.target.closest('[data-comp]');
   if(cb){ const t = selTrack(); if(!t || isLocked(t)) return; pushUndo('la compression'); const i = +cb.dataset.comp; t.fx = { ...t.fx, ...(i ? COMP_PRE[i] : { ratio: 1 }) }; if(t.preset !== 'perso' && t.preset !== 'instru') t.preset = 'perso'; t.chain.set(t, audible(t), true); renderMix(); scheduleSave(); return; }
   const b = e.target.closest('[data-vsm]'); if(b){ applyVStyle(selTrack(), +b.dataset.vsm); return; } fxAction(e, selTrack()); });
@@ -6991,7 +7007,7 @@ async function saveSession(){
     showSessTitle();
     const tracks = S.tracks.map(t => ({
       name: t.name, color: t.color, preset: t.preset, fx: t.fx, fx29: true, vr: t.vr, vol: t.vol, pan: t.pan, mute: t.mute, solo: t.solo,
-      uid: t.uid, owner: t.owner, ownerName: t.ownerName, label: t.label ?? null, lbl2: true, srcName: t.srcName || '', regs: t.regs?.length ? t.regs : undefined, stuts: t.stuts?.length ? t.stuts.filter(r => r.orig).map(r => ({ a: r.a, b: r.b, n: r.n, t0: r.orig.t0, sr: r.orig.sr, aid: bufAid(r.orig.buf) })) : undefined, keep: !!t.keep, take: t.take, trim: t.trim, atOn: t.atOn, at: t.at, lv: t.lv, vp: t.vp, adapted: t.adapted, semi: t.semi, bpmOrig: t.bpmOrig, origTake: t.origTake,
+      uid: t.uid, owner: t.owner, ownerName: t.ownerName, label: t.label ?? null, lbl2: true, srcName: t.srcName || '', regs: t.regs?.length ? t.regs : undefined, stuts: t.stuts?.length ? t.stuts.filter(r => r.orig).map(r => ({ a: r.a, b: r.b, n: r.n, fx: r.fx, p: r.p, t0: r.orig.t0, sr: r.orig.sr, aid: bufAid(r.orig.buf) })) : undefined, keep: !!t.keep, take: t.take, trim: t.trim, atOn: t.atOn, at: t.at, lv: t.lv, vp: t.vp, adapted: t.adapted, semi: t.semi, bpmOrig: t.bpmOrig, origTake: t.origTake,
       takes: t.takes.map(k => ({ aid: bufAid(k.buffer), offset: k.offset, tuned: k.tuned, hz: k.hz, cl: k.cl, src: k.src, xf: k.xf, punch: k.punch, full: k.full ? bufAid(k.full) : k.fullAid, fullOff: k.fullOff, vx: k.vx, vxSrc: k.vxSrc, vxp: k.vxp }))
     }));
     for(const t of S.tracks) for(const k of [...t.takes, ...t.takes.filter(x => x.full).map(x => ({ buffer: x.full })), ...(t.stuts || []).filter(r => r.orig).map(r => ({ buffer: r.orig.buf }))]){
@@ -7042,7 +7058,7 @@ async function loadSession(id){
     }
     t.takes.forEach(k => { k.src = k.src != null && remap.has(k.src) ? remap.get(k.src) : undefined; k.vxSrc = k.vxSrc != null && remap.has(k.vxSrc) ? remap.get(k.vxSrc) : undefined; if(k.vx && k.vxSrc == null) delete k.vx; });
     /* bégaiements posés : leur son d'origine revient avec la séance, l'interrupteur peut les enlever */
-    if(tr.stuts?.length){ t.stuts = []; for(const r of tr.stuts){ try{ const o = await dbDo('audio', 'readonly', st => st.get(r.aid)); if(!o) continue; const b = unpackBuf(o); aidOf.set(b, r.aid); savedAids.add(r.aid); t.stuts.push({ a: r.a, b: r.b, n: r.n, orig: { t0: r.t0, sr: r.sr, buf: b } }); }catch(e){} } if(!t.stuts.length) delete t.stuts; }
+    if(tr.stuts?.length){ t.stuts = []; for(const r of tr.stuts){ try{ const o = await dbDo('audio', 'readonly', st => st.get(r.aid)); if(!o) continue; const b = unpackBuf(o); aidOf.set(b, r.aid); savedAids.add(r.aid); t.stuts.push({ a: r.a, b: r.b, n: r.n, fx: r.fx, p: r.p, orig: { t0: r.t0, sr: r.sr, buf: b } }); }catch(e){} } if(!t.stuts.length) delete t.stuts; }
     t.origTake = tr.origTake != null && remap.has(tr.origTake) ? remap.get(tr.origTake) : undefined;
     t.take = remap.has(cur) ? remap.get(cur) : t.takes.length - 1;
     if(t.take >= 0){ t.buffer = t.takes[t.take].buffer; t.offset = t.takes[t.take].offset; } else { t.buffer = null; t.offset = 0; }
@@ -7180,7 +7196,11 @@ function blazeAsk(){
 /* À l'ouverture : on choisit, rien n'est rouvert d'office */
 function showWelcome(){
   if(!ME.name){ startTour(true, null, showWelcome); return; }
-  if(!ME.from){ startTour(true, [WHO, HELLO], showWelcome); return; }
+  /* déjà présenté avec une ville connue : le département se retrouve tout seul ; sinon on te le demande une fois */
+  if(ME.from && !ME.dep){ const c = cityDep(ME.from), d = c && depParse(c); if(d){ ME.dep = d.code; ME.city = ME.city || ME.from; store.set('me', ME); try{ $('#meDep').value = d.code; }catch(e){} } }
+  if(!ME.from || !ME.dep){ startTour(true, [WHO, HELLO], showWelcome); return; }
+  /* le Xel te salue (une fois toutes les 4 h au plus) */
+  try{ const last = +localStorage.getItem('sx.hyOpen') || 0; if(Date.now() - last > 4 * 3600e3){ localStorage.setItem('sx.hyOpen', String(Date.now())); setTimeout(() => toast(hyLine('open')), 900); } }catch(e){}
   if(!sessIndex.length){ newSession(); return; }
   const list = sessIndex.slice().sort((a, b) => b.updated - a.updated).slice(0, 4);
   const w = document.createElement('div');
@@ -8213,7 +8233,10 @@ $('#meFrom').value = ME.from || '';
 $('#meSoc').value = ME.soc ? '@' + ME.soc : '';
 $('#meSoc').addEventListener('input', e => { ME.soc = e.target.value.replace(/\s+/g, '').replace(/^@+/, ''); store.set('me', ME); });
 $('#meSoc').addEventListener('blur', e => { e.target.value = ME.soc ? '@' + ME.soc : ''; });
-$('#meFrom').addEventListener('input', e => { ME.from = e.target.value.trim(); store.set('me', ME); });
+$('#meFrom').addEventListener('input', e => { ME.from = ME.city = e.target.value.trim(); store.set('me', ME); });
+$('#meDep').value = ME.dep || '';
+$('#meDep').addEventListener('change', e => { const d = depParse(e.target.value); if(d){ ME.dep = d.code; store.set('me', ME); e.target.value = d.code; } else { e.target.value = ME.dep || ''; toast('Département inconnu : mets son numéro (ex : 86) ou ton pays.'); } });
+setTimeout(() => { const dl = document.createElement('datalist'); dl.id = 'depList2'; dl.innerHTML = Object.keys(DEPN).map(d => `<option value="${d}">${DEPN[d]}</option>`).join(''); document.body.appendChild(dl); }, 0);
 $('#meName').addEventListener('input', e => {
   ME.name = e.target.value.trim(); store.set('me', ME);
   S.tracks.forEach(t => { if(t.owner === ME.id) t.ownerName = ME.name; });
@@ -8432,7 +8455,90 @@ async function stutterRender(buf, offset, a, N, u){
   return out;
 }
 /* le bégaiement posé sur ce bout (gardé tant que l'appli est ouverte, pour pouvoir l'éteindre) */
-const stutOf = (t, a, b) => (t.stuts || []).find(r => r.a < b && r.b > a);
+const stutOf = (t, a, b) => (t.stuts || []).find(r => !r.fx && r.a < b && r.b > a);
+/* ---------- Effets « piste entière » posés rien que sur un bout : auto-tune, transformation, saturation, radio, doublage ----------
+   Le bout est traité à part puis recollé dans ta prise avec un fondu de 15 ms à chaque bord (pas de clic). Le son d'origine du bout est gardé
+   avec la séance (même rangement que le bégaiement) : l'interrupteur l'enlève, même après avoir fermé l'appli. */
+const BP_FX = { sbat: 'at', svx: 'vx', ssat: 'sat', srad: 'rad', sdbl: 'dbl' };
+const BP_N = { at: '🤖 Auto-tune', vx: '🎭 Transformation', sat: '🔥 Saturation', rad: '📻 Radio', dbl: '👥 Doublage' };
+const patchOf = (t, a, b, fx) => (t.stuts || []).find(r => r.fx === fx && r.a < b && r.b > a);
+const bpRms = b => { let s2 = 0, n = 0; for(let c = 0; c < b.numberOfChannels; c++){ const d = b.getChannelData(c); for(let i = 0; i < d.length; i++){ s2 += d[i] * d[i]; n++; } } return Math.sqrt(s2 / Math.max(1, n)); };
+function bpMatch(out, ref, k){ const a = bpRms(ref), b = bpRms(out); if(a > 0 && b > 0){ const g = Math.min(4, a / b * (k || 1)); for(let c = 0; c < out.numberOfChannels; c++){ const d = out.getChannelData(c); for(let i = 0; i < d.length; i++) d[i] = Math.max(-0.99, Math.min(0.99, d[i] * g)); } } return out; }
+async function bpProc(seg, fx, P){
+  const sr = seg.sampleRate, nc = seg.numberOfChannels, n = seg.length;
+  if(fx === 'vx') return ssVoice(seg, P.tr, P.fm, P.comp);
+  if(fx === 'at'){
+    const an = await analysePitch(seg); if(!an.f0.some(f => f > 0)) throw new Error('pas de voix chantée sur ce bout');
+    let key = P.key, scale = P.scale; if(P.auto){ const k = detectKey(an.f0); if(k){ key = k.key; scale = k.scale; } }
+    const sh = shiftCurve(an.f0, { ...P, key, scale, mode: 2, amount: 100, speedS: 0.006, keepVib: 0 }, an.hopS / an.sr);
+    return psola(seg, an, sh);
+  }
+  if(fx === 'sat'){
+    const out = ctx.createBuffer(nc, n, sr), K = 4, T = Math.tanh(K);
+    for(let c = 0; c < nc; c++){ const x = seg.getChannelData(c), y = out.getChannelData(c); for(let i = 0; i < n; i++) y[i] = 0.35 * x[i] + 0.65 * Math.tanh(K * x[i]) / T; }
+    return bpMatch(out, seg);
+  }
+  if(fx === 'rad'){
+    const off = new OfflineAudioContext(nc, n, sr), src = off.createBufferSource(); src.buffer = seg;
+    const hp = biq(off, 'highpass', 450, 0.9), lp = biq(off, 'lowpass', 3200, 0.9), pk = biq(off, 'peaking', 1500, 1.2); pk.gain.value = 5;
+    const ws = off.createWaveShaper(), cv = new Float32Array(1024); for(let i = 0; i < 1024; i++){ const x = i / 511.5 - 1; cv[i] = Math.tanh(2.2 * x) / Math.tanh(2.2); } ws.curve = cv;
+    src.connect(hp); hp.connect(lp); lp.connect(pk); pk.connect(ws); ws.connect(off.destination); src.start();
+    return bpMatch(await off.startRendering(), seg);
+  }
+  if(fx === 'dbl'){
+    const cp = await ssVoice(seg, 0.15, 0, true); if(!cp) return null;
+    const out = ctx.createBuffer(nc, n, sr), D = Math.round(sr * 0.025);
+    for(let c = 0; c < nc; c++){ const x = seg.getChannelData(c), q = cp.getChannelData(c), y = out.getChannelData(c); for(let i = 0; i < n; i++) y[i] = x[i] + 0.6 * (i >= D ? q[i - D] : 0); }
+    return bpMatch(out, seg, 1.12);
+  }
+  return null;
+}
+/* le bout [a, b] traité puis recollé dans la prise, fondu de 15 ms à chaque bord */
+async function bpRender(buf, off, a, b, fx, P){
+  const sr = buf.sampleRate, len = buf.length;
+  const A = Math.max(0, Math.round((a - off) * sr)), Z = Math.min(len, Math.round((b - off) * sr)); if(Z - A < sr * 0.05) return null;
+  const M = Math.round(sr * 0.05), s0 = Math.max(0, A - M), s1 = Math.min(len, Z + M);
+  const proc = await bpProc(bufSlice(buf, s0, s1), fx, P); if(!proc) return null;
+  const nb = ctx.createBuffer(buf.numberOfChannels, len, sr), X = Math.max(1, Math.min(Math.round(sr * 0.015), (Z - A) >> 2));
+  for(let c = 0; c < buf.numberOfChannels; c++){
+    const d = nb.getChannelData(c), x = buf.getChannelData(c), y = proc.getChannelData(Math.min(c, proc.numberOfChannels - 1)); d.set(x);
+    for(let i = A; i < Z; i++){ const w = Math.min(1, (i - A) / X, (Z - 1 - i) / X); const v = y[i - s0]; d[i] = x[i] * (1 - w) + (isFinite(v) ? v : x[i]) * w; }
+  }
+  return nb;
+}
+async function bpApply(t, fx, P){
+  if(!t?.buffer || !mxSel || isLocked(t)){ if(t && isLocked(t)) lockToast(t); return; }
+  if(t.keep){ keepToast(); return; }
+  if(busy) return;
+  if(S.playing) pause();
+  setBusy(true, BP_N[fx] + ' sur ce bout…');
+  try{
+    pushUndo('l\'effet sur le bout');
+    const old = patchOf(t, mxSel.a, mxSel.b, fx); if(old) await stutterOff(t, old, true);
+    const cur = t.takes[t.take], ids = [t.take]; if((cur?.tuned || cur?.hz) && t.takes[cur.src]) ids.push(cur.src);
+    const rec = { a: mxSel.a, b: mxSel.b, n: 0, fx, p: P, prev: [], now: [] };
+    { const bk = t.takes[ids[ids.length - 1]], bb = bk.buffer, sr = bb.sampleRate, A = Math.max(0, Math.round((mxSel.a - (bk.offset ?? t.offset)) * sr)), Z = Math.min(bb.length, Math.round((mxSel.b - (bk.offset ?? t.offset)) * sr));
+      if(Z > A){ const ob = ctx.createBuffer(bb.numberOfChannels, Z - A, sr); for(let c = 0; c < bb.numberOfChannels; c++) ob.copyToChannel(bb.getChannelData(c).slice(A, Z), c); rec.orig = { t0: (bk.offset ?? t.offset) + A / sr, sr, buf: ob }; } }
+    let done = 0;
+    for(const i of ids){ const k = t.takes[i], nb = await bpRender(k.buffer, k.offset ?? t.offset, mxSel.a, mxSel.b, fx, P); if(nb){ rec.prev.push([i, k.buffer]); rec.now.push([i, nb]); t.takes[i] = { ...k, buffer: nb }; done++; } }
+    if(!done) throw new Error('bout hors de la prise');
+    (t.stuts = t.stuts || []).push(rec);
+    t.buffer = t.takes[t.take].buffer; claim(t);
+    jr('a', 'effet sur un bout : ' + fx + ' ' + (Math.round((mxSel.b - mxSel.a) * 10) / 10) + ' s'); track('bout-' + fx);
+    restart(); renderTracks(); renderMix(); scheduleSave();
+    toast(BP_N[fx] + ' rien que sur ce bout. ▶ Écouter le bout ; l\'interrupteur l\'enlève.');
+  }catch(e){ toast(BP_N[fx] + ' impossible sur ce bout : ' + e.message); jr('w', 'effet bout ' + fx + ' : ' + e.message); }
+  setBusy(false);
+}
+async function bpOff(t, fx){
+  const r = mxSel && patchOf(t, mxSel.a, mxSel.b, fx); if(!r || busy) return;
+  if(S.playing) pause();
+  setBusy(true, 'J\'enlève l\'effet…');
+  try{ pushUndo('l\'effet sur le bout'); await stutterOff(t, r, true); jr('a', 'effet enlevé du bout : ' + fx); restart(); renderTracks(); renderMix(); scheduleSave(); toast(BP_N[fx] + ' enlevé : le bout redevient comme avant.'); }
+  catch(e){ toast('Impossible d\'enlever l\'effet : ' + e.message); }
+  setBusy(false);
+}
+const bpDefault = (t, fx) => fx === 'vx' ? (VX[t.bvxLast] || VX.diable) : fx === 'at' ? { ...t.at } : {};
 async function stutterOff(t, rec, quiet){
   let miss = false;
   if(rec.prev?.length) rec.prev.forEach(([i, buf], q) => { const k = t.takes[i]; if(k && k.buffer === rec.now[q][1]) t.takes[i] = { ...k, buffer: buf }; else miss = true; });
@@ -8966,6 +9072,60 @@ $('#selListen').onclick = () => {
 
 /* ---------- Tuto : le Xel présente le studio aux kickeurs ---------- */
 let tourOnEnd = null, tourDoneRun = false;
+/* ---------- Le Xel te parle à toi : ton blaze, ta ville, ton département ----------
+   Des phrases variées (jamais deux fois la même d'affilée), qui chambrent gentiment, posent des questions,
+   et citent des rappeurs connus de ton coin quand il y en a (seulement ceux dont l'origine est sûre). */
+const DEPN = { '01': 'Ain', '02': 'Aisne', '03': 'Allier', '04': 'Alpes-de-Haute-Provence', '05': 'Hautes-Alpes', '06': 'Alpes-Maritimes', '07': 'Ardèche', '08': 'Ardennes', '09': 'Ariège', '10': 'Aube', '11': 'Aude', '12': 'Aveyron', '13': 'Bouches-du-Rhône', '14': 'Calvados', '15': 'Cantal', '16': 'Charente', '17': 'Charente-Maritime', '18': 'Cher', '19': 'Corrèze', '2A': 'Corse-du-Sud', '2B': 'Haute-Corse', '21': 'Côte-d\'Or', '22': 'Côtes-d\'Armor', '23': 'Creuse', '24': 'Dordogne', '25': 'Doubs', '26': 'Drôme', '27': 'Eure', '28': 'Eure-et-Loir', '29': 'Finistère', '30': 'Gard', '31': 'Haute-Garonne', '32': 'Gers', '33': 'Gironde', '34': 'Hérault', '35': 'Ille-et-Vilaine', '36': 'Indre', '37': 'Indre-et-Loire', '38': 'Isère', '39': 'Jura', '40': 'Landes', '41': 'Loir-et-Cher', '42': 'Loire', '43': 'Haute-Loire', '44': 'Loire-Atlantique', '45': 'Loiret', '46': 'Lot', '47': 'Lot-et-Garonne', '48': 'Lozère', '49': 'Maine-et-Loire', '50': 'Manche', '51': 'Marne', '52': 'Haute-Marne', '53': 'Mayenne', '54': 'Meurthe-et-Moselle', '55': 'Meuse', '56': 'Morbihan', '57': 'Moselle', '58': 'Nièvre', '59': 'Nord', '60': 'Oise', '61': 'Orne', '62': 'Pas-de-Calais', '63': 'Puy-de-Dôme', '64': 'Pyrénées-Atlantiques', '65': 'Hautes-Pyrénées', '66': 'Pyrénées-Orientales', '67': 'Bas-Rhin', '68': 'Haut-Rhin', '69': 'Rhône', '70': 'Haute-Saône', '71': 'Saône-et-Loire', '72': 'Sarthe', '73': 'Savoie', '74': 'Haute-Savoie', '75': 'Paris', '76': 'Seine-Maritime', '77': 'Seine-et-Marne', '78': 'Yvelines', '79': 'Deux-Sèvres', '80': 'Somme', '81': 'Tarn', '82': 'Tarn-et-Garonne', '83': 'Var', '84': 'Vaucluse', '85': 'Vendée', '86': 'Vienne', '87': 'Haute-Vienne', '88': 'Vosges', '89': 'Yonne', '90': 'Territoire de Belfort', '91': 'Essonne', '92': 'Hauts-de-Seine', '93': 'Seine-Saint-Denis', '94': 'Val-de-Marne', '95': 'Val-d\'Oise', '971': 'Guadeloupe', '972': 'Martinique', '973': 'Guyane', '974': 'La Réunion', '976': 'Mayotte' };
+const RAPZ = { '75': ['Nekfeu', 'Alpha Wann', 'Lomepal', 'Oxmo Puccino'], '13': ['IAM', 'Jul', 'SCH', 'Soprano', 'Naps', 'Alonzo'], '92': ['Booba', 'Lunatic'], '93': ['NTM', 'Kaaris', 'Dinos', 'Tiakola', 'Sefyu'], '91': ['PNL', 'Niska', 'Koba LaD', 'Sinik'], '94': ['Rohff', 'Kery James', '113', 'Mafia K\'1 Fry'], '95': ['Ärsenik'], '31': ['Bigflo & Oli'], '14': ['Orelsan'], '59': ['Gradur'], '972': ['Kalash'], '971': ['Admiral T'], belgique: ['Damso', 'Hamza', 'Roméo Elvis'] };
+const normK = x => String(x || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ');
+/* « 86 », « Vienne », « 2a », « Belgique »… → { code, name, abroad } */
+function depParse(x){
+  const k = normK(x); if(!k) return null;
+  if(PAYS[k]) return { code: k, name: x.trim().replace(/^./, c => c.toUpperCase()), abroad: true, flag: PAYS[k] };
+  const c = k.toUpperCase().replace(/^0?(\d)$/, '0$1');
+  if(DEPN[c]) return { code: c, name: DEPN[c] };
+  const byName = Object.keys(DEPN).find(d => normK(DEPN[d]) === k || normK(DEPN[d]).replace(/-/g, ' ') === k.replace(/-/g, ' '));
+  return byName ? { code: byName, name: DEPN[byName] } : null;
+}
+const cityDep = v => { const k = normK(v); return DEPTS[k] || DEPTS[k.replace(/ /g, '-')] || null; };
+const hyPick = (arr, tag) => {
+  let used = []; try{ used = JSON.parse(localStorage.getItem('sx.hy') || '[]'); }catch(e){}
+  const all = arr.map((x, i) => [x, tag + i]), fresh = all.filter(([, id]) => !used.includes(id));
+  /* tout a déjà servi : on reprend la phrase la plus ancienne, jamais une récente */
+  const [v, id] = fresh.length ? fresh[Math.floor(Math.random() * fresh.length)] : all.reduce((a, b) => used.indexOf(b[1]) > used.indexOf(a[1]) ? b : a);
+  used = [id, ...used.filter(u => u !== id)].slice(0, 40); try{ localStorage.setItem('sx.hy', JSON.stringify(used)); }catch(e){}
+  return v;
+};
+function hyCtx(){
+  const d = depParse(ME.dep) || (cityDep(ME.from) ? depParse(cityDep(ME.from)) : null), city = (ME.city || ME.from || '').trim();
+  const R = d ? RAPZ[d.abroad ? d.code : d.code] || [] : [];
+  const two = R.length > 1 ? (() => { const a = [...R].sort(() => Math.random() - 0.5); return a[0] + ' et ' + a[1]; })() : R[0] || '';
+  return { n: ME.name || 'toi', v: city || (d ? d.name : 'ton coin'), d, dd: d ? (d.abroad ? d.name : d.code.split('').join('.')) : '', dn: d ? d.name : '', r: R.length ? R[Math.floor(Math.random() * R.length)] : '', rr: two, abroad: !!d?.abroad, flag: d?.flag || '' };
+}
+const hyFill = (str, c) => str.replace(/\{(\w+)\}/g, (_, k) => c[k] ?? '');
+const HY = {
+  title: ['Bienvenue {n} 🙌', 'Yo {n} 👊', '{n} dans la cabine 🎤', 'Ah, voilà {n} 🔥', 'Wesh {n} 👋'],
+  rap: ['{v}, {dn}… le coin de {rr}. Pas de pression hein 😏', 'Du {dd}, comme {r} ? Ok, maintenant on attend du lourd.', '{r} vient de chez toi. T\'es là pour prendre sa place ou pour faire les chœurs ? 😄', 'Le {dd}, terre de {rr}. T\'as intérêt à faire honneur au département.', '{v} ! Là où {r} a commencé. À ton tour de faire parler le {dd}.'],
+  norap: ['{v} ({dn}) : le jour où on parlera du rap de là-bas, ce sera grâce à toi. Pas de pression 😏', 'Le {dd}, je note. Le premier disque d\'or du coin, c\'est pour toi ?', '{v}, {dn} ! La place de star du rap du coin, elle est pour qui ? Pour toi j\'espère 👑', '{v} ({dn}). Ce soir, c\'est toi qui fais parler {v}.', 'Le {dd} représente ! Enfin… il va représenter encore plus fort, grâce à toi 😏', '{v} ? Je note. Bientôt sur la carte du rap, grâce à toi 😏', '{v} dans le {dd} : petit coin, grosses rimes. Prouve-le.'],
+  abroad: ['{v} {flag} ! Ça vient de loin pour kicker ici, respect 🙏', 'De {v} {flag} jusqu\'à la cabine… t\'as fait tout ce chemin, alors envoie.', '{dn} {flag} dans la place ! {r} n\'a qu\'à bien se tenir 😏'],
+  tease: ['{n}, la cabine a vu passer des légendes… et des catastrophes. On parie sur quoi pour toi ? 😏', 'Le blaze est validé, {n}. Le flow, on va voir.', '{n}, si t\'as le trac, c\'est normal. Si t\'as pas le trac, c\'est louche 😄', 'Je te préviens {n} : moi je dis toujours la vérité sur les prises.', '{n}… c\'est un blaze qui doit assumer. On va voir ça.', 'Avec un blaze comme {n}, t\'as pas le droit de rater ta première prise 😏', '{n}, j\'espère que t\'écris mieux que tu choisis tes blazes. Je rigole… un peu.', 'Ok {n}, retiens bien : ici, le micro ne ment pas.', '{n}, j\'ai déjà entendu des débutants tout casser. J\'ai aussi entendu l\'inverse. Toi, t\'es lequel ?'],
+  ask: ['Tu kickes plutôt la nuit ou t\'es du matin, toi ?', 'C\'est quoi le thème de ton premier son : la rue, le love, ou l\'ego trip ?', 'T\'as déjà fait écouter tes sons à quelqu\'un, ou je suis le premier ? 😏', 'T\'es team refrain qui reste en tête, ou team couplet qui découpe ?', 'T\'es chaud, ou t\'es venu en touriste ?', 'T\'as déjà ton texte, ou tu comptes improviser comme un ouf ?', 'T\'es plutôt drill, boom bap, ou t\'as pas encore choisi ton camp ?', 'Dis-moi que t\'as des écouteurs, sinon ça va être la guerre avec l\'instru 😅', 'On fait un son qui tourne dans tout le {dd} ?', 'Première prise ce soir, ou tu fais encore semblant de t\'échauffer ?'],
+  open: ['{n} ! La cabine est chaude, t\'attends quoi ?', 'Tiens, {v} se réveille enfin 😏 Prêt à kicker, {n} ?', 'Yo {n} 👊 Une idée qui te trotte dans la tête ? Pose-la avant qu\'elle file.', '{n}, le micro t\'a manqué. Enfin… je crois.', 'Bon {n}, aujourd\'hui on fait mieux qu\'hier. Deal ?', 'Wesh {n} ! {v} est réveillé ? On pose un son ?', 'Le {dd} est dans la place 🔥 T\'es chaud, {n} ?', 'Re {n} 👊 Cette fois, on vise le classique ?', '{n} est de retour. {v}, préparez-vous.', 'Alors {n}, ce texte, il est fini ou tu le repousses encore ? 😏', 'T\'es revenu, {n}. Je savais que tu pouvais pas t\'en passer.'],
+  openr: ['{n}, {r} n\'a qu\'à bien se tenir aujourd\'hui.', 'Le {dd} a déjà {r}. Il lui manque toi. On y va ?'],
+  take: ['Ça, c\'est une prise qui sent le {dd} 🔥', 'Le flow est là, {n}. Le souffle, on en reparle 😅', 'J\'ai senti un truc là… refais-la pour voir si c\'était pas un accident 😏', 'Tu commences à me plaire, {n}.', '{v} peut dormir tranquille, {n} assure.', 'Ça kicke, {n} 🔥 Le {dd} est fier.', 'Pas mal {n}… mais je sais que t\'as mieux en stock 😏', 'Allez {n}, encore une, plus énervée ?', 'Propre. {v} va entendre parler de toi.', 'Hmm… t\'étais à fond, ou c\'était l\'échauffement ? 😏', 'Celle-là, je la garde au chaud. Tu la refais pour le plaisir ?'],
+  taker: ['Celle-là, {r} l\'aurait validée.', 'Doucement {n}, tu vas faire de l\'ombre à {r} 😏']
+};
+function hyLine(kind){
+  const c = hyCtx();
+  if(kind === 'title') return hyFill(hyPick(HY.title, 't'), c);
+  if(kind === 'hello'){
+    const place = c.abroad ? hyPick(HY.abroad, 'a') : c.r ? hyPick(HY.rap, 'r') : c.dd ? hyPick(HY.norap, 'p') : '{v} dans la place ! 🔥';
+    return [place, hyPick(HY.tease, 'e'), hyPick(HY.ask, 'q')].map(x => hyFill(x, c)).join('\n');
+  }
+  if(kind === 'open') return hyFill(c.r && Math.random() < 0.35 ? hyPick(HY.openr, 'R') : hyPick(HY.open, 'o'), c);
+  if(kind === 'take') return hyFill(c.r && Math.random() < 0.3 ? hyPick(HY.taker, 'K') : hyPick(HY.take, 'k'), c);
+  return '';
+}
 /* d'où tu viens → « tu représentes le 8.6 » */
 const DEPTS = { paris: '75', marseille: '13', lyon: '69', villeurbanne: '69', toulouse: '31', nice: '06', nantes: '44', strasbourg: '67', montpellier: '34', bordeaux: '33', lille: '59', roubaix: '59', tourcoing: '59', rennes: '35', reims: '51', 'le havre': '76', rouen: '76', 'saint-etienne': '42', toulon: '83', grenoble: '38', dijon: '21', angers: '49', nimes: '30', 'clermont-ferrand': '63', 'le mans': '72', 'aix-en-provence': '13', brest: '29', tours: '37', amiens: '80', limoges: '87', perpignan: '66', metz: '57', besancon: '25', orleans: '45', mulhouse: '68', caen: '14', nancy: '54', poitiers: '86', chatellerault: '86', 'la rochelle': '17', niort: '79', angouleme: '16', 'saint-denis': '93', montreuil: '93', bobigny: '93', sevran: '93', 'aulnay-sous-bois': '93', aulnay: '93', aubervilliers: '93', 'la courneuve': '93', bondy: '93', creteil: '94', vitry: '94', 'vitry-sur-seine': '94', ivry: '94', champigny: '94', argenteuil: '95', sarcelles: '95', cergy: '95', evry: '91', 'grigny': '91', nanterre: '92', boulogne: '92', 'boulogne-billancourt': '92', colombes: '92', versailles: '78', 'mantes-la-jolie': '78', trappes: '78', meaux: '77', melun: '77', avignon: '84', pau: '64', bayonne: '64', ajaccio: '2A', bastia: '2B', 'seine-saint-denis': '93', 'val-de-marne': '94', 'hauts-de-seine': '92', essonne: '91', "val-d'oise": '95', yvelines: '78', 'seine-et-marne': '77', vienne: '86', 'bouches-du-rhone': '13', nord: '59', gironde: '33', rhone: '69' };
 const PAYS = { france: '🇫🇷', belgique: '🇧🇪', suisse: '🇨🇭', canada: '🇨🇦', quebec: '🇨🇦', luxembourg: '🇱🇺', maroc: '🇲🇦', algerie: '🇩🇿', tunisie: '🇹🇳', senegal: '🇸🇳', mali: '🇲🇱', "cote d'ivoire": '🇨🇮', cameroun: '🇨🇲', congo: '🇨🇬', rdc: '🇨🇩', guinee: '🇬🇳', gabon: '🇬🇦', haiti: '🇭🇹', comores: '🇰🇲', madagascar: '🇲🇬', 'burkina faso': '🇧🇫', togo: '🇹🇬', benin: '🇧🇯', niger: '🇳🇪', mauritanie: '🇲🇷', guadeloupe: '🇬🇵', martinique: '🇲🇶', guyane: '🇬🇫', reunion: '🇷🇪', mayotte: '🇾🇹', usa: '🇺🇸', 'etats-unis': '🇺🇸', angleterre: '🇬🇧', espagne: '🇪🇸', portugal: '🇵🇹', italie: '🇮🇹', allemagne: '🇩🇪', bresil: '🇧🇷', turquie: '🇹🇷' };
@@ -8980,8 +9140,8 @@ function fromLine(o){
   if(d) return 'Ah yes, tu représentes le ' + dot(d) + ' ! 🔥 ' + vibe;
   return raw + ' dans la place ! 🔥 ' + vibe;
 }
-const WHO = { who: true, t: '🎤 Présente-toi', b: 'Avant tout, dis-moi qui tu es. Tout le tuto sera pour toi.' };
-const HELLO = { t: () => 'Bienvenue ' + ME.name + ' 🙌', b: () => fromLine(ME.from) + '\n\nOn fait le tour du studio ensemble, et après tu enchaînes sur ton premier son.' };
+const WHO = { who: true, t: '🎤 Présente-toi', b: 'Avant tout, dis-moi qui tu es et d\'où tu viens : ta ville et ton département. Tout le tuto sera pour toi.' };
+const HELLO = { t: () => hyLine('title'), b: () => hyLine('hello') + '\n\nOn fait le tour du studio ensemble, et après tu enchaînes sur ton premier son.' };
 const TOUR = [
   { t: 'Yo les kickeurs 👊', b: 'C\'est le Xel. Avant de kicker, on remet les pieds sur terre : le matos.\nLe micro de ton tel suffit pour maquetter. Pour un son au top :\n• Écouteurs filaires sur les oreilles : tu entends l\'instru et elle ne repart pas dans le micro. Le Bluetooth, évite-le pendant que tu poses ta voix.\n• Un petit micro qui se branche sur le tel, c\'est le vrai saut de qualité.\n• Une pièce calme et pleine de tissu (rideaux, lit, vêtements), pas une salle de bain.\n• Ta bouche à 15–20 cm du micro, et le tel en mode avion pour pas qu\'une notif gâche la prise.\n\nEt soyons vrais : StudioXel, c\'est ton carnet de brouillon. Tu poses tes idées, tu testes tes flows, tu maquettes. Le son final, lui, se fait chez un ingé son, dans un vrai studio équipé. Arrive chez lui avec ta maquette, tu gagnes du temps, il gagne du temps, et ton son gagne tout court.' },
   { t: 'Comme une vraie appli 📲', b: ((navigator.standalone || matchMedia('(display-mode: standalone)').matches) ? 'Toi c\'est déjà fait ✅ Montre-le à tes potes kickeurs.\n\n' : '') + (/Android/i.test(navigator.userAgent)
@@ -9352,13 +9512,13 @@ function startTour(force, steps, onEnd){
   tourEl.addEventListener('click', e => {
     const b = e.target.closest('[data-t]'); if(!b) return;
     /* « Passer » saute le tuto, jamais la présentation : blaze et d'où tu viens sont obligatoires */
-    if(b.dataset.t === 'skip'){ if(!ME.name || !ME.from){ const w = TSTEPS.indexOf(WHO); if(w >= 0){ tourI = w; showStep(); return; } } return endTour(); }
+    if(b.dataset.t === 'skip'){ if(!ME.name || !ME.from || !ME.dep){ const w = TSTEPS.indexOf(WHO); if(w >= 0){ tourI = w; showStep(); return; } } return endTour(); }
     if(b.dataset.t === 'guide'){ endTour(); return startGuide(); }
     if(b.dataset.t === 'prev' && tourI > 0){ tourI--; showStep(); }
     if(b.dataset.t === 'next'){
       if(TSTEPS[tourI] === WHO){
-        const n = $('#tWhoN').value.trim(), f = $('#tWhoF').value.trim(); if(!n || !f) return;
-        ME.name = n; ME.from = f; store.set('me', ME); try{ $('#meName').value = n; $('#meFrom').value = f; }catch(e){}
+        const n = $('#tWhoN').value.trim(), f = $('#tWhoF').value.trim(), d = depParse($('#tWhoD').value); if(!n || !f || !d) return;
+        ME.name = n; ME.from = f; ME.city = f; ME.dep = d.code; store.set('me', ME); try{ $('#meName').value = n; $('#meFrom').value = f; $('#meDep').value = d.code; }catch(e){}
         S.tracks.forEach(t => { if(t.owner === ME.id) t.ownerName = n; }); track('presentation');
       }
       if(tourI >= TSTEPS.length - 1) return endTour(); tourI++; showStep(); }
@@ -9386,11 +9546,14 @@ function showStep(){
   tourEl.querySelector('[data-t=skip]').hidden = isWho;
   if(isWho){
     const box = document.createElement('div'); box.className = 'twho';
-    box.innerHTML = `<label>Ton blaze<input id="tWhoN" maxlength="30" autocomplete="off" placeholder="Ex : Xela"></label><label>D'où tu viens ?<input id="tWhoF" maxlength="40" autocomplete="off" placeholder="Ta ville ou ton département (ex : 86)"></label>`;
+    box.innerHTML = `<label>Ton blaze<input id="tWhoN" maxlength="30" autocomplete="off" placeholder="Ex : Xela"></label><label>Ta ville<input id="tWhoF" maxlength="40" autocomplete="off" placeholder="Ex : Poitiers"></label><label>Ton département<input id="tWhoD" maxlength="30" autocomplete="off" list="depList" placeholder="Ex : 86 (ou ton pays)"></label><datalist id="depList">${Object.keys(DEPN).map(d => `<option value="${d}">${DEPN[d]}</option>`).join('')}</datalist><div class="twhod" id="tWhoDn"></div>`;
     $('#tBody').appendChild(box);
-    const N = $('#tWhoN'), F = $('#tWhoF'); N.value = ME.name || ''; F.value = ME.from || '';
-    const upd = () => { nx.disabled = !(N.value.trim() && F.value.trim()); }; N.oninput = upd; F.oninput = upd;
-    F.onkeydown = e => { if(e.key === 'Enter' && !nx.disabled) nx.click(); };
+    const N = $('#tWhoN'), F = $('#tWhoF'), Dp = $('#tWhoD'), Dn = $('#tWhoDn'); N.value = ME.name || ''; F.value = ME.city || ME.from || ''; Dp.value = ME.dep || '';
+    let dTouched = !!ME.dep;
+    const upd = () => { const d = depParse(Dp.value); Dn.textContent = d ? (d.abroad ? d.flag + ' ' + d.name : '✓ ' + d.name + ' (' + d.code + ')') : (Dp.value.trim() ? 'Département inconnu : mets son numéro (ex : 86) ou ton pays' : ''); nx.disabled = !(N.value.trim() && F.value.trim() && d); };
+    N.oninput = upd; Dp.oninput = () => { dTouched = true; upd(); };
+    F.oninput = () => { const c = cityDep(F.value); if(c && !dTouched) Dp.value = c; upd(); };
+    Dp.onkeydown = e => { if(e.key === 'Enter' && !nx.disabled) nx.click(); };
     setTimeout(upd, 0); setTimeout(() => (N.value ? F : N).focus(), 80);
   } else nx.disabled = false;
   $('#tStepN').textContent = (tourI + 1) + ' / ' + TSTEPS.length;
@@ -9444,7 +9607,7 @@ const HELP = {
     { sel: ['#mxW'], t: '2 · Choisis un bout (si tu veux)', b: 'Touche ta partie enregistrée : elle est choisie en entier, d\'un coup, et tu l\'ajustes comme tu veux avec les poignées rondes ◀ ▶ (pour ne garder qu\'un mot ou une phrase). Glisse sur l\'onde pour avancer ou reculer ; deux doigts pour zoomer ou dézoomer, en douceur. Appui long puis glisse : un bout au doigt. Les bouts déjà réglés à part sont en violet : touche-les pour les reprendre. Sans sélection, tu règles toute la piste. Sur l\'instru, tu as aussi Sans voix (enlever la voix d\'un son du commerce), Reverb, Écho, et sur un bout Étouffé ou Coupure.' },
     { sel: ['#mxTarget'], t: 'À qui s\'appliquent tes réglages', b: 'Ici c\'est écrit : toute la piste, ou ta sélection. Le ✕ enlève la sélection.' },
     { sel: ['[data-mt=clean]', '#strip'], t: '🧽 Nettoyage', b: 'En touchant la tuile Nettoyage, j\'écoute ta piste et je te dis ce que je trouve. Les bruits : souffle de fond, bourdonnement, « P » et « B » qui claquent, « S » qui sifflent, respirations. L\'atmosphère de la prise : pièce qui résonne, son de boîte, voix étouffée, trop fine, qualité téléphone ou manque d\'air (micro qui s\'arrête vers 10 kHz). Le souffle et le bruit de fond sont retirés par une IA (DeepFilterNet, logiciel libre) qui tourne sur ton téléphone : rien n\'est envoyé. La première fois, elle se télécharge (18 Mo, une seule fois). Coche ce que tu veux, choisis la force, touche « Nettoyer et comparer », puis bascule Avant / Après pendant la lecture. Tu gardes si ça te plaît, ↶ annule. « Nettoyer toutes les voix » fait tout d\'un coup. Sur une prise longue (plus d\'une minute et demie), j\'écoute seulement quand tu ouvres Nettoyage, et jamais pendant la lecture : ta musique part tout de suite.' },
-    { sel: ['#strip'], t: '3 · Règle', b: 'Tous les effets sont ici, chacun dans sa tuile qui montre son état d\'un coup d\'œil : Nettoyage, ✂️ Blancs, Volume, Égaliseur, Compression, Reverb, Écho, Doublage, Auto-tune, Harmonies, Saturation, Radio. Un appui sur la tuile l\'allume ou l\'éteint ; ⚙️ ouvre tous ses réglages dans un panneau qui monte d\'en bas (l\'onde reste visible, la musique continue) ; « ✓ OK » le referme. L\'onglet Pistes, lui, sert juste à enregistrer. ✂️ Blancs : après chaque prise, le silence avant et après ta voix est coupé tout seul (↶ le remet) ; dans la tuile, tu glisses les poignées du début et de la fin, et « Tout remettre » rend la prise entière. Ta voix reste toujours calée au même endroit sur l\'instru. 🎭 Transformation : voix de 😈 diable, 👹 monstre, 👩 femme, 👨 homme, 🧒 enfant ou 🐿️ cartoon (hauteur et timbre changés séparément, moteur Signalsmith Stretch, logiciel libre) ; « ⚙️ Réglages avancés » pour régler toi-même la hauteur et le timbre ; « Sans » remet ta voix naturelle, et l\'auto-tune reste. Sur un bout choisi, « ⬇️ Extraire » en fait un fichier WAV, ta voix seule ou avec l\'instru et tout, effets compris. Auto-tune : en haut, l\'effet de style du rap d\'aujourd\'hui (🤖 Robot, la note collée net ; 🛸 Planant, avec les petits sauts de note ; 💎 Cristal, voix plus claire ; 🌑 Grave, voix plus sombre ; 🎹 Vocodeur, un synthé qui chante tes mots façon Daft Punk, avec ta voix auto-tunée Robot dessous en Léger et Moyen (synthé seul en À fond), d\'après le vocodeur libre de Chris Wilson), avec sa dose (Léger, Moyen, À fond) et les Harmonies, qui marchent aussi sans auto-tune (ta voix reste alors naturelle, seules les voix ajoutées sont calées sur la gamme) : Sans, Tierce : une 2e voix juste au-dessus ; Accord : deux voix en plus, à gauche et à droite ; Octave grave : ta voix doublée une octave plus bas) ; en dessous, la simple correction (Naturel, Marqué), qui garde le timbre de ta voix (moteur Signalsmith Stretch, logiciel libre). Avec 🎧 Retour, tu t\'entends auto-tuné pendant que tu kickes (le Vocodeur et les Harmonies s\'ajoutent à la fin de la prise). Dans Auto-tune, « 🔄 Reprendre la note de ma voix » réécoute ta prise et recale la tonalité ; elle est reprise toute seule à chaque nouvelle prise. La reverb et l\'écho ont des réglages simples (Pièce, Studio, Salle…) ; Studio est une vraie plaque de studio (algorithme de Dattorro, logiciel libre) ; en bas du panneau de chaque effet (reverb, écho, doublage, saturation, radio, auto-tune, harmonies, égaliseur, compression, et aussi sur un bout choisi), le même bouton « ⚙️ Réglages avancés » donne tous ses réglages : durée et pré-délai de la reverb, rythme et répétitions de l\'écho, vitesse et tonalité de l\'auto-tune, attaque et anti-« S » de la compression… La tuile 🔁 Bégaiement est toujours là : touchée sans sélection, elle choisit ta partie enregistrée et tu cales les poignées sur le mot. Sur une sélection, toutes les tuiles de la piste restent visibles (🎚️ Toute la piste) et celles du bout s\'ajoutent en haut (🎯 Rien que pour ce bout) : volume, reverb, écho et égaliseur, rien que pour ce bout ; et 🔁 Bégaiement (2, 4 ou 8 fois) : le début du mot se répète en rythme, « ma-ma-ma-mais ». « ▶ Écouter le bout » pour entendre, « ↺ Remettre » pour annuler ce bout. Une prise abîmée ? « 🛟 Retrouver une ancienne prise » (sous les tuiles, ou dans Partager) liste les anciens sons gardés dans ton téléphone : « Essayer » pose le son sur une piste d\'essai « 🛟 Essai » (ta piste est coupée le temps de l\'essai) et le joue avec l\'instru, là où ta voix commence ; pas le bon, essaie le suivant ; le bon, « ✓ Garder cette prise » : il remplace la prise de ta piste et la piste d\'essai disparaît. « Annuler et fermer » remet ta piste comme avant.' },
+    { sel: ['#strip'], t: '3 · Règle', b: 'Tous les effets sont ici, chacun dans sa tuile qui montre son état d\'un coup d\'œil : Nettoyage, ✂️ Blancs, Volume, Égaliseur, Compression, Reverb, Écho, Doublage, Auto-tune, Harmonies, Saturation, Radio. Un appui sur la tuile l\'allume ou l\'éteint ; ⚙️ ouvre tous ses réglages dans un panneau qui monte d\'en bas (l\'onde reste visible, la musique continue) ; « ✓ OK » le referme. L\'onglet Pistes, lui, sert juste à enregistrer. ✂️ Blancs : après chaque prise, le silence avant et après ta voix est coupé tout seul (↶ le remet) ; dans la tuile, tu glisses les poignées du début et de la fin, et « Tout remettre » rend la prise entière. Ta voix reste toujours calée au même endroit sur l\'instru. 🎭 Transformation : voix de 😈 diable, 👹 monstre, 👩 femme, 👨 homme, 🧒 enfant ou 🐿️ cartoon (hauteur et timbre changés séparément, moteur Signalsmith Stretch, logiciel libre) ; « ⚙️ Réglages avancés » pour régler toi-même la hauteur et le timbre ; « Sans » remet ta voix naturelle, et l\'auto-tune reste. Sur un bout choisi, « ⬇️ Extraire » en fait un fichier WAV, ta voix seule ou avec l\'instru et tout, effets compris. Auto-tune : en haut, l\'effet de style du rap d\'aujourd\'hui (🤖 Robot, la note collée net ; 🛸 Planant, avec les petits sauts de note ; 💎 Cristal, voix plus claire ; 🌑 Grave, voix plus sombre ; 🎹 Vocodeur, un synthé qui chante tes mots façon Daft Punk, avec ta voix auto-tunée Robot dessous en Léger et Moyen (synthé seul en À fond), d\'après le vocodeur libre de Chris Wilson), avec sa dose (Léger, Moyen, À fond) et les Harmonies, qui marchent aussi sans auto-tune (ta voix reste alors naturelle, seules les voix ajoutées sont calées sur la gamme) : Sans, Tierce : une 2e voix juste au-dessus ; Accord : deux voix en plus, à gauche et à droite ; Octave grave : ta voix doublée une octave plus bas) ; en dessous, la simple correction (Naturel, Marqué), qui garde le timbre de ta voix (moteur Signalsmith Stretch, logiciel libre). Avec 🎧 Retour, tu t\'entends auto-tuné pendant que tu kickes (le Vocodeur et les Harmonies s\'ajoutent à la fin de la prise). Dans Auto-tune, « 🔄 Reprendre la note de ma voix » réécoute ta prise et recale la tonalité ; elle est reprise toute seule à chaque nouvelle prise. La reverb et l\'écho ont des réglages simples (Pièce, Studio, Salle…) ; Studio est une vraie plaque de studio (algorithme de Dattorro, logiciel libre) ; en bas du panneau de chaque effet (reverb, écho, doublage, saturation, radio, auto-tune, harmonies, égaliseur, compression, et aussi sur un bout choisi), le même bouton « ⚙️ Réglages avancés » donne tous ses réglages : durée et pré-délai de la reverb, rythme et répétitions de l\'écho, vitesse et tonalité de l\'auto-tune, attaque et anti-« S » de la compression… La tuile 🔁 Bégaiement est toujours là : touchée sans sélection, elle choisit ta partie enregistrée et tu cales les poignées sur le mot. Sur une sélection, toutes les tuiles de la piste restent visibles (🎚️ Toute la piste) et celles du bout s\'ajoutent en haut (🎯 Rien que pour ce bout) : volume, reverb, écho, égaliseur, et aussi 🤖 auto-tune, 🎭 transformation, 👥 doublage, 🔥 saturation et 📻 radio, rien que pour ce bout (l\'interrupteur les enlève, même après avoir fermé l\'appli) ; et 🔁 Bégaiement (2, 4 ou 8 fois) : le début du mot se répète en rythme, « ma-ma-ma-mais ». « ▶ Écouter le bout » pour entendre, « ↺ Remettre » pour annuler ce bout. Une prise abîmée ? « 🛟 Retrouver une ancienne prise » (sous les tuiles, ou dans Partager) liste les anciens sons gardés dans ton téléphone : « Essayer » pose le son sur une piste d\'essai « 🛟 Essai » (ta piste est coupée le temps de l\'essai) et le joue avec l\'instru, là où ta voix commence ; pas le bon, essaie le suivant ; le bon, « ✓ Garder cette prise » : il remplace la prise de ta piste et la piste d\'essai disparaît. « Annuler et fermer » remet ta piste comme avant.' },
     { sel: ['#bLevel'], t: 'Rééquilibrer', b: 'Remet tous les niveaux d\'aplomb d\'un coup : l\'instru, le lead, les backs et l\'ambiance à leur juste place.' }
   ],
   vMaster: [
