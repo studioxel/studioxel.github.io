@@ -1209,8 +1209,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 218; // numéro interne (jamais affiché)
-const APP_PUB = '2.9.9';
+const APP_VER = 219; // numéro interne (jamais affiché)
+const APP_PUB = '2.9.10';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -8275,7 +8275,10 @@ async function openRescue(){
     if(e.target === w || e.target.closest('[data-rc]')){ rescueStop(); w.remove(); return; }
     const p = e.target.closest('[data-rp]'), r = e.target.closest('[data-rr]');
     if(p){ const on = p.textContent === '■'; rescueStop(); if(on) return;
-      try{ if(S.playing) pause(); const b = await load(L[+p.dataset.rp]); const s = ctx.createBufferSource(); s.buffer = b; s.connect(ctx.destination); unlockSpeaker(); s.start(); rescueSrc = s; p.textContent = '■'; s.onended = () => { if(rescueSrc === s) rescueStop(); }; }
+      /* iPhone : le son doit être réveillé dans le geste même, avant d'aller chercher la prise en mémoire */
+      try{ if(S.playing) pause(); if(!mic) audioSessionPlay(); unlockSpeaker(); const wk = wake(); p.textContent = '…'; const b = await load(L[+p.dataset.rp]); await wk; if(ctx.state !== 'running') await ctx.resume();
+        const s = ctx.createBufferSource(), g = ctx.createGain(); g.gain.value = 0.9; s.buffer = b; s.connect(g); g.connect(ctx.destination); s.start(ctx.currentTime + 0.05); rescueSrc = s; p.textContent = '■'; s.onended = () => { if(rescueSrc === s) rescueStop(); };
+        jr('i', 'retrouver : écoute ' + Math.round(b.duration) + ' s, son ' + ctx.state); }
       catch(err){ toast('Lecture impossible : ' + err.message); } return; }
     if(r && tgt){
       rescueStop();
