@@ -150,11 +150,11 @@ body:not(.simple) .row .l1 .chip{flex:1 1 0}
 .mxhint{margin:6px 0 0;font-size:12px}
 .mtsec{font:800 11px system-ui,-apple-system,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:14px 2px 8px}
 .mtgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:10px}@media (max-width:330px){.mtgrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
-.mt{position:relative;border:1px solid var(--line);border-radius:12px;background:var(--panel);min-height:66px}
+.mt{position:relative;border:1px solid var(--line);border-radius:12px;background:var(--panel);min-height:76px}
 .mt.on{border-color:color-mix(in srgb,var(--accent) 70%,transparent);background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 14%,var(--panel)),var(--panel))}
 .mt.dim{opacity:.5}.mt.act{outline:2px solid var(--accent)}
-.mtb{all:unset;box-sizing:border-box;display:flex;flex-direction:column;gap:1px;width:100%;height:100%;min-height:66px;padding:7px 6px 6px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-.mtb .mti{font-size:16px;line-height:1;min-height:22px}.mtb b{font-size:11px;line-height:1.15;letter-spacing:-.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mtb .mtv{font-size:10.5px;color:var(--muted);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mt.on .mtv{color:var(--accent)}
+.mtb{all:unset;box-sizing:border-box;display:flex;flex-direction:column;gap:1px;width:100%;height:100%;min-height:76px;padding:7px 6px 6px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.mtb .mti{font-size:24px;line-height:1;min-height:28px}.mtb b{font-size:11px;line-height:1.15;letter-spacing:-.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mtb .mtv{font-size:10.5px;color:var(--muted);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mt.on .mtv{color:var(--accent)}
 .mtl{display:flex;gap:2px;margin-top:auto;padding-top:3px}.mtl i{flex:1;height:3px;border-radius:2px;background:var(--line)}.mtl i.f{background:var(--accent)}
 .mtsw{position:absolute;top:5px;right:5px;width:34px;height:20px;border-radius:10px;border:1px solid var(--line);background:var(--raise);padding:0;touch-action:manipulation;cursor:pointer}
 .mtsw i{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--muted);transition:left .15s,background .15s}
@@ -1206,8 +1206,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 216; // numéro interne (jamais affiché)
-const APP_PUB = '2.9.7';
+const APP_VER = 217; // numéro interne (jamais affiché)
+const APP_PUB = '2.9.8';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -3813,7 +3813,7 @@ async function mxSwitch(t, k, on){
     const r = mxRegOf(t);
     if(k === 'srev' || k === 'sdly'){ const q = k.slice(1); mxSetReg(t, q, on ? 0 : (r && r.fx[q] > 0 ? r.fx[q] : LV[q][1])); renderMix(); return; }
     if(k === 'seq'){ if(on && r){ pushUndo('le réglage du bout'); ['low', 'mid', 'high'].forEach(q => delete r.fx[q]); t.chain.set(t, audible(t), true); scheduleSave(); } else if(!on) mxSetReg(t, 'high', 3); renderMix(); return; }
-    if(k === 'stut'){ const sr = stutOf(t, mxSel.a, mxSel.b); if(on && sr){ setBusy(true, 'Bégaiement…'); try{ pushUndo('le bégaiement'); await stutterOff(t, sr); }finally{ setBusy(false); } } else if(!on) await stutterSel(t, t.lastStut || 4); return; }
+    if(k === 'stut'){ const sr = stutOf(t, mxSel.a, mxSel.b); if(on && sr){ setBusy(true, 'Bégaiement…'); try{ pushUndo('le bégaiement'); await stutterOff(t, sr); }catch(e){ toast('Bégaiement : ' + e.message); }finally{ setBusy(false); } } else if(!on) await stutterSel(t, t.lastStut || 4); return; }
     if(k === 'smuf' || k === 'scut'){ const bq = document.createElement('button'); bq.dataset.mq = k === 'smuf' ? 'muf' : 'drop'; $('#strip').appendChild(bq); bq.click(); bq.remove(); return; }
     return;
   }
@@ -6748,10 +6748,10 @@ async function saveSession(){
     showSessTitle();
     const tracks = S.tracks.map(t => ({
       name: t.name, color: t.color, preset: t.preset, fx: t.fx, fx29: true, vr: t.vr, vol: t.vol, pan: t.pan, mute: t.mute, solo: t.solo,
-      uid: t.uid, owner: t.owner, ownerName: t.ownerName, label: t.label ?? null, lbl2: true, srcName: t.srcName || '', regs: t.regs?.length ? t.regs : undefined, keep: !!t.keep, take: t.take, trim: t.trim, atOn: t.atOn, at: t.at, lv: t.lv, vp: t.vp, adapted: t.adapted, semi: t.semi, bpmOrig: t.bpmOrig, origTake: t.origTake,
+      uid: t.uid, owner: t.owner, ownerName: t.ownerName, label: t.label ?? null, lbl2: true, srcName: t.srcName || '', regs: t.regs?.length ? t.regs : undefined, stuts: t.stuts?.length ? t.stuts.filter(r => r.orig).map(r => ({ a: r.a, b: r.b, n: r.n, t0: r.orig.t0, sr: r.orig.sr, aid: bufAid(r.orig.buf) })) : undefined, keep: !!t.keep, take: t.take, trim: t.trim, atOn: t.atOn, at: t.at, lv: t.lv, vp: t.vp, adapted: t.adapted, semi: t.semi, bpmOrig: t.bpmOrig, origTake: t.origTake,
       takes: t.takes.map(k => ({ aid: bufAid(k.buffer), offset: k.offset, tuned: k.tuned, hz: k.hz, cl: k.cl, src: k.src, xf: k.xf, punch: k.punch }))
     }));
-    for(const t of S.tracks) for(const k of t.takes){
+    for(const t of S.tracks) for(const k of [...t.takes, ...(t.stuts || []).filter(r => r.orig).map(r => ({ buffer: r.orig.buf }))]){
       const a = bufAid(k.buffer);
       if(!savedAids.has(a)){ await dbDo('audio', 'readwrite', st => st.put(packBuf(k.buffer), a)); savedAids.add(a); }
     }
@@ -6798,6 +6798,8 @@ async function loadSession(id){
       t.takes.push({ buffer: b, offset: k.offset, tuned: k.tuned, hz: k.hz, cl: k.cl, src: k.src, xf: k.xf, punch: k.punch });
     }
     t.takes.forEach(k => { k.src = k.src != null && remap.has(k.src) ? remap.get(k.src) : undefined; });
+    /* bégaiements posés : leur son d'origine revient avec la séance, l'interrupteur peut les enlever */
+    if(tr.stuts?.length){ t.stuts = []; for(const r of tr.stuts){ try{ const o = await dbDo('audio', 'readonly', st => st.get(r.aid)); if(!o) continue; const b = unpackBuf(o); aidOf.set(b, r.aid); savedAids.add(r.aid); t.stuts.push({ a: r.a, b: r.b, n: r.n, orig: { t0: r.t0, sr: r.sr, buf: b } }); }catch(e){} } if(!t.stuts.length) delete t.stuts; }
     t.origTake = tr.origTake != null && remap.has(tr.origTake) ? remap.get(tr.origTake) : undefined;
     t.take = remap.has(cur) ? remap.get(cur) : t.takes.length - 1;
     if(t.take >= 0){ t.buffer = t.takes[t.take].buffer; t.offset = t.takes[t.take].offset; } else { t.buffer = null; t.offset = 0; }
@@ -6851,9 +6853,9 @@ async function deleteSession(id){
   sessIndex = sessIndex.filter(x => x.id !== id);
   try{
     const all = await dbDo('sessions', 'readonly', st => st.getAll());
-    const used = new Set(); all.forEach(r => r.tracks.forEach(t => t.takes.forEach(k => used.add(k.aid))));
+    const used = new Set(); all.forEach(r => r.tracks.forEach(t => { t.takes.forEach(k => used.add(k.aid)); (t.stuts || []).forEach(x => used.add(x.aid)); }));
     const keys = await dbDo('audio', 'readonly', st => st.getAllKeys());
-    for(const k of keys) if(!used.has(k) && !(S.tracks.some(t => t.takes.some(x => aidOf.get(x.buffer) === k)))){ await dbDo('audio', 'readwrite', st => st.delete(k)); savedAids.delete(k); }
+    for(const k of keys) if(!used.has(k) && !(S.tracks.some(t => t.takes.some(x => aidOf.get(x.buffer) === k) || (t.stuts || []).some(x => x.orig && aidOf.get(x.orig.buf) === k)))){ await dbDo('audio', 'readwrite', st => st.delete(k)); savedAids.delete(k); }
   }catch(e){}
   if(sess.id === id){ sess = { id: null, name: '', link: '', created: 0 }; store.set('sessId', null); renderSessBar(); }
   renderSessList();
@@ -8190,8 +8192,16 @@ async function stutterRender(buf, offset, a, N, u){
 const stutOf = (t, a, b) => (t.stuts || []).find(r => r.a < b && r.b > a);
 async function stutterOff(t, rec, quiet){
   let miss = false;
-  rec.prev.forEach(([i, buf], q) => { const k = t.takes[i]; if(k && k.buffer === rec.now[q][1]) t.takes[i] = { ...k, buffer: buf }; else miss = true; });
-  t.stuts = (t.stuts || []).filter(r => r !== rec);
+  if(rec.prev?.length) rec.prev.forEach(([i, buf], q) => { const k = t.takes[i]; if(k && k.buffer === rec.now[q][1]) t.takes[i] = { ...k, buffer: buf }; else miss = true; });
+  else if(rec.orig){
+    /* séance rouverte : on recolle le son d'origine du mot dans ta voix d'origine, puis l'auto-tune / les harmonies sont refaits dessus */
+    const cur = t.takes[t.take], bi = (cur?.tuned || cur?.hz) ? atBase(t) : t.take, bk = t.takes[bi];
+    if(!bk || bk.buffer.sampleRate !== rec.orig.sr) throw new Error('voix d\'origine introuvable');
+    const bb = bk.buffer, nb = ctx.createBuffer(bb.numberOfChannels, bb.length, bb.sampleRate), A = Math.round((rec.orig.t0 - (bk.offset ?? t.offset)) * bb.sampleRate);
+    for(let c = 0; c < bb.numberOfChannels; c++){ const d = nb.getChannelData(c); d.set(bb.getChannelData(c)); const o = rec.orig.buf.getChannelData(Math.min(c, rec.orig.buf.numberOfChannels - 1)); if(A >= 0 && A + o.length <= d.length) d.set(o, A); }
+    t.takes[bi] = { ...bk, buffer: nb }; miss = bi !== t.take;
+  } else throw new Error('ce bégaiement date d\'avant la 2.9.8 : ↶ Annuler ou refais la prise');
+  t.stuts = (t.stuts || []).filter(r => r !== rec); if(!t.stuts.length) delete t.stuts;
   t.buffer = t.takes[t.take].buffer;
   if(miss && needsAT(t)){ setBusy(false); await applyAutotune(t); setBusy(true, 'Bégaiement…'); }
   if(!quiet){ jr('a', 'bégaiement enlevé'); restart(); renderTracks(); renderMix(); scheduleSave(); toast('🔁 Bégaiement enlevé : le mot redevient normal.'); }
@@ -8209,6 +8219,9 @@ async function stutterSel(t, N){
     const old = stutOf(t, mxSel.a, mxSel.b); if(old) await stutterOff(t, old, true);
     const cur = t.takes[t.take], ids = [t.take]; if((cur?.tuned || cur?.hz) && t.takes[cur.src]) ids.push(cur.src);
     let done = 0; const rec = { a: mxSel.a, b: mxSel.b, n: N, prev: [], now: [] };
+    /* le son d'origine du mot, gardé avec la séance : l'interrupteur peut l'enlever même après avoir fermé l'appli */
+    { const bk = t.takes[ids[ids.length - 1]], bb = bk.buffer, sr = bb.sampleRate, A = Math.max(0, Math.round((mxSel.a - (bk.offset ?? t.offset)) * sr)), Z = Math.min(bb.length - A, Math.round(u * sr) * N);
+      if(Z > 0){ const ob = ctx.createBuffer(bb.numberOfChannels, Z, sr); for(let c = 0; c < bb.numberOfChannels; c++) ob.copyToChannel(bb.getChannelData(c).slice(A, A + Z), c); rec.orig = { t0: (bk.offset ?? t.offset) + A / sr, sr, buf: ob }; } }
     for(const i of ids){ const k = t.takes[i], nb = await stutterRender(k.buffer, k.offset ?? t.offset, mxSel.a, N, u); if(nb){ rec.prev.push([i, k.buffer]); rec.now.push([i, nb]); t.takes[i] = { ...k, buffer: nb }; done++; } }
     if(!done) throw new Error('bout hors de la prise');
     (t.stuts = t.stuts || []).push(rec); t.lastStut = N;
@@ -9207,7 +9220,7 @@ async function makeBackup(){
     clearTimeout(saveTimer); if(sessReady && S.tracks.some(t => t.buffer)) await saveSession();
     const sessions = await dbDo('sessions', 'readonly', st => st.getAll()) || [];
     if(!sessions.length){ toast('Aucun son à sauvegarder pour l\'instant.'); setBusy(false); return; }
-    const need = new Set(); sessions.forEach(r => (r.tracks || []).forEach(t => (t.takes || []).forEach(k => k.aid && need.add(k.aid))));
+    const need = new Set(); sessions.forEach(r => (r.tracks || []).forEach(t => { (t.takes || []).forEach(k => k.aid && need.add(k.aid)); (t.stuts || []).forEach(x => x.aid && need.add(x.aid)); }));
     const parts = [], audios = []; let off = 0, n = 0;
     for(const aid of need){
       const o = await dbDo('audio', 'readonly', st => st.get(aid)); if(!o) continue;
