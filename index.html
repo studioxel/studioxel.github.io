@@ -750,7 +750,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.9.13 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.9.14 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookie, sans garder ton adresse IP) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze. Coupées, elles arrêtent aussi les rapports techniques (erreurs et mesures du son, jamais ta voix).</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false">📊 Statistiques anonymes : activées</button>
@@ -1209,8 +1209,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 222; // numéro interne (jamais affiché)
-const APP_PUB = '2.9.13';
+const APP_VER = 223; // numéro interne (jamais affiché)
+const APP_PUB = '2.9.14';
 /* le numéro affiché dans Réglages vient toujours d'ici (il était resté écrit en dur sur 2.8.4) */
 try{ document.addEventListener('DOMContentLoaded', () => { const v = document.getElementById('ver'); if(v) v.textContent = 'Version ' + APP_PUB + ' · Bêta'; }); const v0 = document.getElementById('ver'); if(v0) v0.textContent = 'Version ' + APP_PUB + ' · Bêta'; }catch(e){}
 /* Statistiques anonymes (GoatCounter, sans cookies) */
@@ -8311,7 +8311,7 @@ async function openRescue(){
     const p = e.target.closest('[data-rp]'), r = e.target.closest('[data-rr]');
     if(p){ const on = p.textContent === '■'; rescueStop(); if(on) return;
       /* iPhone : le son doit être réveillé dans le geste même, avant d'aller chercher la prise en mémoire */
-      try{ if(S.playing) pause(); if(!mic) audioSessionPlay(); unlockSpeaker(); const wk = wake(); p.textContent = '…';
+      try{ if(S.playing) pause(); audioIdle = false; audioLastActive = Date.now(); if(!mic) audioSessionPlay(); unlockSpeaker(); const wk = wake(); p.textContent = '…';
         const o = L[+p.dataset.rp], tag = {}; rescueSrc = tag;
         const g = ctx.createGain(); g.gain.value = 0.9; g.connect(ctx.destination);
         const play = (b, at, off) => { const s = ctx.createBufferSource(); s.buffer = b; s.connect(g); s.start(at, off); return s; };
@@ -10099,7 +10099,7 @@ async function askMicEarly(){
 /* Le son de l'appli ne prend la main que pendant lecture, enregistrement ou retour voix.
    Le reste du temps (appli ouverte au repos, ou en arrière-plan) : ta musique d'ailleurs continue. */
 const firstTouch = () => {};
-const audioActive = () => !!(S.calib || S.playing || S.recording || S.mon || S.reelRec || (typeof rsPlaying !== 'undefined' && rsPlaying) || (rec && rec.state === 'recording'));
+const audioActive = () => !!(S.calib || S.playing || S.recording || S.mon || S.reelRec || (typeof rsPlaying !== 'undefined' && rsPlaying) || (typeof rescueSrc !== 'undefined' && rescueSrc) || (rec && rec.state === 'recording'));
 let audioLastActive = 0, audioIdle = false;
 function audioRest(){
   try{ if(silentEl && !silentEl.paused) silentEl.pause(); }catch(e){}
