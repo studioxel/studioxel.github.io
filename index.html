@@ -161,6 +161,8 @@ body:not(.simple) .row .l1 .chip{flex:1 1 0}
 .mtsw[aria-checked=true]{background:var(--accent);border-color:var(--accent)}.mtsw[aria-checked=true] i{left:16px;background:#1a1405}
 .mtsw::after{content:'';position:absolute;inset:-9px}.mtsw.big{position:relative;top:0;right:0;flex:none;width:52px;height:30px;border-radius:15px}.mtsw.big i{width:22px;height:22px}.mtsw.big[aria-checked=true] i{left:25px}
 .mthint{text-align:center;margin-top:10px}
+.welcome.rescue{z-index:70}.rescue .wpanel{max-height:86vh;overflow:auto}.rslist{display:flex;flex-direction:column;gap:8px;margin:12px 0}
+.rsit{display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--line);border-radius:12px;background:var(--raise)}.rsit span{flex:1;min-width:0;display:flex;flex-direction:column}.rsit small{color:var(--muted);font-size:12px}.rsit .sbtn{height:40px}.rsit [data-rp]{width:44px;flex:none}
 .mxsheet{position:fixed;left:0;right:0;bottom:0;z-index:56;max-height:62vh;overflow:auto;-webkit-overflow-scrolling:touch;background:var(--raise);border-top:1px solid var(--line);border-radius:20px 20px 0 0;box-shadow:0 -14px 40px rgba(0,0,0,.55);padding:8px max(14px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(14px,env(safe-area-inset-left,0px))}
 .mxgrab{width:42px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 8px}
 .mxsh{display:flex;align-items:center;gap:10px;position:sticky;top:-8px;background:var(--raise);padding:4px 0 8px;z-index:1}.mxsh h3{margin:0;font-size:18px;flex:1}.mxsh .mti{font-size:22px}.mxsh .sbtn{height:38px}
@@ -948,6 +950,7 @@ body.ed-open .wmark{z-index:41}
     <div class="sec">Ta sauvegarde</div>
     <p class="note">Ne perds jamais tes sons : un fichier avec tout dedans, à ranger dans iCloud Drive, Google Drive, Dropbox, OneDrive ou par mail.</p>
     <div class="btns"><button class="sbtn primary" data-bk="save">💾 Sauvegarder tous mes sons</button><button class="sbtn" data-bk="load">♻️ Restaurer</button></div>
+    <div class="btns"><button class="sbtn" data-rescue>🛟 Retrouver une ancienne prise</button></div>
     <div class="sec">Pour un ingé son</div>
     <p class="note">Chaque piste en WAV avec ses effets, toutes calées au même départ.</p>
     <div class="btns">
@@ -1206,8 +1209,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 217; // numéro interne (jamais affiché)
-const APP_PUB = '2.9.8';
+const APP_VER = 218; // numéro interne (jamais affiché)
+const APP_PUB = '2.9.9';
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
@@ -3857,7 +3860,8 @@ function renderMix(){
   } else {
     /* toutes les tuiles d'un seul bloc, assez compactes pour tenir sur un écran de téléphone sous l'onde */
     html = tiles(T)
-      + `<p class="mxnote mthint">Touche une tuile pour ses réglages · l'interrupteur l'allume ou l'éteint</p>`;
+      + `<p class="mxnote mthint">Touche une tuile pour ses réglages · l'interrupteur l'allume ou l'éteint</p>`
+      + `<div class="mxbtns"><button class="sbtn" data-rescue>🛟 Retrouver une ancienne prise</button></div>`;
   }
   if(mxSheet){
     const x = T.find(y => y.k === mxSheet);
@@ -8232,6 +8236,64 @@ async function stutterSel(t, N){
   }catch(e){ toast('Bégaiement impossible : ' + e.message); }
   setBusy(false);
 }
+/* ---------- 🛟 Retrouver une ancienne prise ----------
+   Quand une prise est modifiée (bégaiement, nettoyage, auto-tune…), son ancien son reste rangé dans le téléphone.
+   Ici on liste ces sons qui ne sont plus reliés à aucune séance, du plus récent au plus ancien, pour les réécouter et les remettre. */
+const aidTime = a => { const v = parseInt(String(a).slice(1, -5), 36); return isFinite(v) && v > 1.5e12 && v < 4e12 ? v : 0; };
+async function rescueList(){
+  const all = await dbDo('sessions', 'readonly', st => st.getAll());
+  const used = new Set();
+  all.forEach(r => (r.tracks || []).forEach(t => { (t.takes || []).forEach(k => k.aid && used.add(k.aid)); (t.stuts || []).forEach(x => x.aid && used.add(x.aid)); }));
+  S.tracks.forEach(t => { t.takes.forEach(k => { const a = aidOf.get(k.buffer); if(a) used.add(a); }); });
+  const keys = await dbDo('audio', 'readonly', st => st.getAllKeys());
+  const orph = keys.filter(k => !used.has(k)).map(k => ({ aid: k, at: aidTime(k) })).sort((x, y) => y.at - x.at).slice(0, 40);
+  /* durée de chacun (lu un par un, pour ne pas charger toute la mémoire d'un coup) */
+  for(const o of orph){ try{ const v = await dbDo('audio', 'readonly', st => st.get(o.aid)); o.dur = v && v.ch && v.ch[0] ? v.ch[0].length / v.sr : 0; o.nc = v?.ch?.length || 0; }catch(e){ o.dur = 0; } }
+  return orph.filter(o => o.dur >= 0.5);
+}
+let rescueSrc = null;
+function rescueStop(){ try{ rescueSrc && rescueSrc.stop(); }catch(e){} rescueSrc = null; document.querySelectorAll('.rescue [data-rp]').forEach(b => b.textContent = '▶'); }
+async function openRescue(){
+  if(busy) return;
+  setBusy(true, 'Je cherche tes anciennes prises…');
+  let L = [];
+  try{ ensureCtx(); L = await rescueList(); }catch(e){ setBusy(false); toast('Recherche impossible : ' + e.message); return; }
+  setBusy(false);
+  const t = selTrack(), tgt = t && t.preset !== 'instru' ? t : S.tracks.find(x => x.buffer && x.preset !== 'instru') || t;
+  const w = document.createElement('div');
+  w.className = 'welcome rescue'; w.setAttribute('role', 'dialog'); w.setAttribute('aria-label', 'Retrouver une ancienne prise');
+  const when = a => a ? new Date(a).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', ' à') : 'date inconnue';
+  w.innerHTML = `<div class="wpanel">
+    <h2>🛟 Retrouver une ancienne prise</h2>
+    <p class="note">${L.length ? 'Les sons gardés dans ton téléphone qui ne sont plus dans une séance, du plus récent au plus ancien. Écoute, et remets celui qui est ta prise.' : 'Aucun ancien son trouvé dans ce téléphone : ils ont été effacés (une séance supprimée efface les sons qui ne servent plus).'}</p>
+    <div class="rslist">${L.map((o, i) => `<div class="rsit"><button class="sbtn" data-rp="${i}" aria-label="Écouter">▶</button><span><b>${(Math.round(o.dur * 10) / 10).toString().replace('.', ',')} s</b><small>${when(o.at)}${o.nc > 1 ? ' · stéréo' : ''}</small></span>${tgt ? `<button class="sbtn primary" data-rr="${i}">Remettre sur « ${esc(tgt.name)} »</button>` : ''}</div>`).join('')}</div>
+    <button class="wlink" data-rc>Fermer</button>
+  </div>`;
+  document.body.appendChild(w);
+  const load = async o => { const v = await dbDo('audio', 'readonly', st => st.get(o.aid)); if(!v) throw new Error('son introuvable'); const b = unpackBuf(v); aidOf.set(b, o.aid); savedAids.add(o.aid); return b; };
+  w.addEventListener('click', async e => {
+    if(e.target === w || e.target.closest('[data-rc]')){ rescueStop(); w.remove(); return; }
+    const p = e.target.closest('[data-rp]'), r = e.target.closest('[data-rr]');
+    if(p){ const on = p.textContent === '■'; rescueStop(); if(on) return;
+      try{ if(S.playing) pause(); const b = await load(L[+p.dataset.rp]); const s = ctx.createBufferSource(); s.buffer = b; s.connect(ctx.destination); unlockSpeaker(); s.start(); rescueSrc = s; p.textContent = '■'; s.onended = () => { if(rescueSrc === s) rescueStop(); }; }
+      catch(err){ toast('Lecture impossible : ' + err.message); } return; }
+    if(r && tgt){
+      rescueStop();
+      if(isLocked(tgt)){ lockToast(tgt); return; }
+      try{
+        const b = await load(L[+r.dataset.rr]);
+        pushUndo('la prise retrouvée');
+        const off = tgt.buffer ? tgt.offset : (S.playing ? now() : S.pos);
+        tgt.takes.push({ buffer: b, offset: off }); tgt.take = tgt.takes.length - 1; tgt.buffer = b; tgt.offset = off; tgt.atOn = false; delete tgt.stuts; claim(tgt);
+        jr('a', 'prise retrouvée : ' + (Math.round(b.duration * 10) / 10) + ' s sur ' + tgt.name);
+        w.remove(); restart(); renderTracks(); if(!$('#vMix').hidden) renderMix(); scheduleSave();
+        toast('🛟 Prise remise sur « ' + tgt.name + ' », à sa place d\'avant. Écoute ; ↶ si ce n\'est pas la bonne.');
+      }catch(err){ toast('Impossible de la remettre : ' + err.message); }
+    }
+  });
+}
+document.addEventListener('click', e => { if(e.target.closest('[data-rescue]')) openRescue(); });
+
 function setTrackBuf(t, buf, off){
   if(t.take < 0 || !t.takes[t.take]){ t.takes = [{ buffer: buf, offset: off }]; t.take = 0; }
   else t.takes[t.take] = { ...t.takes[t.take], buffer: buf, offset: off };
@@ -9074,7 +9136,7 @@ const HELP = {
     { sel: ['#mxW'], t: '2 · Choisis un bout (si tu veux)', b: 'Touche ta partie enregistrée : elle est choisie en entier, d\'un coup, et tu l\'ajustes comme tu veux avec les poignées rondes ◀ ▶ (pour ne garder qu\'un mot ou une phrase). Glisse sur l\'onde pour avancer ou reculer ; deux doigts pour zoomer ou dézoomer, en douceur. Appui long puis glisse : un bout au doigt. Les bouts déjà réglés à part sont en violet : touche-les pour les reprendre. Sans sélection, tu règles toute la piste. Sur l\'instru, tu as aussi Sans voix (enlever la voix d\'un son du commerce), Reverb, Écho, et sur un bout Étouffé ou Coupure.' },
     { sel: ['#mxTarget'], t: 'À qui s\'appliquent tes réglages', b: 'Ici c\'est écrit : toute la piste, ou ta sélection. Le ✕ enlève la sélection.' },
     { sel: ['[data-mt=clean]', '#strip'], t: '🧽 Nettoyage', b: 'En touchant la tuile Nettoyage, j\'écoute ta piste et je te dis ce que je trouve. Les bruits : souffle de fond, bourdonnement, « P » et « B » qui claquent, « S » qui sifflent, respirations. L\'atmosphère de la prise : pièce qui résonne, son de boîte, voix étouffée, trop fine, qualité téléphone ou manque d\'air (micro qui s\'arrête vers 10 kHz). Le souffle et le bruit de fond sont retirés par une IA (DeepFilterNet, logiciel libre) qui tourne sur ton téléphone : rien n\'est envoyé. La première fois, elle se télécharge (18 Mo, une seule fois). Coche ce que tu veux, choisis la force, touche « Nettoyer et comparer », puis bascule Avant / Après pendant la lecture. Tu gardes si ça te plaît, ↶ annule. « Nettoyer toutes les voix » fait tout d\'un coup.' },
-    { sel: ['#strip'], t: '3 · Règle', b: 'Tous les effets sont ici, chacun dans sa tuile qui montre son état d\'un coup d\'œil : Nettoyage, Volume, Égaliseur, Compression, Reverb, Écho, Doublage, Auto-tune, Harmonies, Saturation, Radio. Un appui sur la tuile l\'allume ou l\'éteint ; ⚙️ ouvre tous ses réglages dans un panneau qui monte d\'en bas (l\'onde reste visible, la musique continue) ; « ✓ OK » le referme. L\'onglet Pistes, lui, sert juste à enregistrer. Auto-tune : en haut, l\'effet de style du rap d\'aujourd\'hui (🤖 Robot, la note collée net ; 🛸 Planant, avec les petits sauts de note ; 💎 Cristal, voix plus claire ; 🌑 Grave, voix plus sombre ; 🎹 Vocodeur, un synthé qui chante tes mots façon Daft Punk, avec ta voix auto-tunée Robot dessous en Léger et Moyen (synthé seul en À fond), d\'après le vocodeur libre de Chris Wilson), avec sa dose (Léger, Moyen, À fond) et les Harmonies, qui marchent aussi sans auto-tune (ta voix reste alors naturelle, seules les voix ajoutées sont calées sur la gamme) : Sans, Tierce : une 2e voix juste au-dessus ; Accord : deux voix en plus, à gauche et à droite ; Octave grave : ta voix doublée une octave plus bas) ; en dessous, la simple correction (Naturel, Marqué), qui garde le timbre de ta voix (moteur Signalsmith Stretch, logiciel libre). Avec 🎧 Retour, tu t\'entends auto-tuné pendant que tu kickes (le Vocodeur et les Harmonies s\'ajoutent à la fin de la prise). Dans Auto-tune, « 🔄 Reprendre la note de ma voix » réécoute ta prise et recale la tonalité ; elle est reprise toute seule à chaque nouvelle prise. La reverb et l\'écho ont des réglages simples (Pièce, Studio, Salle…) ; Studio est une vraie plaque de studio (algorithme de Dattorro, logiciel libre) ; dans son panneau, « ⚙️ Réglages » (ou deux appuis sur l\'effet) donne tous ses réglages : durée et pré-délai de la reverb, rythme et répétitions de l\'écho, vitesse et tonalité de l\'auto-tune… L\'égaliseur a son bouton « ⚙️ Réglages poussés ». La tuile 🔁 Bégaiement est toujours là : touchée sans sélection, elle choisit ta partie enregistrée et tu cales les poignées sur le mot. Sur une sélection, les tuiles passent en couleur « sélection » : volume, reverb, écho et égaliseur, rien que pour ce bout ; et 🔁 Bégaiement (2, 4 ou 8 fois) : le début du mot se répète en rythme, « ma-ma-ma-mais ». « ▶ Écouter le bout » pour entendre, « ↺ Remettre » pour annuler ce bout.' },
+    { sel: ['#strip'], t: '3 · Règle', b: 'Tous les effets sont ici, chacun dans sa tuile qui montre son état d\'un coup d\'œil : Nettoyage, Volume, Égaliseur, Compression, Reverb, Écho, Doublage, Auto-tune, Harmonies, Saturation, Radio. Un appui sur la tuile l\'allume ou l\'éteint ; ⚙️ ouvre tous ses réglages dans un panneau qui monte d\'en bas (l\'onde reste visible, la musique continue) ; « ✓ OK » le referme. L\'onglet Pistes, lui, sert juste à enregistrer. Auto-tune : en haut, l\'effet de style du rap d\'aujourd\'hui (🤖 Robot, la note collée net ; 🛸 Planant, avec les petits sauts de note ; 💎 Cristal, voix plus claire ; 🌑 Grave, voix plus sombre ; 🎹 Vocodeur, un synthé qui chante tes mots façon Daft Punk, avec ta voix auto-tunée Robot dessous en Léger et Moyen (synthé seul en À fond), d\'après le vocodeur libre de Chris Wilson), avec sa dose (Léger, Moyen, À fond) et les Harmonies, qui marchent aussi sans auto-tune (ta voix reste alors naturelle, seules les voix ajoutées sont calées sur la gamme) : Sans, Tierce : une 2e voix juste au-dessus ; Accord : deux voix en plus, à gauche et à droite ; Octave grave : ta voix doublée une octave plus bas) ; en dessous, la simple correction (Naturel, Marqué), qui garde le timbre de ta voix (moteur Signalsmith Stretch, logiciel libre). Avec 🎧 Retour, tu t\'entends auto-tuné pendant que tu kickes (le Vocodeur et les Harmonies s\'ajoutent à la fin de la prise). Dans Auto-tune, « 🔄 Reprendre la note de ma voix » réécoute ta prise et recale la tonalité ; elle est reprise toute seule à chaque nouvelle prise. La reverb et l\'écho ont des réglages simples (Pièce, Studio, Salle…) ; Studio est une vraie plaque de studio (algorithme de Dattorro, logiciel libre) ; dans son panneau, « ⚙️ Réglages » (ou deux appuis sur l\'effet) donne tous ses réglages : durée et pré-délai de la reverb, rythme et répétitions de l\'écho, vitesse et tonalité de l\'auto-tune… L\'égaliseur a son bouton « ⚙️ Réglages poussés ». La tuile 🔁 Bégaiement est toujours là : touchée sans sélection, elle choisit ta partie enregistrée et tu cales les poignées sur le mot. Sur une sélection, les tuiles passent en couleur « sélection » : volume, reverb, écho et égaliseur, rien que pour ce bout ; et 🔁 Bégaiement (2, 4 ou 8 fois) : le début du mot se répète en rythme, « ma-ma-ma-mais ». « ▶ Écouter le bout » pour entendre, « ↺ Remettre » pour annuler ce bout. Une prise abîmée ? « 🛟 Retrouver une ancienne prise » (sous les tuiles, ou dans Partager) liste les anciens sons gardés dans ton téléphone : écoute, et remets le bon.' },
     { sel: ['#bLevel'], t: 'Rééquilibrer', b: 'Remet tous les niveaux d\'aplomb d\'un coup : l\'instru, le lead, les backs et l\'ambiance à leur juste place.' }
   ],
   vMaster: [
