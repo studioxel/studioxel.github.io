@@ -750,7 +750,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.9.14 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.9.15 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookie, sans garder ton adresse IP) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze. Coupées, elles arrêtent aussi les rapports techniques (erreurs et mesures du son, jamais ta voix).</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false">📊 Statistiques anonymes : activées</button>
@@ -1209,8 +1209,8 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 223; // numéro interne (jamais affiché)
-const APP_PUB = '2.9.14';
+const APP_VER = 224; // numéro interne (jamais affiché)
+const APP_PUB = '2.9.15';
 /* le numéro affiché dans Réglages vient toujours d'ici (il était resté écrit en dur sur 2.8.4) */
 try{ document.addEventListener('DOMContentLoaded', () => { const v = document.getElementById('ver'); if(v) v.textContent = 'Version ' + APP_PUB + ' · Bêta'; }); const v0 = document.getElementById('ver'); if(v0) v0.textContent = 'Version ' + APP_PUB + ' · Bêta'; }catch(e){}
 /* Statistiques anonymes (GoatCounter, sans cookies) */
@@ -8277,14 +8277,24 @@ async function rsFillDur(L, w){
     await new Promise(r => setTimeout(r, 0));
   }
 }
-/* l'écoute part sur les premières secondes du son ; la suite est préparée pendant qu'il joue et s'enchaîne sans coupure */
 const RS_HEAD = 6, rsBufs = new Map();
-function rsHeadBuf(v){ const n = Math.min(v.ch[0].length, Math.round(RS_HEAD * v.sr)), b = ctx.createBuffer(v.ch.length, n, v.sr), k = 1 / 32767; for(let c = 0; c < v.ch.length; c++){ const d = b.getChannelData(c), s2 = v.ch[c]; for(let i = 0; i < n; i++) d[i] = s2[i] * k; } return b; }
+/* l'écoute passe par le lecteur audio de base du téléphone (comme n'importe quel son d'un site) : un fichier WAV fait directement depuis le son rangé, sans conversion */
+let rsEl = null, rsUrl = null, rsUrlAid = null;
+function rsWav(v){
+  const nc = v.ch.length, n = v.ch[0].length, ab = new ArrayBuffer(44 + n * nc * 2), dv = new DataView(ab);
+  const ws = (o, t) => { for(let i = 0; i < t.length; i++) dv.setUint8(o + i, t.charCodeAt(i)); };
+  ws(0, 'RIFF'); dv.setUint32(4, 36 + n * nc * 2, true); ws(8, 'WAVE'); ws(12, 'fmt '); dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, nc, true);
+  dv.setUint32(24, v.sr, true); dv.setUint32(28, v.sr * nc * 2, true); dv.setUint16(32, nc * 2, true); dv.setUint16(34, 16, true); ws(36, 'data'); dv.setUint32(40, n * nc * 2, true);
+  const o = new Int16Array(ab, 44);
+  if(nc === 1) o.set(v.ch[0]); else { const a = v.ch[0], b = v.ch[1]; for(let i = 0, j = 0; i < n; i++, j += 2){ o[j] = a[i]; o[j + 1] = b[i]; } }
+  return new Blob([ab], { type: 'audio/wav' });
+}
+const RS_SILENT = 'data:audio/wav;base64,UklGRiYAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQIAAAAAAA==';
 async function rsFullBuf(v){ const n = v.ch[0].length, b = ctx.createBuffer(v.ch.length, n, v.sr), k = 1 / 32767, step = v.sr * 8;
   for(let c = 0; c < v.ch.length; c++){ const d = b.getChannelData(c), s2 = v.ch[c]; for(let i0 = 0; i0 < n; i0 += step){ const e = Math.min(n, i0 + step); for(let i = i0; i < e; i++) d[i] = s2[i] * k; await new Promise(r => setTimeout(r, 0)); } }
   return b; }
 let rescueSrc = null;
-function rescueStop(){ try{ rescueSrc && rescueSrc._head && rescueSrc._head.stop(); }catch(e){} try{ rescueSrc && rescueSrc.stop && rescueSrc.stop(); }catch(e){} rescueSrc = null; document.querySelectorAll('.rescue [data-rp]').forEach(b => b.textContent = '▶'); }
+function rescueStop(){ try{ rescueSrc && rescueSrc.stop && rescueSrc.stop(); }catch(e){} rescueSrc = null; document.querySelectorAll('.rescue [data-rp]').forEach(b => b.textContent = '▶'); }
 async function openRescue(){
   if(busy) return;
   setBusy(true, 'Je cherche tes anciennes prises…');
@@ -8311,22 +8321,18 @@ async function openRescue(){
     const p = e.target.closest('[data-rp]'), r = e.target.closest('[data-rr]');
     if(p){ const on = p.textContent === '■'; rescueStop(); if(on) return;
       /* iPhone : le son doit être réveillé dans le geste même, avant d'aller chercher la prise en mémoire */
-      try{ if(S.playing) pause(); audioIdle = false; audioLastActive = Date.now(); if(!mic) audioSessionPlay(); unlockSpeaker(); const wk = wake(); p.textContent = '…';
-        const o = L[+p.dataset.rp], tag = {}; rescueSrc = tag;
-        const g = ctx.createGain(); g.gain.value = 0.9; g.connect(ctx.destination);
-        const play = (b, at, off) => { const s = ctx.createBufferSource(); s.buffer = b; s.connect(g); s.start(at, off); return s; };
-        const done = rsBufs.get(o.aid), v = done ? null : await raw(o); await wk; if(ctx.state !== 'running') await ctx.resume();
-        if(rescueSrc !== tag) return;
-        const first = done || rsHeadBuf(v), t0 = ctx.currentTime + 0.05, s1 = play(first, t0, 0);
-        rescueSrc = s1; p.textContent = '■'; s1.onended = () => { if(rescueSrc === s1) rescueStop(); };
-        jr('i', 'retrouver : écoute ' + Math.round(o.dur || 0) + ' s, son ' + ctx.state);
-        if(done || v.ch[0].length <= first.length) return;
-        const full = keep(o, await rsFullBuf(v)); if(rescueSrc !== s1) return;
-        const at = t0 + RS_HEAD, late = ctx.currentTime > at - 0.02;
-        const s2 = late ? play(full, 0, ctx.currentTime - t0) : play(full, at, RS_HEAD);
-        if(late) try{ s1.stop(); }catch(e){}
-        s1.onended = null; s2._head = s1; rescueSrc = s2; s2.onended = () => { if(rescueSrc === s2) rescueStop(); }; }
-      catch(err){ rescueStop(); toast('Lecture impossible : ' + err.message); } return; }
+      try{ if(S.playing) pause(); audioIdle = false; audioLastActive = Date.now(); if(!mic) audioSessionPlay(); unlockSpeaker(); wake(); p.textContent = '…';
+        const o = L[+p.dataset.rp], tag = { stop(){} }; rescueSrc = tag;
+        /* le lecteur est débloqué dans le geste même (sinon l'iPhone refuse de jouer après le chargement) */
+        if(!rsEl){ rsEl = new Audio(); rsEl.setAttribute('playsinline', ''); rsEl.preload = 'auto'; }
+        const el = rsEl; try{ el.pause(); }catch(e){} if(rsUrlAid !== o.aid){ el.src = RS_SILENT; const pr = el.play(); if(pr) pr.catch(() => {}); }
+        if(rsUrlAid !== o.aid){ const v = await raw(o); if(rescueSrc !== tag) return; if(rsUrl) URL.revokeObjectURL(rsUrl); rsUrl = URL.createObjectURL(rsWav(v)); rsUrlAid = o.aid; el.src = rsUrl; }
+        try{ el.currentTime = 0; }catch(e){}
+        el.volume = 1; await el.play(); if(rescueSrc !== tag){ el.pause(); return; }
+        const src = { stop(){ try{ el.pause(); }catch(e){} }, el };
+        rescueSrc = src; p.textContent = '■'; el.onended = () => { if(rescueSrc === src) rescueStop(); };
+        jr('i', 'retrouver : écoute ' + Math.round(o.dur || 0) + ' s (lecteur audio)'); }
+      catch(err){ rescueStop(); jr('w', 'retrouver : lecture impossible ' + (err.name || '') + ' ' + err.message); toast('Lecture impossible : ' + err.message); } return; }
     if(r && tgt){
       rescueStop();
       if(isLocked(tgt)){ lockToast(tgt); return; }
