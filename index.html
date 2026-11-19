@@ -750,7 +750,7 @@ body.ed-open .wmark{z-index:41}
     </div>
     <div class="autobox"><div class="autot">Appli</div>
       <div class="bkrow"><button class="toggle" id="bReload" title="Recharge l'appli pour récupérer la dernière version">Recharger l'appli</button>
-      <span class="grp" id="ver">Version 2.8.4 · Bêta</span></div>
+      <span class="grp" id="ver">Version 2.9.11 · Bêta</span></div>
       <p class="note" id="envInfo"></p>
       <p class="note">📊 L'appli compte ses visites et ses actions de façon anonyme (GoatCounter, sans cookie, sans garder ton adresse IP) pour savoir ce qui sert et ce qui bloque. Rien sur toi : ni tes sons, ni tes textes, ni ton blaze. Coupées, elles arrêtent aussi les rapports techniques (erreurs et mesures du son, jamais ta voix).</p>
       <button class="toggle" id="tNoTrack" aria-pressed="false">📊 Statistiques anonymes : activées</button>
@@ -1209,8 +1209,10 @@ Les lignes entre crochets deviennent des titres de section dans le prompteur."><
 /* La page de version (studioxel-vN.html) se présente à l'adresse principale : l'icône d'accueil ouvre toujours la dernière version */
 try{ if(/studioxel-v\d+\.html$/.test(location.pathname)) history.replaceState(null, '', location.pathname.replace(/studioxel-v\d+\.html$/, '')); }catch(e){}
 const $ = s => document.querySelector(s);
-const APP_VER = 219; // numéro interne (jamais affiché)
-const APP_PUB = '2.9.10';
+const APP_VER = 220; // numéro interne (jamais affiché)
+const APP_PUB = '2.9.11';
+/* le numéro affiché dans Réglages vient toujours d'ici (il était resté écrit en dur sur 2.8.4) */
+try{ document.addEventListener('DOMContentLoaded', () => { const v = document.getElementById('ver'); if(v) v.textContent = 'Version ' + APP_PUB + ' · Bêta'; }); const v0 = document.getElementById('ver'); if(v0) v0.textContent = 'Version ' + APP_PUB + ' · Bêta'; }catch(e){}
 /* Statistiques anonymes (GoatCounter, sans cookies) */
 const GC_URL = 'https://studioxel.goatcounter.com/count';
 const gcQ = [];
